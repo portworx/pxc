@@ -20,6 +20,8 @@ import (
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 
+	"github.com/cheynewallace/tabby"
+
 	"github.com/spf13/cobra"
 )
 
@@ -56,15 +58,66 @@ func statusExec(cmd *cobra.Command, args []string) {
 	ctx, conn := pxConnect()
 	defer conn.Close()
 
-	// Create a cluster client
-	cluster := api.NewOpenStorageClusterClient(conn)
+	// Get Identity information
+	identity := api.NewOpenStorageIdentityClient(conn)
+	version, err := identity.Version(ctx, &api.SdkIdentityVersionRequest{})
+	var versionDetails string
+	for k, v := range version.GetVersion().GetDetails() {
+		versionDetails += fmt.Sprintf("  %s: %s\n", k, v)
+	}
 
 	// Print the cluster information
+	cluster := api.NewOpenStorageClusterClient(conn)
 	clusterInfo, err := cluster.InspectCurrent(ctx, &api.SdkClusterInspectCurrentRequest{})
 	if err != nil {
+		pxPrintGrpcErrorWithMessage(err, "Failed to inspect cluster")
 		return
 	}
 
-	fmt.Printf("Connected to Cluster %s\n",
-		clusterInfo.GetCluster().GetId())
+	fmt.Printf("Cluster ID: %s\n"+
+		"Cluster UUID: %s\n"+
+		"Cluster Status: %s\n"+
+		"Version: %s\n"+
+		"%s"+
+		"SDK Version %s\n"+
+		"\n",
+		clusterInfo.GetCluster().GetName(),
+		clusterInfo.GetCluster().GetId(),
+		clusterInfo.GetCluster().GetStatus(),
+		version.GetVersion().GetVersion(),
+		versionDetails,
+		version.GetSdkVersion().GetVersion())
+
+	// Get all node Ids
+	nodes := api.NewOpenStorageNodeClient(conn)
+	nodesInfo, err := nodes.Enumerate(ctx, &api.SdkNodeEnumerateRequest{})
+	if err != nil {
+		pxPrintGrpcErrorWithMessage(err, "Failed to get nodes")
+		return
+	}
+
+	t := tabby.New()
+	t.AddHeader("Hostname", "IP", "SchedulerNodeName", "Used", "Capacity", "Status")
+	for _, nid := range nodesInfo.GetNodeIds() {
+		node, err := nodes.Inspect(ctx, &api.SdkNodeInspectRequest{NodeId: nid})
+		if err != nil {
+			pxPrintGrpcErrorWithMessagef(err, "Failed to get information about node %s", nid)
+			continue
+		}
+		n := node.GetNode()
+
+		// Calculate used
+		var (
+			used, capacity uint64
+		)
+		for _, pool := range n.GetPools() {
+			used += pool.GetUsed()
+			capacity += pool.GetTotalSize()
+		}
+		usedStr := fmt.Sprintf("%d Gi", used/Gi)
+		capacityStr := fmt.Sprintf("%d Gi", capacity/Gi)
+
+		t.AddLine(n.GetHostname(), n.GetMgmtIp(), n.GetSchedulerNodeName(), usedStr, capacityStr, n.GetStatus())
+	}
+	t.Print()
 }

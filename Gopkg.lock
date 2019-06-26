@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:f7f103fbcdadb44ba57f3fff677aa7f719948ba010cbbee5b69ab6067d3ab66b"
+  name = "github.com/cheynewallace/tabby"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "32f05d9eda409be9e968b440181da339cba4f212"
+  version = "v1.1.0"
+
+[[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -299,6 +307,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/cheynewallace/tabby",
     "github.com/grpc-ecosystem/go-grpc-middleware/util/metautils",
     "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang",
     "github.com/mitchellh/go-homedir",

@@ -35,6 +35,11 @@ import (
 const (
 	pxDefaultDir        = ".px"
 	pxDefaultConfigName = "config.yml"
+
+	Ki = 1024
+	Mi = 1024 * Ki
+	Gi = 1024 * Mi
+	Ti = 1024 * Gi
 )
 
 var (
@@ -127,7 +132,16 @@ func pxConnect() (context.Context, *grpc.ClientConn) {
 	return context.Background(), conn
 }
 
+func pxPrintGrpcErrorWithMessagef(err error, format string, args ...string) {
+	pxPrintGrpcErrorWithMessage(err, fmt.Sprintf(format, args))
+}
+
+func pxPrintGrpcErrorWithMessage(err error, msg string) {
+	gerr, _ := status.FromError(err)
+	fmt.Fprintf(os.Stderr, "%s: %s\n", msg, gerr.Message())
+}
+
 func pxPrintGrpcError(err error) {
 	gerr, _ := status.FromError(err)
-	fmt.Printf("Message[%s]\n", gerr.Message())
+	fmt.Fprintf(os.Stderr, "%s\n", gerr.Message())
 }
