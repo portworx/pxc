@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/portworx/px/pkg/contextconfig"
 	pxgrpc "github.com/portworx/px/pkg/grpc"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -33,10 +34,11 @@ import (
 
 const (
 	pxDefaultDir        = ".px"
-	pxDefaultConfigName = "config"
+	pxDefaultConfigName = "config.yml"
 )
 
 var (
+	cfgDir      string
 	cfgFile     string
 	optEndpoint string
 )
@@ -96,6 +98,7 @@ func initConfig() {
 		// Search config in home directory with name ".px" (without extension).
 		viper.AddConfigPath(path.Join(home, pxDefaultDir))
 		viper.SetConfigName(pxDefaultConfigName)
+		cfgFile = path.Join(home, pxDefaultDir, pxDefaultConfigName)
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
@@ -109,14 +112,19 @@ func initConfig() {
 // pxConnect will connect to the server using TLS if needed and returns
 // the context setup with any security if any and the grpc client. The
 // context will not have a timeout set, that should be setup by each caller.
-func pxConnect() (context.Context, *grpc.ClientConn, error) {
-	conn, err := pxgrpc.Connect("127.0.0.1:9100", []grpc.DialOption{grpc.WithInsecure()})
+func pxConnect() (context.Context, *grpc.ClientConn) {
+	pxctx, err := contextconfig.NewContextConfig(cfgFile).Get()
 	if err != nil {
-		fmt.Println(err)
-		return nil, nil, err
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
+	conn, err := pxgrpc.Connect(pxctx.Endpoint, []grpc.DialOption{grpc.WithInsecure()})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
 	}
 
-	return context.Background(), conn, err
+	return context.Background(), conn
 }
 
 func pxPrintGrpcError(err error) {
