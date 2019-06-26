@@ -16,13 +16,19 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
 
+	pxgrpc "github.com/portworx/px/pkg/grpc"
+
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -30,7 +36,10 @@ const (
 	pxDefaultConfigName = "config"
 )
 
-var cfgFile string
+var (
+	cfgFile     string
+	optEndpoint string
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -64,6 +73,7 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+".yaml)")
+	rootCmd.PersistentFlags().StringVar(&optEndpoint, "endpoint", "", "Portworx service endpoint")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -94,4 +104,22 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
+}
+
+// pxConnect will connect to the server using TLS if needed and returns
+// the context setup with any security if any and the grpc client. The
+// context will not have a timeout set, that should be setup by each caller.
+func pxConnect() (context.Context, *grpc.ClientConn, error) {
+	conn, err := pxgrpc.Connect("127.0.0.1:9100", []grpc.DialOption{grpc.WithInsecure()})
+	if err != nil {
+		fmt.Println(err)
+		return nil, nil, err
+	}
+
+	return context.Background(), conn, err
+}
+
+func pxPrintGrpcError(err error) {
+	gerr, _ := status.FromError(err)
+	fmt.Printf("Message[%s]\n", gerr.Message())
 }

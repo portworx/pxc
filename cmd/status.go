@@ -16,15 +16,11 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
 	"fmt"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 
-	pxgrpc "github.com/portworx/px/pkg/grpc"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/status"
 )
 
 // statusCmd represents the status command
@@ -57,25 +53,18 @@ func init() {
 }
 
 func statusExec(cmd *cobra.Command, args []string) {
-	conn, err := pxgrpc.Connect("127.0.0.1:9100", []grpc.DialOption{grpc.WithInsecure()})
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	ctx, conn, err := pxConnect()
+	defer conn.Close()
 
 	// Create a cluster client
 	cluster := api.NewOpenStorageClusterClient(conn)
 
 	// Print the cluster information
-	clusterInfo, err := cluster.InspectCurrent(
-		context.Background(),
-		&api.SdkClusterInspectCurrentRequest{})
+	clusterInfo, err := cluster.InspectCurrent(ctx, &api.SdkClusterInspectCurrentRequest{})
 	if err != nil {
-		gerr, _ := status.FromError(err)
-		fmt.Printf("Error Code[%d] Message[%s]\n",
-			gerr.Code(), gerr.Message())
 		return
 	}
+
 	fmt.Printf("Connected to Cluster %s\n",
 		clusterInfo.GetCluster().GetId())
 }
