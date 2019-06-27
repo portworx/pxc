@@ -16,13 +16,16 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 
 	"github.com/cheynewallace/tabby"
+	"google.golang.org/grpc"
 
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
@@ -102,7 +105,7 @@ func getVolumesExec(cmd *cobra.Command, args []string) {
 		// default printer
 		fallthrough
 	default:
-		getVolumesDefaultPrinter(cmd, args, vols)
+		getVolumesDefaultPrinter(cmd, args, ctx, conn, vols)
 	}
 }
 
@@ -124,7 +127,7 @@ func getVolumesJsonPrinter(cmd *cobra.Command, args []string, vols []*api.SdkVol
 	fmt.Println(string(bytes))
 }
 
-func getVolumesDefaultPrinter(cmd *cobra.Command, args []string, vols []*api.SdkVolumeInspectResponse) {
+func getVolumesDefaultPrinter(cmd *cobra.Command, args []string, ctx context.Context, conn *grpc.ClientConn, vols []*api.SdkVolumeInspectResponse) {
 
 	// Determine if it is a wide output
 	output, _ := cmd.Flags().GetString("output")
@@ -135,7 +138,12 @@ func getVolumesDefaultPrinter(cmd *cobra.Command, args []string, vols []*api.Sdk
 
 	// Start the columns
 	t := tabby.New()
-	np := &volumeColumnFormatter{wide: wide, showLabels: showLabels}
+	np := &volumeColumnFormatter{
+		wide:       wide,
+		showLabels: showLabels,
+		ctx:        ctx,
+		conn:       conn,
+	}
 	t.AddHeader(np.getHeader()...)
 
 	for _, n := range vols {
@@ -147,14 +155,16 @@ func getVolumesDefaultPrinter(cmd *cobra.Command, args []string, vols []*api.Sdk
 type volumeColumnFormatter struct {
 	wide       bool
 	showLabels bool
+	ctx        context.Context
+	conn       *grpc.ClientConn
 }
 
 func (p *volumeColumnFormatter) getHeader() []interface{} {
 	var header []interface{}
 	if p.wide {
-		header = []interface{}{"Id", "Name", "Size Gi", "HA", "Shared", "Encrypted", "Io Profile", "Status", "Snap Enabled"}
+		header = []interface{}{"Id", "Name", "Size Gi", "HA", "Shared", "Encrypted", "Io Profile", "Status", "State", "Snap Enabled"}
 	} else {
-		header = []interface{}{"Name", "Size", "HA", "Shared", "Status"}
+		header = []interface{}{"Name", "Size", "HA", "Shared", "Status", "State"}
 	}
 	if p.showLabels {
 		header = append(header, "Labels")
@@ -168,7 +178,32 @@ func (p *volumeColumnFormatter) getLine(resp *api.SdkVolumeInspectResponse) []in
 	v := resp.GetVolume()
 	spec := v.GetSpec()
 
-	// Return a line
+	var node *api.StorageNode
+	if len(v.GetAttachedOn()) != 0 {
+		nodes := api.NewOpenStorageNodeClient(p.conn)
+		nodeInfo, err := nodes.Inspect(p.ctx, &api.SdkNodeInspectRequest{NodeId: v.GetAttachedOn()})
+		if err != nil {
+			pxPrintGrpcErrorWithMessage(err, "Failed to get node information where volume attached")
+			return nil
+		}
+		node = nodeInfo.GetNode()
+	}
+
+	// Determine the status of the volume
+	state := "Detached"
+	if v.State == api.VolumeState_VOLUME_STATE_ATTACHED {
+		if node != nil {
+			state = "on " + node.GetHostname()
+		} else {
+			state = "Attached"
+		}
+	} else if v.State == api.VolumeState_VOLUME_STATE_DETATCHING {
+		if node != nil {
+			state = "Was on " + node.GetHostname()
+		} else {
+			state = "Detaching"
+		}
+	}
 
 	// Size needs to be done better
 	var line []interface{}
@@ -176,16 +211,20 @@ func (p *volumeColumnFormatter) getLine(resp *api.SdkVolumeInspectResponse) []in
 		line = []interface{}{
 			v.GetId(), v.GetLocator().GetName(), spec.GetSize() / Gi, spec.GetHaLevel(),
 			spec.GetShared() || spec.GetSharedv4(), spec.GetEncrypted(),
-			spec.GetCos(), v.GetStatus(), spec.GetSnapshotSchedule() != "",
+			spec.GetCos(), prettyStatus(v), state, spec.GetSnapshotSchedule() != "",
 		}
 	} else {
 		line = []interface{}{
 			v.GetLocator().GetName(), spec.GetSize() / Gi, spec.GetHaLevel(),
-			spec.GetShared() || spec.GetSharedv4(), v.GetStatus(),
+			spec.GetShared() || spec.GetSharedv4(), prettyStatus(v), state,
 		}
 	}
 	if p.showLabels {
 		line = append(line, labelsToString(v.GetLocator().GetVolumeLabels()))
 	}
 	return line
+}
+
+func prettyStatus(v *api.Volume) string {
+	return strings.TrimPrefix(v.GetStatus().String(), "VOLUME_STATUS_")
 }
