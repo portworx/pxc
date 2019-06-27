@@ -16,9 +16,16 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+
+	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+
+	"github.com/cheynewallace/tabby"
 
 	"github.com/spf13/cobra"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // getVolumesCmd represents the getVolumes command
@@ -33,7 +40,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("getVolumes called")
+		getVolumesExec(cmd, args)
 	},
 }
 
@@ -49,4 +56,136 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// getVolumesCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	getVolumesCmd.Flags().String("owner", "", "Owner of volume")
+	getVolumesCmd.Flags().String("volumegroup", "", "Volume group id")
+	getVolumesCmd.Flags().Bool("deep", false, "Collect more information, this may delay the request")
+
+}
+
+func getVolumesExec(cmd *cobra.Command, args []string) {
+	ctx, conn := pxConnect()
+	defer conn.Close()
+
+	// Get volume information
+	volumes := api.NewOpenStorageVolumeClient(conn)
+	var vols []*api.SdkVolumeInspectResponse
+	if len(args) != 0 {
+		vols = make([]*api.SdkVolumeInspectResponse, 0, len(args))
+		for _, v := range args {
+			// If it is just one volume, just do an inspect
+			vol, err := volumes.Inspect(ctx, &api.SdkVolumeInspectRequest{VolumeId: v})
+			if err != nil {
+				pxPrintGrpcErrorWithMessage(err, "Failed to get volume")
+				return
+			}
+			vols = append(vols, vol)
+		}
+	} else {
+		// If it is no volumes (all)
+		volsInfo, err := volumes.InspectWithFilters(ctx, &api.SdkVolumeInspectWithFiltersRequest{})
+		if err != nil {
+			pxPrintGrpcErrorWithMessage(err, "Failed to get volumes")
+			return
+		}
+		vols = volsInfo.GetVolumes()
+	}
+
+	// Get output
+	output, _ := cmd.Flags().GetString("output")
+	switch output {
+	case "yaml":
+		getVolumesYamlPrinter(cmd, args, vols)
+	case "json":
+		getVolumesJsonPrinter(cmd, args, vols)
+	case "wide":
+		// We can have a special one here, but for simplicity, we will use the
+		// default printer
+		fallthrough
+	default:
+		getVolumesDefaultPrinter(cmd, args, vols)
+	}
+}
+
+func getVolumesYamlPrinter(cmd *cobra.Command, args []string, vols []*api.SdkVolumeInspectResponse) {
+	bytes, err := yaml.Marshal(vols)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to create yaml output")
+		return
+	}
+	fmt.Println(string(bytes))
+}
+
+func getVolumesJsonPrinter(cmd *cobra.Command, args []string, vols []*api.SdkVolumeInspectResponse) {
+	bytes, err := json.MarshalIndent(vols, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to create json output")
+		return
+	}
+	fmt.Println(string(bytes))
+}
+
+func getVolumesDefaultPrinter(cmd *cobra.Command, args []string, vols []*api.SdkVolumeInspectResponse) {
+
+	// Determine if it is a wide output
+	output, _ := cmd.Flags().GetString("output")
+	wide := output == "wide"
+
+	// Determine if we need to show labels
+	showLabels, _ := cmd.Flags().GetBool("show-labels")
+
+	// Start the columns
+	t := tabby.New()
+	np := &volumeColumnFormatter{wide: wide, showLabels: showLabels}
+	t.AddHeader(np.getHeader()...)
+
+	for _, n := range vols {
+		t.AddLine(np.getLine(n)...)
+	}
+	t.Print()
+}
+
+type volumeColumnFormatter struct {
+	wide       bool
+	showLabels bool
+}
+
+func (p *volumeColumnFormatter) getHeader() []interface{} {
+	var header []interface{}
+	if p.wide {
+		header = []interface{}{"Id", "Name", "Size Gi", "HA", "Shared", "Encrypted", "Io Profile", "Status", "Snap Enabled"}
+	} else {
+		header = []interface{}{"Name", "Size", "HA", "Shared", "Status"}
+	}
+	if p.showLabels {
+		header = append(header, "Labels")
+	}
+
+	return header
+}
+
+func (p *volumeColumnFormatter) getLine(resp *api.SdkVolumeInspectResponse) []interface{} {
+
+	v := resp.GetVolume()
+	spec := v.GetSpec()
+
+	// Return a line
+
+	// Size needs to be done better
+	var line []interface{}
+	if p.wide {
+		line = []interface{}{
+			v.GetId(), v.GetLocator().GetName(), spec.GetSize() / Gi, spec.GetHaLevel(),
+			spec.GetShared() || spec.GetSharedv4(), spec.GetEncrypted(),
+			spec.GetCos(), v.GetStatus(), spec.GetSnapshotSchedule() != "",
+		}
+	} else {
+		line = []interface{}{
+			v.GetLocator().GetName(), spec.GetSize() / Gi, spec.GetHaLevel(),
+			spec.GetShared() || spec.GetSharedv4(), v.GetStatus(),
+		}
+	}
+	if p.showLabels {
+		line = append(line, labelsToString(v.GetLocator().GetVolumeLabels()))
+	}
+	return line
 }

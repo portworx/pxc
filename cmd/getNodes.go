@@ -30,8 +30,9 @@ import (
 
 // getNodesCmd represents the getNodes command
 var getNodesCmd = &cobra.Command{
-	Use:   "nodes",
-	Short: "A brief description of your command",
+	Use:     "node",
+	Aliases: []string{"nodes", "no"},
+	Short:   "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
