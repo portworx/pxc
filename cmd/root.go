@@ -81,10 +81,11 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+".yaml)")
 	rootCmd.PersistentFlags().StringVar(&optEndpoint, "endpoint", "", "Portworx service endpoint")
+	rootCmd.PersistentFlags().StringP("output", "o", "", "Output in yaml|json|wide")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -144,4 +145,22 @@ func pxPrintGrpcErrorWithMessage(err error, msg string) {
 func pxPrintGrpcError(err error) {
 	gerr, _ := status.FromError(err)
 	fmt.Fprintf(os.Stderr, "%s\n", gerr.Message())
+}
+
+func listContains(list []string, s string) bool {
+	for _, value := range list {
+		if value == s {
+			return true
+		}
+	}
+	return false
+}
+
+func listHaveMatch(list, match []string) bool {
+	for _, s := range match {
+		if listContains(list, s) {
+			return true
+		}
+	}
+	return false
 }
