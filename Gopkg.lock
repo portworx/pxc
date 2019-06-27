@@ -94,12 +94,12 @@
   version = "v1.0.2"
 
 [[projects]]
-  digest = "1:97e6f3a4dd4d5e72b3300d8e3ad9e8a5db58810efcfc92644057bcb707d85a2a"
+  branch = "release-0.42"
+  digest = "1:9c4a87b5f3ff0e5c0e2a6b0328c0fefe15939cf1ebf773f1d4b004c18a6ca284"
   name = "github.com/libopenstorage/openstorage-sdk-clients"
   packages = ["sdk/golang"]
   pruneopts = "UT"
-  revision = "bcf800e104c20c6cc722b63922a44f6463ecf32f"
-  version = "v0.42.14"
+  revision = "c39a2a5c764a64d6604bcb3785db8dca948adf11"
 
 [[projects]]
   digest = "1:5a0ef768465592efca0412f7e838cdc0826712f8447e70e6ccc52eb441e9ab13"

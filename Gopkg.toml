@@ -31,7 +31,7 @@
 
 [[constraint]]
   name = "github.com/libopenstorage/openstorage-sdk-clients"
-  version = "0.42.14"
+  branch = "release-0.42"
 
 [[constraint]]
   name = "github.com/mitchellh/go-homedir"
