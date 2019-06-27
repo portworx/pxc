@@ -1,5 +1,5 @@
 /*
-Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+Copyright © 2019 Portworx
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 
@@ -97,7 +96,9 @@ func getNodesExec(cmd *cobra.Command, args []string) {
 	case "json":
 		getNodesJsonPrinter(cmd, args, storageNodes)
 	case "wide":
-		getNodesWidePrinter(cmd, args, storageNodes)
+		// We can have a special one here, but for simplicity, we will use the
+		// default printer
+		fallthrough
 	default:
 		getNodesDefaultPrinter(cmd, args, storageNodes)
 	}
@@ -121,60 +122,75 @@ func getNodesJsonPrinter(cmd *cobra.Command, args []string, storageNodes []*api.
 	fmt.Println(string(bytes))
 }
 
-func getNodesWidePrinter(cmd *cobra.Command, args []string, storageNodes []*api.StorageNode) {
+func getNodesDefaultPrinter(cmd *cobra.Command, args []string, storageNodes []*api.StorageNode) {
+
+	// Determine if it is a wide output
+	output, _ := cmd.Flags().GetString("output")
+	wide := output == "wide"
+
+	// Determine if we need to show labels
+	showLabels, _ := cmd.Flags().GetBool("show-labels")
+
+	// Start the columns
 	t := tabby.New()
-	t.AddHeader("Id", "Hostname", "IP", "SchedulerNodeName", "Used", "Capacity", "Status", "Labels")
+	np := &nodeColumnFormatter{wide: wide, showLabels: showLabels}
+	t.AddHeader(np.getHeader()...)
+
 	for _, n := range storageNodes {
-		// Calculate used
-		var (
-			used, capacity uint64
-		)
-		for _, pool := range n.GetPools() {
-			used += pool.GetUsed()
-			capacity += pool.GetTotalSize()
-		}
-		usedStr := fmt.Sprintf("%d Gi", used/Gi)
-		capacityStr := fmt.Sprintf("%d Gi", capacity/Gi)
-
-		labels := make([]string, 0, len(n.GetNodeLabels()))
-		for k, v := range n.GetNodeLabels() {
-			labels = append(labels, k+"="+v)
-		}
-
-		t.AddLine(n.GetId(),
-			n.GetHostname(),
-			n.GetMgmtIp(),
-			n.GetSchedulerNodeName(),
-			usedStr,
-			capacityStr,
-			n.GetStatus(),
-			strings.Join(labels, ","))
+		t.AddLine(np.getLine(n)...)
 	}
 	t.Print()
-
 }
 
-func getNodesDefaultPrinter(cmd *cobra.Command, args []string, storageNodes []*api.StorageNode) {
-	t := tabby.New()
-	t.AddHeader("Hostname", "IP", "SchedulerNodeName", "Used", "Capacity", "Status")
-	for _, n := range storageNodes {
-		// Calculate used
-		var (
-			used, capacity uint64
-		)
-		for _, pool := range n.GetPools() {
-			used += pool.GetUsed()
-			capacity += pool.GetTotalSize()
-		}
-		usedStr := fmt.Sprintf("%d Gi", used/Gi)
-		capacityStr := fmt.Sprintf("%d Gi", capacity/Gi)
+type nodeColumnFormatter struct {
+	wide       bool
+	showLabels bool
+}
 
-		t.AddLine(n.GetHostname(),
-			n.GetMgmtIp(),
-			n.GetSchedulerNodeName(),
-			usedStr,
-			capacityStr,
-			n.GetStatus())
+func (p *nodeColumnFormatter) getHeader() []interface{} {
+	var header []interface{}
+	if p.wide {
+		header = []interface{}{"Id", "Hostname", "IP", "Data IP", "SchedulerNodeName", "Used", "Capacity", "# Disks", "# Pools", "Status"}
+	} else {
+		header = []interface{}{"Hostname", "IP", "SchedulerNodeName", "Used", "Capacity", "Status"}
 	}
-	t.Print()
+	if p.showLabels {
+		header = append(header, "Labels")
+	}
+
+	return header
+}
+
+func (p *nodeColumnFormatter) getLine(n *api.StorageNode) []interface{} {
+
+	// Calculate used
+	var (
+		used, capacity uint64
+	)
+	for _, pool := range n.GetPools() {
+		used += pool.GetUsed()
+		capacity += pool.GetTotalSize()
+	}
+	usedStr := fmt.Sprintf("%d Gi", used/Gi)
+	capacityStr := fmt.Sprintf("%d Gi", capacity/Gi)
+
+	// Return a line
+	var line []interface{}
+	if p.wide {
+		line = []interface{}{
+			n.GetId(), n.GetHostname(), n.GetMgmtIp(),
+			n.GetDataIp(), n.GetSchedulerNodeName(), usedStr, capacityStr,
+			len(n.GetDisks()), len(n.GetPools()), n.GetStatus(),
+		}
+	} else {
+		line = []interface{}{
+			n.GetHostname(), n.GetMgmtIp(),
+			n.GetSchedulerNodeName(), usedStr, capacityStr,
+			n.GetStatus(),
+		}
+	}
+	if p.showLabels {
+		line = append(line, labelsToString(n.GetNodeLabels()))
+	}
+	return line
 }

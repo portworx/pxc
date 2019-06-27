@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/portworx/px/pkg/contextconfig"
 	pxgrpc "github.com/portworx/px/pkg/grpc"
@@ -82,6 +83,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+".yaml)")
 	rootCmd.PersistentFlags().StringVar(&optEndpoint, "endpoint", "", "Portworx service endpoint")
 	rootCmd.PersistentFlags().StringP("output", "o", "", "Output in yaml|json|wide")
+	rootCmd.PersistentFlags().Bool("show-labels", false, "Show labels in the last column of the output")
+	rootCmd.PersistentFlags().StringP("selector", "l", "", "Comma separated label selector of the form 'key=value,key=value'")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -163,4 +166,12 @@ func listHaveMatch(list, match []string) bool {
 		}
 	}
 	return false
+}
+
+func labelsToString(labels map[string]string) string {
+	s := make([]string, 0, len(labels))
+	for k, v := range labels {
+		s = append(s, k+"="+v)
+	}
+	return strings.Join(s, ",")
 }
