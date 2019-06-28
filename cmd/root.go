@@ -31,6 +31,9 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
+
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -134,6 +137,30 @@ func pxConnect() (context.Context, *grpc.ClientConn) {
 	}
 
 	return context.Background(), conn
+}
+
+func kubeConnect() *kubernetes.Clientset {
+	pxctx, err := contextconfig.NewContextConfig(cfgFile).Get()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
+	if len(pxctx.Kubeconfig) == 0 {
+		fmt.Fprintf(os.Stderr, "No kubeconfig found in context %s\n", pxctx.Context)
+		os.Exit(1)
+	}
+
+	r, err := clientcmd.BuildConfigFromFlags("", pxctx.Kubeconfig)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to configure kubernetes client: %v\n", err)
+		os.Exit(1)
+	}
+	clientset, err := kubernetes.NewForConfig(r)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to Kubernetes: %v\n", err)
+		os.Exit(1)
+	}
+	return clientset
 }
 
 func pxPrintGrpcErrorWithMessagef(err error, format string, args ...string) {

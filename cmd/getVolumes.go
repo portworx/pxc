@@ -29,6 +29,9 @@ import (
 
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
+
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // getVolumesCmd represents the getVolumes command
@@ -62,12 +65,27 @@ func init() {
 	getVolumesCmd.Flags().String("owner", "", "Owner of volume")
 	getVolumesCmd.Flags().String("volumegroup", "", "Volume group id")
 	getVolumesCmd.Flags().Bool("deep", false, "Collect more information, this may delay the request")
+	getVolumesCmd.Flags().Bool("show-k8s-info", false, "Show kubernetes information")
 
 }
 
 func getVolumesExec(cmd *cobra.Command, args []string) {
 	ctx, conn := pxConnect()
 	defer conn.Close()
+
+	showK8s, _ := cmd.Flags().GetBool("show-k8s-info")
+	var pods []v1.Pod
+
+	if showK8s {
+		kc := kubeConnect()
+		podClient := kc.CoreV1().Pods("")
+		podList, err := podClient.List(metav1.ListOptions{})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "K: %v\n", err)
+			return
+		}
+		pods = podList.Items
+	}
 
 	// Get volume information
 	volumes := api.NewOpenStorageVolumeClient(conn)
@@ -105,7 +123,7 @@ func getVolumesExec(cmd *cobra.Command, args []string) {
 		// default printer
 		fallthrough
 	default:
-		getVolumesDefaultPrinter(cmd, args, ctx, conn, vols)
+		getVolumesDefaultPrinter(cmd, args, ctx, conn, vols, pods)
 	}
 }
 
@@ -127,7 +145,7 @@ func getVolumesJsonPrinter(cmd *cobra.Command, args []string, vols []*api.SdkVol
 	fmt.Println(string(bytes))
 }
 
-func getVolumesDefaultPrinter(cmd *cobra.Command, args []string, ctx context.Context, conn *grpc.ClientConn, vols []*api.SdkVolumeInspectResponse) {
+func getVolumesDefaultPrinter(cmd *cobra.Command, args []string, ctx context.Context, conn *grpc.ClientConn, vols []*api.SdkVolumeInspectResponse, pods []v1.Pod) {
 
 	// Determine if it is a wide output
 	output, _ := cmd.Flags().GetString("output")
@@ -135,14 +153,17 @@ func getVolumesDefaultPrinter(cmd *cobra.Command, args []string, ctx context.Con
 
 	// Determine if we need to show labels
 	showLabels, _ := cmd.Flags().GetBool("show-labels")
+	showK8s, _ := cmd.Flags().GetBool("show-k8s-info")
 
 	// Start the columns
 	t := tabby.New()
 	np := &volumeColumnFormatter{
 		wide:       wide,
 		showLabels: showLabels,
+		showK8s:    showK8s,
 		ctx:        ctx,
 		conn:       conn,
+		pods:       pods,
 	}
 	t.AddHeader(np.getHeader()...)
 
@@ -155,8 +176,10 @@ func getVolumesDefaultPrinter(cmd *cobra.Command, args []string, ctx context.Con
 type volumeColumnFormatter struct {
 	wide       bool
 	showLabels bool
+	showK8s    bool
 	ctx        context.Context
 	conn       *grpc.ClientConn
+	pods       []v1.Pod
 }
 
 func (p *volumeColumnFormatter) getHeader() []interface{} {
@@ -165,6 +188,9 @@ func (p *volumeColumnFormatter) getHeader() []interface{} {
 		header = []interface{}{"Id", "Name", "Size Gi", "HA", "Shared", "Encrypted", "Io Profile", "Status", "State", "Snap Enabled"}
 	} else {
 		header = []interface{}{"Name", "Size", "HA", "Shared", "Status", "State"}
+	}
+	if p.showK8s {
+		header = append(header, "Pods")
 	}
 	if p.showLabels {
 		header = append(header, "Labels")
@@ -219,6 +245,9 @@ func (p *volumeColumnFormatter) getLine(resp *api.SdkVolumeInspectResponse) []in
 			spec.GetShared() || spec.GetSharedv4(), prettyStatus(v), state,
 		}
 	}
+	if p.showK8s {
+		line = append(line, p.podsUsingVolume(v))
+	}
 	if p.showLabels {
 		line = append(line, labelsToString(v.GetLocator().GetVolumeLabels()))
 	}
@@ -227,4 +256,24 @@ func (p *volumeColumnFormatter) getLine(resp *api.SdkVolumeInspectResponse) []in
 
 func prettyStatus(v *api.Volume) string {
 	return strings.TrimPrefix(v.GetStatus().String(), "VOLUME_STATUS_")
+}
+
+func (p *volumeColumnFormatter) podsUsingVolume(v *api.Volume) string {
+	usedPods := make([]string, 0)
+	// get the pvc name
+	pvc := v.Locator.VolumeLabels["pvc"]
+	namespace := v.Locator.VolumeLabels["namespace"]
+	for _, pod := range p.pods {
+		if pod.Namespace == namespace {
+			for _, volumeInfo := range pod.Spec.Volumes {
+				if volumeInfo.PersistentVolumeClaim != nil {
+					if volumeInfo.PersistentVolumeClaim.ClaimName == pvc {
+						usedPods = append(usedPods, namespace+"/"+pod.Name)
+					}
+				}
+			}
+		}
+	}
+
+	return strings.Join(usedPods, ",")
 }

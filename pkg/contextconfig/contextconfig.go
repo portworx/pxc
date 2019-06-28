@@ -38,13 +38,14 @@ type Identity struct {
 
 // ClientContext provides information about the client context
 type ClientContext struct {
-	Context  string        `json:"context" yaml:"context"`
-	Token    string        `json:"token" yaml:"token"`
-	Identity Identity      `json:"identity,omitempty" yaml:"identity,omitempty"`
-	Error    string        `json:"error,omitempty" yaml:"error,omitempty"`
-	TlsData  ClientTLSInfo `json:"tlsdata,omitempty" yaml:"tlsdata,omitempty"`
-	Endpoint string        `json:"endpoint" yaml:"endpoint"`
-	Secure   bool          `json:"secure" yaml:"secure"`
+	Context    string        `json:"context" yaml:"context"`
+	Token      string        `json:"token" yaml:"token"`
+	Identity   Identity      `json:"identity,omitempty" yaml:"identity,omitempty"`
+	Error      string        `json:"error,omitempty" yaml:"error,omitempty"`
+	TlsData    ClientTLSInfo `json:"tlsdata,omitempty" yaml:"tlsdata,omitempty"`
+	Endpoint   string        `json:"endpoint" yaml:"endpoint"`
+	Secure     bool          `json:"secure" yaml:"secure"`
+	Kubeconfig string        `json:"kubeconfig" yaml:"kubeconfig"`
 }
 
 // ContextConfig provides information about the px context information
