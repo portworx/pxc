@@ -175,3 +175,23 @@ func labelsToString(labels map[string]string) string {
 	}
 	return strings.Join(s, ",")
 }
+
+// commaKVStringToMap converts a comma separated key/val pair list to map
+func commaKVStringToMap(s string) (map[string]string, error) {
+	kvMap := make(map[string]string)
+
+	for _, pair := range strings.Split(s, ",") {
+		kv := strings.Split(pair, "=")
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("invalid pair %s", kv)
+		}
+		k := kv[0]
+		v := kv[1]
+		if len(k) == 0 || len(v) == 0 {
+			return nil, fmt.Errorf("'%s' is invalid", pair)
+		}
+		kvMap[k] = v
+	}
+
+	return kvMap, nil
+}
