@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-
-	"github.com/cheynewallace/tabby"
+	"github.com/portworx/px/pkg/portworx"
+	"github.com/portworx/px/pkg/util"
 
 	"github.com/spf13/cobra"
 )
@@ -35,8 +35,8 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		statusExec(cmd, args)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return statusExec(cmd, args)
 	},
 }
 
@@ -54,13 +54,19 @@ func init() {
 	// statusCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func statusExec(cmd *cobra.Command, args []string) {
-	ctx, conn := pxConnect()
+func statusExec(cmd *cobra.Command, args []string) error {
+	ctx, conn, err := portworx.PxConnect(GetConfigFile())
+	if err != nil {
+		return err
+	}
 	defer conn.Close()
 
 	// Get Identity information
 	identity := api.NewOpenStorageIdentityClient(conn)
 	version, err := identity.Version(ctx, &api.SdkIdentityVersionRequest{})
+	if err != nil {
+		return util.PxErrorMessage(err, "Failed to get server version")
+	}
 	var versionDetails string
 	for k, v := range version.GetVersion().GetDetails() {
 		versionDetails += fmt.Sprintf("  %s: %s\n", k, v)
@@ -70,11 +76,10 @@ func statusExec(cmd *cobra.Command, args []string) {
 	cluster := api.NewOpenStorageClusterClient(conn)
 	clusterInfo, err := cluster.InspectCurrent(ctx, &api.SdkClusterInspectCurrentRequest{})
 	if err != nil {
-		pxPrintGrpcErrorWithMessage(err, "Failed to inspect cluster")
-		return
+		return util.PxErrorMessage(err, "Failed to inspect cluster")
 	}
 
-	fmt.Printf("Cluster ID: %s\n"+
+	util.Printf("Cluster ID: %s\n"+
 		"Cluster UUID: %s\n"+
 		"Cluster Status: %s\n"+
 		"Version: %s\n"+
@@ -92,17 +97,15 @@ func statusExec(cmd *cobra.Command, args []string) {
 	nodes := api.NewOpenStorageNodeClient(conn)
 	nodesInfo, err := nodes.Enumerate(ctx, &api.SdkNodeEnumerateRequest{})
 	if err != nil {
-		pxPrintGrpcErrorWithMessage(err, "Failed to get nodes")
-		return
+		return util.PxErrorMessage(err, "Failed to get nodes")
 	}
 
-	t := tabby.New()
+	t := util.NewTabby()
 	t.AddHeader("Hostname", "IP", "SchedulerNodeName", "Used", "Capacity", "Status")
 	for _, nid := range nodesInfo.GetNodeIds() {
 		node, err := nodes.Inspect(ctx, &api.SdkNodeInspectRequest{NodeId: nid})
 		if err != nil {
-			pxPrintGrpcErrorWithMessagef(err, "Failed to get information about node %s", nid)
-			continue
+			return util.PxErrorMessagef(err, "Failed to get information about node %s", nid)
 		}
 		n := node.GetNode()
 
@@ -120,4 +123,6 @@ func statusExec(cmd *cobra.Command, args []string) {
 		t.AddLine(n.GetHostname(), n.GetMgmtIp(), n.GetSchedulerNodeName(), usedStr, capacityStr, n.GetStatus())
 	}
 	t.Print()
+
+	return nil
 }

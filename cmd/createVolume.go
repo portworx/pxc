@@ -17,9 +17,10 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+	"github.com/portworx/px/pkg/portworx"
+	"github.com/portworx/px/pkg/util"
 
 	"github.com/spf13/cobra"
 )
@@ -48,23 +49,14 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		createVolumeExec(cmd, args)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return createVolumeExec(cmd, args)
 	},
 }
 
 func init() {
 	createCmd.AddCommand(createVolumeCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// createVolumeCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// createVolumeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	createVolumeCmd.Flags().StringVar(&cvOpts.req.Name, "name", "", "Name of volume (required)")
 	createVolumeCmd.Flags().IntVar(&cvOpts.sizeInGi, "size", 0, "Size in GiB")
 	createVolumeCmd.Flags().Int64Var(&cvOpts.req.Spec.HaLevel, "replicas", 0, "Number of replicas [1-3]")
@@ -72,16 +64,19 @@ func init() {
 	createVolumeCmd.Flags().StringVar(&cvOpts.labelsAsString, "labels", "", "Comma separated list of labels as key-value pairs: 'k1=v1,k2=v2'")
 }
 
-func createVolumeExec(cmd *cobra.Command, args []string) {
-	ctx, conn := pxConnect()
+func createVolumeExec(cmd *cobra.Command, args []string) error {
+	ctx, conn, err := portworx.PxConnect(GetConfigFile())
+	if err != nil {
+		return err
+	}
 	defer conn.Close()
 
+	// Get labels
 	if len(cvOpts.labelsAsString) != 0 {
 		var err error
-		cvOpts.req.Labels, err = commaKVStringToMap(cvOpts.labelsAsString)
+		cvOpts.req.Labels, err = util.CommaStringToStringMap(cvOpts.labelsAsString)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to parse labels: %v\n", err)
-			return
+			return fmt.Errorf("Failed to parse labels: %v\n", err)
 		}
 	}
 
@@ -92,10 +87,13 @@ func createVolumeExec(cmd *cobra.Command, args []string) {
 	volumes := api.NewOpenStorageVolumeClient(conn)
 	resp, err := volumes.Create(ctx, cvOpts.req)
 	if err != nil {
-		pxPrintGrpcErrorWithMessage(err, "Failed to create volume")
-		return
+		return util.PxErrorMessage(err, "Failed to create volume")
 	}
-	fmt.Printf("Volume %s created with id %s\n",
+
+	// Show user information
+	util.Printf("Volume %s created with id %s\n",
 		cvOpts.req.GetName(),
 		resp.GetVolumeId())
+
+	return nil
 }

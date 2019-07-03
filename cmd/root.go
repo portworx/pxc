@@ -16,24 +16,12 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
-	"fmt"
 	"os"
 	"path"
-	"strings"
-
-	"github.com/portworx/px/pkg/contextconfig"
-	pxgrpc "github.com/portworx/px/pkg/grpc"
 
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/status"
-
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -71,7 +59,7 @@ to quickly create a Cobra application.`,
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		util.Eprintf("%v\n", err)
 		os.Exit(1)
 	}
 }
@@ -83,7 +71,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+".yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName)
 	rootCmd.PersistentFlags().StringVar(&optEndpoint, "endpoint", "", "Portworx service endpoint")
 	rootCmd.PersistentFlags().StringP("output", "o", "", "Output in yaml|json|wide")
 	rootCmd.PersistentFlags().Bool("show-labels", false, "Show labels in the last column of the output")
@@ -96,129 +84,18 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
+	if len(cfgFile) == 0 {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			fmt.Println(err)
+			util.Eprintf("Error: %v\n", err)
 			os.Exit(1)
 		}
 
-		// Search config in home directory with name ".px" (without extension).
-		viper.AddConfigPath(path.Join(home, pxDefaultDir))
-		viper.SetConfigName(pxDefaultConfigName)
 		cfgFile = path.Join(home, pxDefaultDir, pxDefaultConfigName)
 	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}
 }
 
-// pxConnect will connect to the server using TLS if needed and returns
-// the context setup with any security if any and the grpc client. The
-// context will not have a timeout set, that should be setup by each caller.
-func pxConnect() (context.Context, *grpc.ClientConn) {
-	pxctx, err := contextconfig.NewContextConfig(cfgFile).Get()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
-	}
-	conn, err := pxgrpc.Connect(pxctx.Endpoint, []grpc.DialOption{grpc.WithInsecure()})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
-	}
-
-	return context.Background(), conn
-}
-
-func kubeConnect() *kubernetes.Clientset {
-	pxctx, err := contextconfig.NewContextConfig(cfgFile).Get()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
-	}
-	if len(pxctx.Kubeconfig) == 0 {
-		fmt.Fprintf(os.Stderr, "No kubeconfig found in context %s\n", pxctx.Context)
-		os.Exit(1)
-	}
-
-	r, err := clientcmd.BuildConfigFromFlags("", pxctx.Kubeconfig)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to configure kubernetes client: %v\n", err)
-		os.Exit(1)
-	}
-	clientset, err := kubernetes.NewForConfig(r)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to Kubernetes: %v\n", err)
-		os.Exit(1)
-	}
-	return clientset
-}
-
-func pxPrintGrpcErrorWithMessagef(err error, format string, args ...string) {
-	pxPrintGrpcErrorWithMessage(err, fmt.Sprintf(format, args))
-}
-
-func pxPrintGrpcErrorWithMessage(err error, msg string) {
-	gerr, _ := status.FromError(err)
-	fmt.Fprintf(os.Stderr, "%s: %s\n", msg, gerr.Message())
-}
-
-func pxPrintGrpcError(err error) {
-	gerr, _ := status.FromError(err)
-	fmt.Fprintf(os.Stderr, "%s\n", gerr.Message())
-}
-
-func listContains(list []string, s string) bool {
-	for _, value := range list {
-		if value == s {
-			return true
-		}
-	}
-	return false
-}
-
-func listHaveMatch(list, match []string) bool {
-	for _, s := range match {
-		if listContains(list, s) {
-			return true
-		}
-	}
-	return false
-}
-
-func labelsToString(labels map[string]string) string {
-	s := make([]string, 0, len(labels))
-	for k, v := range labels {
-		s = append(s, k+"="+v)
-	}
-	return strings.Join(s, ",")
-}
-
-// commaKVStringToMap converts a comma separated key/val pair list to map
-func commaKVStringToMap(s string) (map[string]string, error) {
-	kvMap := make(map[string]string)
-
-	for _, pair := range strings.Split(s, ",") {
-		kv := strings.Split(pair, "=")
-		if len(kv) != 2 {
-			return nil, fmt.Errorf("invalid pair %s", kv)
-		}
-		k := kv[0]
-		v := kv[1]
-		if len(k) == 0 || len(v) == 0 {
-			return nil, fmt.Errorf("'%s' is invalid", pair)
-		}
-		kvMap[k] = v
-	}
-
-	return kvMap, nil
+func GetConfigFile() string {
+	return cfgFile
 }

@@ -16,16 +16,13 @@ limitations under the License.
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-
-	"github.com/cheynewallace/tabby"
+	"github.com/portworx/px/pkg/portworx"
+	"github.com/portworx/px/pkg/util"
 
 	"github.com/spf13/cobra"
-	yaml "gopkg.in/yaml.v2"
 )
 
 // getNodesCmd represents the getNodes command
@@ -39,36 +36,27 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		getNodesExec(cmd, args)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getNodesExec(cmd, args)
 	},
 }
 
 func init() {
 	getCmd.AddCommand(getNodesCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// getNodesCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// getNodesCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	//getNodesCmd.Flags().BoolP("output", "y", false, "Output to yaml")
 }
 
-func getNodesExec(cmd *cobra.Command, args []string) {
-	ctx, conn := pxConnect()
+func getNodesExec(cmd *cobra.Command, args []string) error {
+	ctx, conn, err := portworx.PxConnect(GetConfigFile())
+	if err != nil {
+		return err
+	}
 	defer conn.Close()
 
 	// Get all node Ids
 	nodes := api.NewOpenStorageNodeClient(conn)
 	nodesInfo, err := nodes.Enumerate(ctx, &api.SdkNodeEnumerateRequest{})
 	if err != nil {
-		pxPrintGrpcErrorWithMessage(err, "Failed to get nodes")
-		return
+		return util.PxErrorMessage(err, "Failed to get node information")
 	}
 
 	// Get all node info
@@ -76,13 +64,19 @@ func getNodesExec(cmd *cobra.Command, args []string) {
 	for _, nid := range nodesInfo.GetNodeIds() {
 		node, err := nodes.Inspect(ctx, &api.SdkNodeInspectRequest{NodeId: nid})
 		if err != nil {
-			pxPrintGrpcErrorWithMessagef(err, "Failed to get information about node %s", nid)
+			// Just print it and continue to other nodes
+			util.PrintPxErrorMessagef(err, "Failed to get information about node %s", nid)
 			continue
 		}
 		n := node.GetNode()
 
 		// Check if we have been asked for specific node
-		if len(args) != 0 && !listHaveMatch(args, []string{n.GetId(), n.GetHostname(), n.GetMgmtIp(), n.GetSchedulerNodeName()}) {
+		if len(args) != 0 &&
+			!util.ListHaveMatch(args,
+				[]string{n.GetId(),
+					n.GetHostname(),
+					n.GetMgmtIp(),
+					n.GetSchedulerNodeName()}) {
 			continue
 		}
 
@@ -93,9 +87,9 @@ func getNodesExec(cmd *cobra.Command, args []string) {
 	output, _ := cmd.Flags().GetString("output")
 	switch output {
 	case "yaml":
-		getNodesYamlPrinter(cmd, args, storageNodes)
+		util.PrintYaml(storageNodes)
 	case "json":
-		getNodesJsonPrinter(cmd, args, storageNodes)
+		util.PrintJson(storageNodes)
 	case "wide":
 		// We can have a special one here, but for simplicity, we will use the
 		// default printer
@@ -103,24 +97,8 @@ func getNodesExec(cmd *cobra.Command, args []string) {
 	default:
 		getNodesDefaultPrinter(cmd, args, storageNodes)
 	}
-}
 
-func getNodesYamlPrinter(cmd *cobra.Command, args []string, storageNodes []*api.StorageNode) {
-	bytes, err := yaml.Marshal(storageNodes)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create yaml output")
-		return
-	}
-	fmt.Println(string(bytes))
-}
-
-func getNodesJsonPrinter(cmd *cobra.Command, args []string, storageNodes []*api.StorageNode) {
-	bytes, err := json.MarshalIndent(storageNodes, "", "  ")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create json output")
-		return
-	}
-	fmt.Println(string(bytes))
+	return nil
 }
 
 func getNodesDefaultPrinter(cmd *cobra.Command, args []string, storageNodes []*api.StorageNode) {
@@ -133,7 +111,7 @@ func getNodesDefaultPrinter(cmd *cobra.Command, args []string, storageNodes []*a
 	showLabels, _ := cmd.Flags().GetBool("show-labels")
 
 	// Start the columns
-	t := tabby.New()
+	t := util.NewTabby()
 	np := &nodeColumnFormatter{wide: wide, showLabels: showLabels}
 	t.AddHeader(np.getHeader()...)
 
@@ -191,7 +169,7 @@ func (p *nodeColumnFormatter) getLine(n *api.StorageNode) []interface{} {
 		}
 	}
 	if p.showLabels {
-		line = append(line, labelsToString(n.GetNodeLabels()))
+		line = append(line, util.StringMapToCommaString(n.GetNodeLabels()))
 	}
 	return line
 }

@@ -18,15 +18,12 @@ package cmd
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 
 	"github.com/portworx/px/pkg/contextconfig"
+	"github.com/portworx/px/pkg/util"
 
 	"github.com/spf13/cobra"
 )
-
-type contextDataFile struct {
-}
 
 // contextCreateCmd represents the contextCreate command
 var contextCreateCmd = &cobra.Command{
@@ -38,30 +35,23 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		contextCreateExec(cmd, args)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return contextCreateExec(cmd, args)
 	},
 }
 
 func init() {
 	contextCmd.AddCommand(contextCreateCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// contextCreateCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
 	contextCreateCmd.Flags().String("name", "", "Name of context")
 	contextCreateCmd.Flags().String("token", "", "Token for use in this context")
 	contextCreateCmd.Flags().String("endpoint", "", "Portworx service endpoint. Ex. 127.0.0.1:9020")
 	contextCreateCmd.Flags().Bool("secure", false, "Use secure connection")
 	contextCreateCmd.Flags().String("cafile", "", "Path to client CA certificate if needed")
+	contextCreateCmd.Flags().String("kubeconfig", "", "Path to Kubeconfig file if any")
 }
 
-func contextCreateExec(cmd *cobra.Command, args []string) {
+func contextCreateExec(cmd *cobra.Command, args []string) error {
 
 	c := new(contextconfig.ClientContext)
 
@@ -69,36 +59,41 @@ func contextCreateExec(cmd *cobra.Command, args []string) {
 	if s, _ := cmd.Flags().GetString("name"); len(s) != 0 {
 		c.Context = s
 	} else {
-		fmt.Fprintf(os.Stderr, "Must supply a name for the context")
-		return
+		return fmt.Errorf("Must supply a name for the context")
 	}
 	if s, _ := cmd.Flags().GetString("endpoint"); len(s) != 0 {
 		c.Endpoint = s
 	} else {
-		fmt.Fprintf(os.Stderr, "Must supply an endpoint for the context")
-		return
+		return fmt.Errorf("Must supply an endpoint for the context")
 	}
 
 	// Optional
+	if s, _ := cmd.Flags().GetString("kubeconfig"); len(s) != 0 {
+		// TODO: Should check if the file exists
+		c.Kubeconfig = s
+	}
 	if s, _ := cmd.Flags().GetString("token"); len(s) != 0 {
+		// TODO: Check the token is a JWT token
 		c.Token = s
 	}
 	if s, _ := cmd.Flags().GetString("secure"); len(s) != 0 {
 		c.Secure = true
 	}
 	if s, _ := cmd.Flags().GetString("cafile"); len(s) != 0 {
+		// TODO: Should check if the file exists
 		data, err := ioutil.ReadFile(s)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to read CA file %s", s)
-			return
+			return fmt.Errorf("Unable to read CA file %s", s)
 		}
 		c.TlsData.Cacert = string(data)
 	}
 
 	config := contextconfig.NewContextConfig(cfgFile)
 	if err := config.Add(c); err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
-		return
+		return err
 	}
-	fmt.Printf("New context saved to %s\n", cfgFile)
+
+	util.Printf("New context saved to %s\n", cfgFile)
+
+	return nil
 }

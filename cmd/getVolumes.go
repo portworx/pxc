@@ -17,20 +17,18 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"os"
 	"strings"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+	"github.com/portworx/px/pkg/kubernetes"
+	"github.com/portworx/px/pkg/portworx"
+	"github.com/portworx/px/pkg/util"
 
-	"github.com/cheynewallace/tabby"
 	"google.golang.org/grpc"
 
 	"github.com/spf13/cobra"
-	yaml "gopkg.in/yaml.v2"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -45,8 +43,8 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		getVolumesExec(cmd, args)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return getVolumesExec(cmd, args)
 	},
 }
 
@@ -69,20 +67,25 @@ func init() {
 
 }
 
-func getVolumesExec(cmd *cobra.Command, args []string) {
-	ctx, conn := pxConnect()
+func getVolumesExec(cmd *cobra.Command, args []string) error {
+	ctx, conn, err := portworx.PxConnect(GetConfigFile())
+	if err != nil {
+		return err
+	}
 	defer conn.Close()
 
-	showK8s, _ := cmd.Flags().GetBool("show-k8s-info")
+	// Check if we need to get information from Kubernetes
 	var pods []v1.Pod
-
+	showK8s, _ := cmd.Flags().GetBool("show-k8s-info")
 	if showK8s {
-		kc := kubeConnect()
+		kc, err := kubernetes.KubeConnect(GetConfigFile())
+		if err != nil {
+			return err
+		}
 		podClient := kc.CoreV1().Pods("")
 		podList, err := podClient.List(metav1.ListOptions{})
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "K: %v\n", err)
-			return
+			return err
 		}
 		pods = podList.Items
 	}
@@ -90,14 +93,14 @@ func getVolumesExec(cmd *cobra.Command, args []string) {
 	// Get volume information
 	volumes := api.NewOpenStorageVolumeClient(conn)
 	var vols []*api.SdkVolumeInspectResponse
+
+	// Determine if we should get all the volumes or specific ones
 	if len(args) != 0 {
 		vols = make([]*api.SdkVolumeInspectResponse, 0, len(args))
 		for _, v := range args {
-			// If it is just one volume, just do an inspect
 			vol, err := volumes.Inspect(ctx, &api.SdkVolumeInspectRequest{VolumeId: v})
 			if err != nil {
-				pxPrintGrpcErrorWithMessage(err, "Failed to get volume")
-				return
+				return util.PxErrorMessage(err, "Failed to get volume")
 			}
 			vols = append(vols, vol)
 		}
@@ -105,58 +108,32 @@ func getVolumesExec(cmd *cobra.Command, args []string) {
 		// If it is no volumes (all)
 		volsInfo, err := volumes.InspectWithFilters(ctx, &api.SdkVolumeInspectWithFiltersRequest{})
 		if err != nil {
-			pxPrintGrpcErrorWithMessage(err, "Failed to get volumes")
-			return
+			return util.PxErrorMessage(err, "Failed to get volumes")
 		}
 		vols = volsInfo.GetVolumes()
 	}
 
 	// Get output
 	output, _ := cmd.Flags().GetString("output")
+
+	// Determine if we need to output the object
 	switch output {
 	case "yaml":
-		getVolumesYamlPrinter(cmd, args, vols)
+		util.PrintYaml(vols)
+		return nil
 	case "json":
-		getVolumesJsonPrinter(cmd, args, vols)
-	case "wide":
-		// We can have a special one here, but for simplicity, we will use the
-		// default printer
-		fallthrough
-	default:
-		getVolumesDefaultPrinter(cmd, args, ctx, conn, vols, pods)
+		util.PrintJson(vols)
+		return nil
 	}
-}
-
-func getVolumesYamlPrinter(cmd *cobra.Command, args []string, vols []*api.SdkVolumeInspectResponse) {
-	bytes, err := yaml.Marshal(vols)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create yaml output")
-		return
-	}
-	fmt.Println(string(bytes))
-}
-
-func getVolumesJsonPrinter(cmd *cobra.Command, args []string, vols []*api.SdkVolumeInspectResponse) {
-	bytes, err := json.MarshalIndent(vols, "", "  ")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create json output")
-		return
-	}
-	fmt.Println(string(bytes))
-}
-
-func getVolumesDefaultPrinter(cmd *cobra.Command, args []string, ctx context.Context, conn *grpc.ClientConn, vols []*api.SdkVolumeInspectResponse, pods []v1.Pod) {
 
 	// Determine if it is a wide output
-	output, _ := cmd.Flags().GetString("output")
 	wide := output == "wide"
 
 	// Determine if we need to show labels
 	showLabels, _ := cmd.Flags().GetBool("show-labels")
-	showK8s, _ := cmd.Flags().GetBool("show-k8s-info")
 
 	// Start the columns
-	t := tabby.New()
+	t := util.NewTabby()
 	np := &volumeColumnFormatter{
 		wide:       wide,
 		showLabels: showLabels,
@@ -171,6 +148,8 @@ func getVolumesDefaultPrinter(cmd *cobra.Command, args []string, ctx context.Con
 		t.AddLine(np.getLine(n)...)
 	}
 	t.Print()
+
+	return nil
 }
 
 type volumeColumnFormatter struct {
@@ -204,12 +183,18 @@ func (p *volumeColumnFormatter) getLine(resp *api.SdkVolumeInspectResponse) []in
 	v := resp.GetVolume()
 	spec := v.GetSpec()
 
+	// Get node information if it is attached
 	var node *api.StorageNode
 	if len(v.GetAttachedOn()) != 0 {
 		nodes := api.NewOpenStorageNodeClient(p.conn)
-		nodeInfo, err := nodes.Inspect(p.ctx, &api.SdkNodeInspectRequest{NodeId: v.GetAttachedOn()})
+		nodeInfo, err := nodes.Inspect(
+			p.ctx,
+			&api.SdkNodeInspectRequest{NodeId: v.GetAttachedOn()})
 		if err != nil {
-			pxPrintGrpcErrorWithMessage(err, "Failed to get node information where volume attached")
+			util.Eprintf("%v\n",
+				util.PxErrorMessagef(err,
+					"Failed to get node information where volume %s is attached",
+					v.GetLocator().GetName()))
 			return nil
 		}
 		node = nodeInfo.GetNode()
@@ -249,7 +234,7 @@ func (p *volumeColumnFormatter) getLine(resp *api.SdkVolumeInspectResponse) []in
 		line = append(line, p.podsUsingVolume(v))
 	}
 	if p.showLabels {
-		line = append(line, labelsToString(v.GetLocator().GetVolumeLabels()))
+		line = append(line, util.StringMapToCommaString(v.GetLocator().GetVolumeLabels()))
 	}
 	return line
 }
