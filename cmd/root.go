@@ -20,6 +20,7 @@ import (
 	"path"
 
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/portworx/px/pkg/plugin"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -38,6 +39,15 @@ var (
 	cfgDir      string
 	cfgFile     string
 	optEndpoint string
+	pm          *plugin.PluginManager
+
+	// The $HOME/.px/plugins dir will be added at runtime
+	pxPluginDefaultDirs = []string{
+		"/var/lib/px/plugins",
+		"/etc/pwx/plugins",
+		"/opt/pwx/plugins",
+		"/var/lib/porx/plugins",
+	}
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -71,7 +81,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName)
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+")")
 	rootCmd.PersistentFlags().StringVar(&optEndpoint, "endpoint", "", "Portworx service endpoint")
 	rootCmd.PersistentFlags().StringP("output", "o", "", "Output in yaml|json|wide")
 	rootCmd.PersistentFlags().Bool("show-labels", false, "Show labels in the last column of the output")
@@ -80,6 +90,35 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	// Load plugins
+	home, _ := homedir.Dir()
+	pxPluginDefaultDirs = append(pxPluginDefaultDirs,
+		path.Join(home, pxDefaultDir, "plugins"))
+	pm = plugin.NewPluginManager(&plugin.PluginManagerConfig{
+		PluginDirs: pxPluginDefaultDirs,
+		RootCmd:    rootCmd,
+	})
+	pm.Load()
+
+	/*
+		p, err := plugin.Open(soPath)
+		if err != nil {
+			util.Eprintf("Failed to open plugin %s: %v\n", soPath, err)
+		} else {
+			f, err := p.Lookup("PluginInit")
+			if err != nil {
+				util.Eprintf("Plugin ___ does not have init function\n")
+			} else {
+				pinit, ok := f.(func(*cobra.Command))
+				if !ok {
+					util.Eprintf("Plugin ___ failed to initialize\n")
+				} else {
+					pinit(rootCmd)
+				}
+			}
+		}
+	*/
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -94,6 +133,7 @@ func initConfig() {
 
 		cfgFile = path.Join(home, pxDefaultDir, pxDefaultConfigName)
 	}
+
 }
 
 func GetConfigFile() string {
