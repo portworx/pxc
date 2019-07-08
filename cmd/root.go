@@ -100,25 +100,6 @@ func init() {
 		RootCmd:    rootCmd,
 	})
 	pm.Load()
-
-	/*
-		p, err := plugin.Open(soPath)
-		if err != nil {
-			util.Eprintf("Failed to open plugin %s: %v\n", soPath, err)
-		} else {
-			f, err := p.Lookup("PluginInit")
-			if err != nil {
-				util.Eprintf("Plugin ___ does not have init function\n")
-			} else {
-				pinit, ok := f.(func(*cobra.Command))
-				if !ok {
-					util.Eprintf("Plugin ___ failed to initialize\n")
-				} else {
-					pinit(rootCmd)
-				}
-			}
-		}
-	*/
 }
 
 // initConfig reads in config file and ENV variables if set.
