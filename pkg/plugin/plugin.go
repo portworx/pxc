@@ -18,7 +18,6 @@ package plugin
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path"
 	"path/filepath"
 	"plugin"
@@ -142,12 +141,12 @@ func (pm *PluginManager) registerPlugin(p *plugin.Plugin, soPath string) error {
 	}
 
 	// Confirm the interface is correct
-	pinit, ok := f.(func(*cobra.Command, *os.File, *os.File))
+	pinit, ok := f.(func(*cobra.Command))
 	if !ok {
 		return fmt.Errorf("Plugin %s does not have the correct init function", soPath)
 	}
 
 	// Finally, register the handler
-	pinit(pm.config.RootCmd, util.Stdout, util.Stderr)
+	pinit(pm.config.RootCmd)
 	return nil
 }

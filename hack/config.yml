@@ -1,0 +1,7 @@
+current: test
+configurations:
+- context: test
+  token: ""
+  endpoint: localhost:9920
+  secure: false
+  kubeconfig: ""

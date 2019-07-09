@@ -19,6 +19,7 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"text/tabwriter"
 
@@ -28,9 +29,9 @@ import (
 
 var (
 	// Stdout points to the output buffer to send screen output
-	Stdout = os.Stdout
+	Stdout io.Writer = os.Stdout
 	// Stderr points to the output buffer to send errors to the screen
-	Stderr = os.Stderr
+	Stderr io.Writer = os.Stderr
 )
 
 // Printf is just like fmt.Printf except that it send the output to Stdout. It

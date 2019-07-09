@@ -57,10 +57,6 @@
   version = "0.0.5"
 
 [[constraint]]
-  name = "github.com/spf13/viper"
-  version = "1.4.0"
-
-[[constraint]]
   name = "google.golang.org/grpc"
   version = "1.21.1"
 

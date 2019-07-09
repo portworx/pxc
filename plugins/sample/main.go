@@ -1,5 +1,7 @@
+// +build plugin
+
 /*
-Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+Copyright © 2019 Portworx
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,8 +18,6 @@ limitations under the License.
 package main
 
 import (
-	"os"
-
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -52,10 +52,7 @@ var PluginManifest = map[string]string{
 	"version":     Version,
 }
 
-func PluginInit(parent *cobra.Command, Stdout, Stderr *os.File) {
-	util.Stdout = Stdout
-	util.Stderr = Stderr
-
+func PluginInit(parent *cobra.Command) {
 	parent.AddCommand(sampleCmd)
 	sampleCmd.Flags().StringVar(&argExample, "example", "", "Help message for sample")
 }
