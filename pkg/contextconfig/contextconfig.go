@@ -65,6 +65,8 @@ func NewContextConfig(contextFile string) *ContextConfigFile {
 	}
 }
 
+// TODO: Return error if exists already
+// TODO: Add Update support
 func (c *ContextConfigFile) Add(cctx *ClientContext) error {
 	var ctx *ContextConfig
 
@@ -80,6 +82,7 @@ func (c *ContextConfigFile) Add(cctx *ClientContext) error {
 	return c.saveContext(ctx)
 }
 
+//TODO: Add GetWithContext to get non-default
 func (c *ContextConfigFile) Get() (*ClientContext, error) {
 	ctx, err := c.loadContext()
 	if err != nil {
@@ -109,6 +112,7 @@ func (c *ContextConfigFile) GetAll() (*ContextConfig, error) {
 	return c.loadContext()
 }
 
+// TODO:
 func (c *ContextConfigFile) Remove(cctx *ClientContext) error {
 	return nil
 }
@@ -121,6 +125,7 @@ func (c *ContextConfigFile) UnSet(cctx *ClientContext) error {
 	return nil
 }
 
+// TODO: below
 // GetContext loads the context
 /*
 func GetContext(contextFile string) (*ContextConfig, error) {

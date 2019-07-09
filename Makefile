@@ -2,7 +2,7 @@ CLINAME := px
 SHA := $(shell git rev-parse --short HEAD)
 BRANCH := $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
 #VER := $(shell git describe --tags)
-VER := 0.0.0
+VER := 0.0.0-$(SHA)
 ARCH := $(shell go env GOARCH)
 GOOS := $(shell go env GOOS)
 DIR=.
@@ -16,6 +16,7 @@ else
   VERSION = $(VER)-$(BRANCH)
 endif
 endif
+LDFLAGS :=-ldflags "-X github.com/portworx/px/cmd.PxVersion=$(VERSION)"
 
 ifneq (windows,$(GOOS))
 PKG_NAME = $(CLINAME)
@@ -31,7 +32,7 @@ install:
 	go install
 
 $(PKG_NAME):
-	go build
+	go build $(LDFLAGS)
 
 release: darwin_amd64_dist \
 	windows_amd64_dist \

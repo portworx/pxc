@@ -35,14 +35,8 @@ import (
 // getVolumesCmd represents the getVolumes command
 var getVolumesCmd = &cobra.Command{
 	Use:     "volume",
-	Aliases: []string{"volumes", "vol"},
-	Short:   "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Aliases: []string{"volumes"},
+	Short:   "Get information about Portworx volumes",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return getVolumesExec(cmd, args)
 	},
@@ -50,21 +44,12 @@ to quickly create a Cobra application.`,
 
 func init() {
 	getCmd.AddCommand(getVolumesCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// getVolumesCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// getVolumesCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	getVolumesCmd.Flags().String("owner", "", "Owner of volume")
 	getVolumesCmd.Flags().String("volumegroup", "", "Volume group id")
 	getVolumesCmd.Flags().Bool("deep", false, "Collect more information, this may delay the request")
 	getVolumesCmd.Flags().Bool("show-k8s-info", false, "Show kubernetes information")
 
+	// TODO: Place here support for selectors and move the flags from the rootCmd
 }
 
 func getVolumesExec(cmd *cobra.Command, args []string) error {

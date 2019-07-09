@@ -27,6 +27,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// TODO: Add comments
+
 type PluginManifest struct {
 	Name     string
 	Version  string

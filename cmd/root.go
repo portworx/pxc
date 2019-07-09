@@ -53,16 +53,7 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "px",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+	Short: "Portworx command line tool",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -77,19 +68,13 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
+	// TODO: Allow a --context to override the default
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+")")
-	rootCmd.PersistentFlags().StringVar(&optEndpoint, "endpoint", "", "Portworx service endpoint")
+
+	// TODO: move these flags out of persistent
 	rootCmd.PersistentFlags().StringP("output", "o", "", "Output in yaml|json|wide")
 	rootCmd.PersistentFlags().Bool("show-labels", false, "Show labels in the last column of the output")
 	rootCmd.PersistentFlags().StringP("selector", "l", "", "Comma separated label selector of the form 'key=value,key=value'")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 	// Load plugins
 	home, _ := homedir.Dir()
@@ -102,8 +87,10 @@ func init() {
 	pm.Load()
 }
 
-// initConfig reads in config file and ENV variables if set.
+// initConfig reads in config file
 func initConfig() {
+	// If the cfgFile has not been setup in the arguments, then
+	// read it from the HOME directory
 	if len(cfgFile) == 0 {
 		// Find home directory.
 		home, err := homedir.Dir()
@@ -111,10 +98,8 @@ func initConfig() {
 			util.Eprintf("Error: %v\n", err)
 			os.Exit(1)
 		}
-
 		cfgFile = path.Join(home, pxDefaultDir, pxDefaultConfigName)
 	}
-
 }
 
 func GetConfigFile() string {

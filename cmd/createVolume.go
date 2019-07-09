@@ -42,13 +42,11 @@ var (
 // createVolumeCmd represents the createVolume command
 var createVolumeCmd = &cobra.Command{
 	Use:   "volume",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Create a volume in Portworx",
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	// TODO:
+	Long: `TODO
+ADD EXAMPLES HERE.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return createVolumeExec(cmd, args)
 	},
@@ -62,6 +60,10 @@ func init() {
 	createVolumeCmd.Flags().Int64Var(&cvOpts.req.Spec.HaLevel, "replicas", 0, "Number of replicas [1-3]")
 	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Shared, "shared", false, "Number of replicas [1-3]")
 	createVolumeCmd.Flags().StringVar(&cvOpts.labelsAsString, "labels", "", "Comma separated list of labels as key-value pairs: 'k1=v1,k2=v2'")
+
+	// TODO bring the flags from rootCmd
+
+	// TODO add more flags here
 }
 
 func createVolumeExec(cmd *cobra.Command, args []string) error {
@@ -89,6 +91,8 @@ func createVolumeExec(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return util.PxErrorMessage(err, "Failed to create volume")
 	}
+
+	// TODO: Show output in appropriate format
 
 	// Show user information
 	util.Printf("Volume %s created with id %s\n",

@@ -59,6 +59,7 @@ func Connect(address string, dialOptions []grpc.DialOption) (*grpc.ClientConn, e
 	}); err != nil {
 		// Clean up the connection
 		if err := conn.Close(); err != nil {
+			// TODO: Remove logrus usage
 			logrus.Warnf("Failed to close connection to %v: %v", address, err)
 		}
 		return nil, fmt.Errorf("Connection timed out")

@@ -24,6 +24,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+// TODO: Add Support to connect to a context name
+
 // PxConnect will connect to the default context server using TLS if needed
 // and returns the context setup with any security if any and the grpc client.
 // The context will not have a timeout set, that should be setup by the caller

@@ -22,14 +22,9 @@ import (
 
 // getPluginsCmd represents the getPlugins command
 var getPluginsCmd = &cobra.Command{
-	Use:   "plugins",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:     "plugin",
+	Aliases: []string{"plugins"},
+	Short:   "Display px plugin information",
 	Run: func(cmd *cobra.Command, args []string) {
 		getPluginsExec(cmd, args)
 	},
@@ -37,19 +32,16 @@ to quickly create a Cobra application.`,
 
 func init() {
 	getCmd.AddCommand(getPluginsCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// getPluginsCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// getPluginsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func getPluginsExec(cmd *cobra.Command, args []string) {
+
+	// Get the list of the plugins from the PluginManager
+	if len(pm.List()) == 0 {
+		util.Printf("No plugins installed")
+		return
+	}
+
 	t := util.NewTabby()
 	t.AddHeader("Name", "Version", "Location")
 	for _, p := range pm.List() {
