@@ -76,6 +76,9 @@ func init() {
 	rootCmd.PersistentFlags().Bool("show-labels", false, "Show labels in the last column of the output")
 	rootCmd.PersistentFlags().StringP("selector", "l", "", "Comma separated label selector of the form 'key=value,key=value'")
 
+	// Global cobra configurations
+	rootCmd.Flags().SortFlags = false
+
 	// Load plugins
 	home, _ := homedir.Dir()
 	pxPluginDefaultDirs = append(pxPluginDefaultDirs,

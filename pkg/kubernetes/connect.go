@@ -27,12 +27,12 @@ import (
 // KubeConnect will return a Kubernetes client using the kubeconfig file
 // set in the default context.
 func KubeConnect(cfgFile string) (*kubernetes.Clientset, error) {
-	pxctx, err := contextconfig.NewContextConfig(cfgFile).Get()
+	pxctx, err := contextconfig.NewConfigReference(cfgFile).GetCurrent()
 	if err != nil {
 		return nil, err
 	}
 	if len(pxctx.Kubeconfig) == 0 {
-		return nil, fmt.Errorf("No kubeconfig found in context %s\n", pxctx.Context)
+		return nil, fmt.Errorf("No kubeconfig found in context %s\n", pxctx.Name)
 	}
 
 	r, err := clientcmd.BuildConfigFromFlags("", pxctx.Kubeconfig)

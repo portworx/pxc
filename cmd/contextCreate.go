@@ -55,7 +55,7 @@ func contextCreateExec(cmd *cobra.Command, args []string) error {
 
 	// Required
 	if s, _ := cmd.Flags().GetString("name"); len(s) != 0 {
-		c.Context = s
+		c.Name = s
 	} else {
 		return fmt.Errorf("Must supply a name for the context")
 	}
@@ -86,7 +86,7 @@ func contextCreateExec(cmd *cobra.Command, args []string) error {
 		c.TlsData.Cacert = string(data)
 	}
 
-	config := contextconfig.NewContextConfig(cfgFile)
+	config := contextconfig.NewConfigReference(cfgFile)
 	if err := config.Add(c); err != nil {
 		return err
 	}

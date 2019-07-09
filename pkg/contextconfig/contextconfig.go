@@ -38,7 +38,7 @@ type Identity struct {
 
 // ClientContext provides information about the client context
 type ClientContext struct {
-	Context    string        `json:"context" yaml:"context"`
+	Name       string        `json:"context" yaml:"context"`
 	Token      string        `json:"token" yaml:"token"`
 	Identity   Identity      `json:"identity,omitempty" yaml:"identity,omitempty"`
 	Error      string        `json:"error,omitempty" yaml:"error,omitempty"`
@@ -54,43 +54,44 @@ type ContextConfig struct {
 	Configurations []ClientContext `json:"configurations" yaml:"configurations"`
 }
 
-type ContextConfigFile struct {
-	ctxFile string
-	ctx     *ContextConfig
+// ConfigReference is a reference to a ContextConfig and the path associated with it
+type ConfigReference struct {
+	path string
+	cfg  *ContextConfig
 }
 
-func NewContextConfig(contextFile string) *ContextConfigFile {
-	return &ContextConfigFile{
-		ctxFile: contextFile,
+// NewContextConfig
+func NewConfigReference(configFile string) *ConfigReference {
+	return &ConfigReference{
+		path: configFile,
 	}
 }
 
 // TODO: Return error if exists already
 // TODO: Add Update support
-func (c *ContextConfigFile) Add(cctx *ClientContext) error {
+func (cr *ConfigReference) Add(cctx *ClientContext) error {
 	var ctx *ContextConfig
 
-	ctx, _ = c.loadContext()
+	ctx, _ = cr.loadContext()
 	if ctx == nil {
 		ctx = new(ContextConfig)
 		ctx.Configurations = []ClientContext{*cctx}
-		ctx.Current = cctx.Context
+		ctx.Current = cctx.Name
 	} else {
 		ctx.Configurations = append(ctx.Configurations, *cctx)
 	}
 
-	return c.saveContext(ctx)
+	return cr.saveContext(ctx)
 }
 
-//TODO: Add GetWithContext to get non-default
-func (c *ContextConfigFile) Get() (*ClientContext, error) {
-	ctx, err := c.loadContext()
+func (cr *ConfigReference) GetCurrent() (*ClientContext, error) {
+	ctx, err := cr.loadContext()
 	if err != nil {
 		return nil, err
 	}
 
 	if len(ctx.Configurations) == 0 {
-		return nil, fmt.Errorf("No configurations found in %s", c.ctxFile)
+		return nil, fmt.Errorf("No configurations found in %s", cr.path)
 	}
 
 	if len(ctx.Current) == 0 {
@@ -98,30 +99,53 @@ func (c *ContextConfigFile) Get() (*ClientContext, error) {
 	}
 
 	for _, cctx := range ctx.Configurations {
-		if cctx.Context == ctx.Current {
+		if cctx.Name == ctx.Current {
 			return &cctx, nil
 		}
 	}
 
 	return nil, fmt.Errorf("Default context %s not found in %s",
 		ctx.Current,
-		c.ctxFile)
+		cr.path)
 }
 
-func (c *ContextConfigFile) GetAll() (*ContextConfig, error) {
-	return c.loadContext()
+// TODO have GetNamedContext and GetCurrent() call a common helper function
+func (cr *ConfigReference) GetNamedContext(name string) (*ClientContext, error) {
+	ctx, err := cr.loadContext()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ctx.Configurations) == 0 {
+		return nil, fmt.Errorf("No configurations found in %s", cr.path)
+	}
+
+	for _, cctx := range ctx.Configurations {
+		if cctx.Name == name {
+			return &cctx, nil
+		}
+	}
+
+	return nil, fmt.Errorf("Context %s not found in %s",
+		ctx.Current,
+		cr.path)
+
+}
+
+func (cr *ConfigReference) GetAll() (*ContextConfig, error) {
+	return cr.loadContext()
 }
 
 // TODO:
-func (c *ContextConfigFile) Remove(cctx *ClientContext) error {
+func (cr *ConfigReference) Remove(cctx *ClientContext) error {
 	return nil
 }
 
-func (c *ContextConfigFile) Set(cctx *ClientContext) error {
+func (cr *ConfigReference) Set(cctx *ClientContext) error {
 	return nil
 }
 
-func (c *ContextConfigFile) UnSet(cctx *ClientContext) error {
+func (cr *ConfigReference) UnSet(cctx *ClientContext) error {
 	return nil
 }
 
@@ -149,7 +173,7 @@ func GetContext(contextFile string) (*ContextConfig, error) {
 
 		if currentContext != "" {
 			for _, ccfg := range PxContextCfg.Configurations {
-				if ccfg.Context == currentContext {
+				if ccfg.Name == currentContext {
 					return ccfg, nil
 				}
 			}
@@ -188,7 +212,7 @@ func UpdateCurrentContext(contextName string) error {
 
 	// only set if context name exists
 	for _, ac := range PxContextCfg.Configurations {
-		if ac.Context == contextName {
+		if acr.Name == contextName {
 			PxContextCfg.Current = contextName
 			if err := SaveContext(PxContextCfg, PxContextFile); err != nil {
 				return err
@@ -203,8 +227,8 @@ func UpdateCurrentContext(contextName string) error {
 
 */
 
-func (c *ContextConfigFile) saveContext(ctx *ContextConfig) error {
-	if ctx == nil || c.ctxFile == "" {
+func (cr *ConfigReference) saveContext(ctx *ContextConfig) error {
+	if ctx == nil || cr.path == "" {
 		return fmt.Errorf("Failed to save context config data. Invalid data...")
 	}
 
@@ -214,22 +238,22 @@ func (c *ContextConfigFile) saveContext(ctx *ContextConfig) error {
 	}
 
 	// Create the contextconfig location
-	err = os.MkdirAll(path.Dir(c.ctxFile), 0700)
+	err = os.MkdirAll(path.Dir(cr.path), 0700)
 	if err != nil {
 		return fmt.Errorf("Failed to create context config dir: %v", err)
 	}
 
-	return ioutil.WriteFile(c.ctxFile, contextYaml, 0600)
+	return ioutil.WriteFile(cr.path, contextYaml, 0600)
 }
 
-func (c *ContextConfigFile) loadContext() (*ContextConfig, error) {
+func (cr *ConfigReference) loadContext() (*ContextConfig, error) {
 	var contextCfg ContextConfig
 
-	if _, err := os.Stat(c.ctxFile); err != nil {
+	if _, err := os.Stat(cr.path); err != nil {
 		return nil, fmt.Errorf("Context does not exist, please use 'px context create' to create one")
 	}
 
-	data, err := ioutil.ReadFile(c.ctxFile)
+	data, err := ioutil.ReadFile(cr.path)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to load context config file, %v", err)
 	}
