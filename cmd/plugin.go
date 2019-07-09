@@ -20,21 +20,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// getPluginsCmd represents the getPlugins command
-var getPluginsCmd = &cobra.Command{
+// pluginsCmd represents the getPlugins command
+var pluginsCmd = &cobra.Command{
 	Use:     "plugin",
 	Aliases: []string{"plugins"},
 	Short:   "Display px plugin information",
 	Run: func(cmd *cobra.Command, args []string) {
-		getPluginsExec(cmd, args)
+		pluginsExec(cmd, args)
 	},
 }
 
 func init() {
-	getCmd.AddCommand(getPluginsCmd)
+	rootCmd.AddCommand(pluginsCmd)
 }
 
-func getPluginsExec(cmd *cobra.Command, args []string) {
+func pluginsExec(cmd *cobra.Command, args []string) {
 
 	// Get the list of the plugins from the PluginManager
 	if len(pm.List()) == 0 {
@@ -43,9 +43,9 @@ func getPluginsExec(cmd *cobra.Command, args []string) {
 	}
 
 	t := util.NewTabby()
-	t.AddHeader("Name", "Version", "Location")
+	t.AddHeader("Name", "Version", "Location", "Description")
 	for _, p := range pm.List() {
-		t.AddLine(p.Name, p.Version, p.Location)
+		t.AddLine(p.Name, p.Version, p.Location, p.Description)
 	}
 	t.Print()
 }

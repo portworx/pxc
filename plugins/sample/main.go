@@ -47,8 +47,9 @@ var Version = "0.0.1"
 
 // PluginInfo sets information about the plugin
 var PluginManifest = map[string]string{
-	"name":    "sample",
-	"version": Version,
+	"name":        "sample",
+	"description": "Sample plugin",
+	"version":     Version,
 }
 
 func PluginInit(parent *cobra.Command, Stdout, Stderr *os.File) {

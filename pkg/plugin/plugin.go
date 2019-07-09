@@ -30,9 +30,10 @@ import (
 // TODO: Add comments
 
 type PluginManifest struct {
-	Name     string
-	Version  string
-	Location string
+	Name        string
+	Version     string
+	Location    string
+	Description string
 }
 
 type PluginManagerConfig struct {
@@ -127,6 +128,7 @@ func (pm *PluginManager) getManifest(p *plugin.Plugin, soPath string) (*PluginMa
 	} else {
 		manifest.Version = version
 	}
+	manifest.Description = manifestMap["description"]
 	manifest.Location = soPath
 
 	return manifest, nil
