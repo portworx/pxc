@@ -50,6 +50,15 @@ dist: $(PACKAGE)
 
 $(PACKAGE): all
 	@echo Packaging client Binaries...
-	zip $@ $(PKG_NAME)
+	@mkdir -p dist
+	@zip dist/$@ $(PKG_NAME)
 	@rm -f $(PKG_NAME)
+
+clean:
+	go clean
+	rm -f $(CLINAME)-$(VERSION)*.zip
+	rm -rf dist
+
+.PHONY: dist all clean darwin_amd64_dist windows_amd64_dist linux_amd64_dist \
+	install release
 
