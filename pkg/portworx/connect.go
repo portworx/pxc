@@ -30,8 +30,8 @@ import (
 // and returns the context setup with any security if any and the grpc client.
 // The context will not have a timeout set, that should be setup by the caller
 // of the gRPC call.
-func PxConnect(cfgFile string) (context.Context, *grpc.ClientConn, error) {
-	pxctx, err := contextconfig.NewContextConfig(cfgFile).Get()
+func PxConnectCurrent(cfgFile string) (context.Context, *grpc.ClientConn, error) {
+	pxctx, err := contextconfig.NewConfigReference(cfgFile).GetCurrent()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -40,5 +40,30 @@ func PxConnect(cfgFile string) (context.Context, *grpc.ClientConn, error) {
 		return nil, nil, err
 	}
 
-	return context.Background(), conn, nil
+	// Add authentication metadata
+	ctx := pxgrpc.AddMetadataToContext(context.Background(), "Authorization", "bearer "+pxctx.Token)
+
+	return ctx, conn, nil
+}
+
+// PxConnectNamed will connect to a specified context server using TLS if needed
+// and returns the context setup with any security if any and the grpc client.
+// The context will not have a timeout set, that should be setup by the caller
+// of the gRPC call.
+func PxConnectNamed(cfgFile string, name string) (context.Context, *grpc.ClientConn, error) {
+	pxctx, err := contextconfig.NewConfigReference(cfgFile).GetNamedContext(name)
+	if err != nil {
+		return nil, nil, err
+	}
+	conn, err := pxgrpc.Connect(pxctx.Endpoint, []grpc.DialOption{grpc.WithInsecure()})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Add authentication metadata
+	ctx := context.Background()
+	if pxctx.Token != "" {
+		ctx = pxgrpc.AddMetadataToContext(ctx, "Authorization", "bearer "+pxctx.Token)
+	}
+	return ctx, conn, nil
 }
