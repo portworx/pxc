@@ -26,12 +26,12 @@ endif
 
 PACKAGE := $(CLINAME)-$(VERSION).$(GOOS).$(ARCH).zip
 
-all: $(PKG_NAME)
+all: px
 
 install:
 	go install
 
-$(PKG_NAME):
+px:
 	go build $(LDFLAGS)
 
 release: darwin_amd64_dist \
@@ -56,10 +56,9 @@ $(PACKAGE): all
 	@rm -f $(PKG_NAME)
 
 clean:
-	go clean
-	rm -f $(CLINAME)-$(VERSION)*.zip
+	rm -f $(PKG_NAME)
 	rm -rf dist
 
 .PHONY: dist all clean darwin_amd64_dist windows_amd64_dist linux_amd64_dist \
-	install release
+	install release px
 

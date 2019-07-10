@@ -57,8 +57,8 @@ func init() {
 
 	createVolumeCmd.Flags().StringVar(&cvOpts.req.Name, "name", "", "Name of volume (required)")
 	createVolumeCmd.Flags().IntVar(&cvOpts.sizeInGi, "size", 0, "Size in GiB")
-	createVolumeCmd.Flags().Int64Var(&cvOpts.req.Spec.HaLevel, "replicas", 0, "Number of replicas [1-3]")
-	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Shared, "shared", false, "Number of replicas [1-3]")
+	createVolumeCmd.Flags().Int64Var(&cvOpts.req.Spec.HaLevel, "replicas", 0, "Number of replicas also called HA level [1-3]")
+	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Shared, "shared", false, "Shared volume")
 	createVolumeCmd.Flags().StringVar(&cvOpts.labelsAsString, "labels", "", "Comma separated list of labels as key-value pairs: 'k1=v1,k2=v2'")
 
 	// TODO bring the flags from rootCmd
@@ -84,6 +84,11 @@ func createVolumeExec(cmd *cobra.Command, args []string) error {
 
 	// Convert size to bytes in uint64
 	cvOpts.req.Spec.Size = uint64(cvOpts.sizeInGi) * uint64(Gi)
+
+	// Set a default value
+	if cvOpts.req.Spec.HaLevel == 0 {
+		cvOpts.req.Spec.HaLevel = 1
+	}
 
 	// Send request
 	volumes := api.NewOpenStorageVolumeClient(conn)
