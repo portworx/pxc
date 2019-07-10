@@ -1,8 +1,8 @@
 CLINAME := px
 SHA := $(shell git rev-parse --short HEAD)
 BRANCH := $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
-#VER := $(shell git describe --tags)
-VER := 0.0.0-$(SHA)
+VER := $(shell git describe --tags)
+#VER := 0.0.0-$(SHA)
 ARCH := $(shell go env GOARCH)
 GOOS := $(shell go env GOOS)
 DIR=.
