@@ -31,6 +31,9 @@ all: px
 install:
 	go install
 
+lint:
+	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
+
 px:
 	go build $(LDFLAGS)
 

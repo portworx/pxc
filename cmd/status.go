@@ -55,7 +55,7 @@ func init() {
 }
 
 func statusExec(cmd *cobra.Command, args []string) error {
-	ctx, conn, err := portworx.PxConnect(GetConfigFile())
+	ctx, conn, err := portworx.PxConnectCurrent(GetConfigFile())
 	if err != nil {
 		return err
 	}

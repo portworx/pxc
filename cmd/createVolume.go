@@ -60,6 +60,7 @@ func init() {
 	createVolumeCmd.Flags().Int64Var(&cvOpts.req.Spec.HaLevel, "replicas", 0, "Number of replicas also called HA level [1-3]")
 	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Shared, "shared", false, "Shared volume")
 	createVolumeCmd.Flags().StringVar(&cvOpts.labelsAsString, "labels", "", "Comma separated list of labels as key-value pairs: 'k1=v1,k2=v2'")
+	createVolumeCmd.Flags().SortFlags = false
 
 	// TODO bring the flags from rootCmd
 
@@ -67,7 +68,7 @@ func init() {
 }
 
 func createVolumeExec(cmd *cobra.Command, args []string) error {
-	ctx, conn, err := portworx.PxConnect(GetConfigFile())
+	ctx, conn, err := portworx.PxConnectCurrent(GetConfigFile())
 	if err != nil {
 		return err
 	}
