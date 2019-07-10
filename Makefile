@@ -49,6 +49,9 @@ linux_amd64_dist:
 
 dist: $(PACKAGE)
 
+test:
+	./hack/test.sh
+
 $(PACKAGE): all
 	@echo Packaging client Binaries...
 	@mkdir -p dist
@@ -60,5 +63,5 @@ clean:
 	rm -rf dist
 
 .PHONY: dist all clean darwin_amd64_dist windows_amd64_dist linux_amd64_dist \
-	install release px
+	install release px test
 
