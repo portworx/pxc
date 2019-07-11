@@ -41,7 +41,7 @@ your home directory.`,
 func init() {
 	contextCmd.AddCommand(contextCreateCmd)
 
-	contextCreateCmd.Flags().String("name", "", "Name of context")
+	contextCreateCmd.Flags().String("name", "", "User provided name for the context")
 	contextCreateCmd.Flags().String("token", "", "Token for use in this context")
 	contextCreateCmd.Flags().String("endpoint", "", "Portworx service endpoint. Ex. 127.0.0.1:9020")
 	contextCreateCmd.Flags().Bool("secure", false, "Use secure connection")
@@ -60,6 +60,7 @@ func contextCreateExec(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Must supply a name for the context")
 	}
 	if s, _ := cmd.Flags().GetString("endpoint"); len(s) != 0 {
+		// TODO: If no port is provided, assume 9020
 		c.Endpoint = s
 	} else {
 		return fmt.Errorf("Must supply an endpoint for the context")

@@ -21,7 +21,7 @@ the appropriate Portworx cluster to execute the requested command.
 You can create a context using the following command:
 
 ```
-px context create --name=mycluster --endpoint=<ip of cluster>:9020
+$ px context create --name=mycluster --endpoint=<ip of cluster>:9020
 ```
 
 > NOTE: The default gRPC SDK port for Portworx is 9020
@@ -30,9 +30,24 @@ px context create --name=mycluster --endpoint=<ip of cluster>:9020
 `px` uses the [OpenStorage SDK](https://libopenstorage.github.io) to communicate
 with Portworx, therefore it is fully compatible with OpenStorage's
 `mock-sdk-server`. If you do not have a Portworx cluster, you can run the
-following to start the `mock-sdk-server` running on port 9100:
+following to start the `mock-sdk-server`:
 
 ```
-docker run --rm --name sdk -d -p 9100:9100 -p 9110:9110 openstorage/mock-sdk-server
+$ docker run --rm --name sdk -d -p 9100:9100 -p 9110:9110 openstorage/mock-sdk-server
+$ px context create --name=mycluster --endpoint=localhost:9100
 ```
+
+## Status
+Now that `px` has been setup with a context, you can do the following commands:
+
+```
+$ px status
+$ px get volume
+$ px get volume -o wide
+$ px get nodes
+$ px get nodes -o wide
+```
+
+# Development
+Please visit [Development](docs/devel.md)
 
