@@ -17,32 +17,47 @@ package kubernetes
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/portworx/px/pkg/contextconfig"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 // KubeConnect will return a Kubernetes client using the kubeconfig file
 // set in the default context.
-func KubeConnect(cfgFile string) (*kubernetes.Clientset, error) {
+// clientcmd.ClientConfig will allow the caller to call ClientConfig.Namespace() to get the namespace
+// set by the caller on their Kubeconfig.
+func KubeConnect(cfgFile string) (clientcmd.ClientConfig, *kubernetes.Clientset, error) {
+	var kubeconfig string
 	pxctx, err := contextconfig.NewConfigReference(cfgFile).GetCurrent()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(pxctx.Kubeconfig) == 0 {
-		return nil, fmt.Errorf("No kubeconfig found in context %s\n", pxctx.Name)
+		kubeconfig = os.Getenv("KUBECONFIG")
+	} else {
+		kubeconfig = pxctx.Kubeconfig
+	}
+	if len(kubeconfig) == 0 {
+		return nil, nil, fmt.Errorf("No kubeconfig found in context %s\n", pxctx.Name)
 	}
 
-	r, err := clientcmd.BuildConfigFromFlags("", pxctx.Kubeconfig)
+	// Get the client config
+	cc := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig},
+		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: ""}})
+	r, err := cc.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("Unable to configure kubernetes client: %v\n", err)
+		return nil, nil, fmt.Errorf("Unable to configure kubernetes client: %v\n", err)
 	}
+	// Get a client to the Kuberntes server
 	clientset, err := kubernetes.NewForConfig(r)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to connect to Kubernetes: %v\n", err)
+		return nil, nil, fmt.Errorf("Unable to connect to Kubernetes: %v\n", err)
 	}
 
-	return clientset, nil
+	return cc, clientset, nil
 }
