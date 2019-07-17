@@ -79,12 +79,12 @@ func createSnapshotExec(cmd *cobra.Command, args []string) error {
 		return util.PxErrorMessage(err, "Failed to create snapshot")
 	}
 
-	// TODO: Show output in appropriate format
-
 	// Show user information
-	util.Printf("Snapshot of %s created with id %s\n",
+	msg := fmt.Sprintf("Snapshot of %s created with id %s\n",
 		csOpts.req.GetVolumeId(),
 		resp.GetSnapshotId())
+	output, _ := cmd.Flags().GetString("output")
+	util.PrintCreateOutput(output, "Create Snapshot", resp.GetSnapshotId(), msg)
 
 	return nil
 }

@@ -97,12 +97,12 @@ func createVolumeExec(cmd *cobra.Command, args []string) error {
 		return util.PxErrorMessage(err, "Failed to create volume")
 	}
 
-	// TODO: Show output in appropriate format
-
 	// Show user information
-	util.Printf("Volume %s created with id %s\n",
+	msg := fmt.Sprintf("Volume %s created with id %s\n",
 		cvOpts.req.GetName(),
 		resp.GetVolumeId())
 
+	output, _ := cmd.Flags().GetString("output")
+	util.PrintCreateOutput(output, "Create Volume", resp.GetVolumeId(), msg)
 	return nil
 }

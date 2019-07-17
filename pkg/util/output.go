@@ -24,8 +24,14 @@ import (
 	"text/tabwriter"
 
 	"github.com/cheynewallace/tabby"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
+
+type Format struct {
+	Cmd  string   `json:"cmd,omitempty" yaml:"cmd,omitempty"`
+	Desc string   `json:"desc,omitempty" yaml:"desc,omitempty"`
+	Uuid []string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
+}
 
 var (
 	// Stdout points to the output buffer to send screen output
@@ -71,4 +77,28 @@ func PrintJson(obj interface{}) {
 func NewTabby() *tabby.Tabby {
 	writer := tabwriter.NewWriter(Stdout, 0, 0, 2, ' ', 0)
 	return tabby.NewCustom(writer)
+}
+
+func PrintOutput(typeOfOutput string, f *Format) {
+	switch typeOfOutput {
+	case "yaml":
+		PrintYaml(f)
+	case "json":
+		PrintJson(f)
+	default:
+		Printf("%s", f.Desc)
+	}
+}
+
+func PrintCreateOutput(
+	typeOfOutput string,
+	cmd string,
+	idOfCreatedObject string,
+	msg string,
+) {
+	PrintOutput(typeOfOutput, &Format{
+		Uuid: []string{idOfCreatedObject},
+		Cmd:  cmd,
+		Desc: msg,
+	})
 }
