@@ -17,12 +17,23 @@ Orchestration systems like Kubernetes. To use this tool you must first create a
 context with the appropriate information. `px` uses the context to connect to
 the appropriate Portworx cluster to execute the requested command.
 
+## Installing as a kubectl plugin
+Install `px` binary anywhere in your PATH and name it `kubectl-px`. You will
+then be able to run it like this:
+
+```
+$ kubectl px get nodes
+$ kubectl px get pvc
+```
+
 ## Creating a context
 You can create a context using the following command:
 
 ```
 $ px context create --name=mycluster --endpoint=<ip of cluster>:9020
 ```
+
+See `px context create --help` for more information like setting the Kubeconfig.
 
 > NOTE: The default gRPC SDK port for Portworx is 9020
 
