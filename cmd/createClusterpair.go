@@ -46,7 +46,7 @@ var createClusterpairCmd = &cobra.Command{
 	Aliases: []string{"clusterpairs"},
 	Short:   "Pair this cluster with another Portworx cluster",
 	Long: `TODO
-	
+
 ADD EXAMPLES
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {

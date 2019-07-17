@@ -24,7 +24,6 @@ import (
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/px/pkg/kubernetes"
-	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
 
 	"github.com/spf13/cobra"
@@ -48,7 +47,7 @@ func init() {
 
 func getPvcExec(cmd *cobra.Command, args []string) error {
 	// Connect to Portworx
-	ctx, conn, err := portworx.PxConnectCurrent(GetConfigFile())
+	ctx, conn, err := PxConnectDefault()
 	if err != nil {
 		return err
 	}

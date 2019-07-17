@@ -16,13 +16,16 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"os"
 	"path"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/portworx/px/pkg/plugin"
+	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -69,14 +72,13 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	// TODO: Allow a --context to override the default
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+")")
+	rootCmd.PersistentFlags().StringVar(&cfgContext, "context", "", "Force context name for the command")
 
 	// TODO: move these flags out of persistent
 	rootCmd.PersistentFlags().StringP("output", "o", "", "Output in yaml|json|wide")
 	rootCmd.PersistentFlags().Bool("show-labels", false, "Show labels in the last column of the output")
 	rootCmd.PersistentFlags().StringP("selector", "l", "", "Comma separated label selector of the form 'key=value,key=value'")
-	rootCmd.PersistentFlags().StringVar(&cfgContext, "context", "", "Force context name for the command")
 
 	// Global cobra configurations
 	rootCmd.Flags().SortFlags = false
@@ -109,4 +111,13 @@ func initConfig() {
 
 func GetConfigFile() string {
 	return cfgFile
+}
+
+func PxConnectDefault() (context.Context, *grpc.ClientConn, error) {
+	// Global information will be set here, like forced context
+	if len(cfgContext) == 0 {
+		return portworx.PxConnectCurrent(cfgFile)
+	} else {
+		return portworx.PxConnectNamed(cfgFile, cfgContext)
+	}
 }

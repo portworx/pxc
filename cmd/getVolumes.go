@@ -21,7 +21,6 @@ import (
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/px/pkg/kubernetes"
-	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
 
 	"google.golang.org/grpc"
@@ -53,7 +52,7 @@ func init() {
 }
 
 func getVolumesExec(cmd *cobra.Command, args []string) error {
-	ctx, conn, err := portworx.PxConnectCurrent(GetConfigFile())
+	ctx, conn, err := PxConnectDefault()
 	if err != nil {
 		return err
 	}
