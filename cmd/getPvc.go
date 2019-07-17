@@ -54,7 +54,7 @@ func getPvcExec(cmd *cobra.Command, args []string) error {
 	defer conn.Close()
 
 	// Connect to kubernetes
-	cc, kc, err := kubernetes.KubeConnect(GetConfigFile())
+	cc, kc, err := KubeConnectDefault()
 	if err != nil {
 		return err
 	}

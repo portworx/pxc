@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/px/pkg/kubernetes"
 	"github.com/portworx/px/pkg/util"
 
 	"google.golang.org/grpc"
@@ -62,7 +61,7 @@ func getVolumesExec(cmd *cobra.Command, args []string) error {
 	var pods []v1.Pod
 	showK8s, _ := cmd.Flags().GetBool("show-k8s-info")
 	if showK8s {
-		_, kc, err := kubernetes.KubeConnect(GetConfigFile())
+		_, kc, err := KubeConnectDefault()
 		if err != nil {
 			return err
 		}
