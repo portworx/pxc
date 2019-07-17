@@ -30,9 +30,18 @@ import (
 // set in the default context.
 // clientcmd.ClientConfig will allow the caller to call ClientConfig.Namespace() to get the namespace
 // set by the caller on their Kubeconfig.
-func KubeConnect(cfgFile string) (clientcmd.ClientConfig, *kubernetes.Clientset, error) {
-	var kubeconfig string
-	pxctx, err := contextconfig.NewConfigReference(cfgFile).GetCurrent()
+func KubeConnect(cfgFile, context string) (clientcmd.ClientConfig, *kubernetes.Clientset, error) {
+	var (
+		kubeconfig string
+		pxctx      *contextconfig.ClientContext
+		err        error
+	)
+
+	if len(context) == 0 {
+		pxctx, err = contextconfig.NewConfigReference(cfgFile).GetCurrent()
+	} else {
+		pxctx, err = contextconfig.NewConfigReference(cfgFile).GetNamedContext(context)
+	}
 	if err != nil {
 		return nil, nil, err
 	}

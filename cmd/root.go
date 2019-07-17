@@ -20,12 +20,16 @@ import (
 	"os"
 	"path"
 
-	homedir "github.com/mitchellh/go-homedir"
+	"github.com/portworx/px/pkg/kubernetes"
 	"github.com/portworx/px/pkg/plugin"
 	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
+
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
+	kclikube "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -120,4 +124,8 @@ func PxConnectDefault() (context.Context, *grpc.ClientConn, error) {
 	} else {
 		return portworx.PxConnectNamed(cfgFile, cfgContext)
 	}
+}
+
+func KubeConnectDefault() (clientcmd.ClientConfig, *kclikube.Clientset, error) {
+	return kubernetes.KubeConnect(cfgFile, cfgContext)
 }
