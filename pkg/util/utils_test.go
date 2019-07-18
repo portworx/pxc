@@ -28,7 +28,7 @@ import (
  Test if given element is present in the list.
  Assert if element is not found in the list.
  */
-func TestListContainsUT1(t *testing.T) {
+func TestListContainsElement(t *testing.T) {
 	// list containg elements
 	elements := []string{"node", "drive", "volume"}
 	matchString := "volume"
@@ -42,7 +42,7 @@ To test negative case of utils.ListContains function.
 Test if given element is not present in the list.
 Asserts if element is found in the list.
 */
-func TestListContainsUT2(t *testing.T) {
+func TestListContainsNoElement(t *testing.T) {
 	// list containg elements
 	elements := []string{"node", "drive", "volume"}
 	matchString := "portworx"
@@ -56,7 +56,7 @@ To test positive case of utils.ListHaveMatch.
 Test if given element present in the both the list.
 Assert if none of the elements is not found in both the list.
 */
-func TestListHaveMatchUT1(t *testing.T) {
+func TestListHaveMatchPresent(t *testing.T) {
 	elements := []string{"node", "drive", "volume", "portworx"}
 	match := []string{"portworx", "osd"}
 
@@ -69,7 +69,7 @@ Test for negative case of utils.ListHaveMatch.
 Tests if the given entity is not present in the list.
 Assert if any one of the elements is found in both the list.
 */
-func TestListHaveMatchUT2(t *testing.T) {
+func TestListHaveMatchNotPresent(t *testing.T) {
 	elements := []string{"node", "drive", "volume", "portworx"}
 	match := []string{"oci", "osd"}
 
@@ -98,7 +98,7 @@ Test for positive case of utils.CommaStringToStringMap
 Tests if the given valid string is converted to  (k,v) pair.
 Asserts if the conversion fails
 */
-func TestCommaStringToStringMapUT1(t *testing.T) {
+func TestCommaStringToStringMapPositive(t *testing.T) {
 	element := "pod=portworx,cluster=k8s"
 	expectedResult := map[string]string {
 		"pod": "portworx",
@@ -111,39 +111,42 @@ func TestCommaStringToStringMapUT1(t *testing.T) {
 }
 
 /*
-Test function for negative case of utils.CommaStringToStringMap
+Test function for negative cases of utils.CommaStringToStringMap
 Tests if the given valid string is not converted to  (k,v) pair.
 Asserts if the conversion succeeds.
 */
-func TestCommaStringToStringMapUT2(t *testing.T) {
+func TestCommaStringToStringMapNegative(t *testing.T) {
+	// case 1
 	element := "pod+portworx,cluster/k8s"
 	expectedResult := map[string]string {
 		"pod": "portworx",
 		"cluster": "k8s",
 	}
 
-	ret, _ := CommaStringToStringMap(element)
-	state := reflect.DeepEqual(ret, expectedResult)
-
+	state := deepCompare(element, expectedResult)
 	assert.Equal(t, state, false, "Successfully converted string %s to (k,v) pair " +
 				"which shouldn't have been!!!", element)
-}
 
-/*
-Test function for negative case of utils.CommaStringToStringMap
-Tests if the given valid string is not converted to  (k,v) pair.
-Asserts if the conversion succeeds.
-*/
-func TestCommaStringToStringMapUT3(t *testing.T) {
-	element := "pod=portworx,cluster/k8s"
-	expectedResult := map[string]string {
+	// case 2
+	element = "pod=portworx,cluster/k8s"
+	expectedResult = map[string]string {
 		"pod": "portworx",
 		"cluster": "k8s",
 	}
 
-	ret, _ := CommaStringToStringMap(element)
-	state := reflect.DeepEqual(ret, expectedResult)
-
+	state = deepCompare(element, expectedResult)
 	assert.Equal(t, state, false, "Successfully converted string %s to (k,v) pair " +
 				"which shouldn't have been!!!", element)
+
+}
+
+/*
+Compares provided map with map generated as part of CommaStringToStringMap
+Return true or false
+*/
+func deepCompare (element string, expectedResult map[string]string) (state bool) {
+	//ret is a map
+	ret, _ := CommaStringToStringMap(element)
+	state = reflect.DeepEqual(ret, expectedResult)
+	return
 }
