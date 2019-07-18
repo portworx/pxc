@@ -20,8 +20,6 @@ import (
 	"strings"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/px/pkg/kubernetes"
-	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
 
 	"google.golang.org/grpc"
@@ -53,7 +51,7 @@ func init() {
 }
 
 func getVolumesExec(cmd *cobra.Command, args []string) error {
-	ctx, conn, err := portworx.PxConnectCurrent(GetConfigFile())
+	ctx, conn, err := PxConnectDefault()
 	if err != nil {
 		return err
 	}
@@ -63,7 +61,7 @@ func getVolumesExec(cmd *cobra.Command, args []string) error {
 	var pods []v1.Pod
 	showK8s, _ := cmd.Flags().GetBool("show-k8s-info")
 	if showK8s {
-		kc, err := kubernetes.KubeConnect(GetConfigFile())
+		_, kc, err := KubeConnectDefault()
 		if err != nil {
 			return err
 		}

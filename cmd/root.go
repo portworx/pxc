@@ -16,13 +16,20 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"os"
 	"path"
 
-	homedir "github.com/mitchellh/go-homedir"
+	"github.com/portworx/px/pkg/kubernetes"
 	"github.com/portworx/px/pkg/plugin"
+	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
+
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
+	kclikube "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -38,6 +45,7 @@ const (
 var (
 	cfgDir      string
 	cfgFile     string
+	cfgContext  string
 	optEndpoint string
 	pm          *plugin.PluginManager
 
@@ -68,8 +76,8 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	// TODO: Allow a --context to override the default
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+")")
+	rootCmd.PersistentFlags().StringVar(&cfgContext, "context", "", "Force context name for the command")
 
 	// TODO: move these flags out of persistent
 	rootCmd.PersistentFlags().StringP("output", "o", "", "Output in yaml|json|wide")
@@ -107,4 +115,17 @@ func initConfig() {
 
 func GetConfigFile() string {
 	return cfgFile
+}
+
+func PxConnectDefault() (context.Context, *grpc.ClientConn, error) {
+	// Global information will be set here, like forced context
+	if len(cfgContext) == 0 {
+		return portworx.PxConnectCurrent(cfgFile)
+	} else {
+		return portworx.PxConnectNamed(cfgFile, cfgContext)
+	}
+}
+
+func KubeConnectDefault() (clientcmd.ClientConfig, *kclikube.Clientset, error) {
+	return kubernetes.KubeConnect(cfgFile, cfgContext)
 }
