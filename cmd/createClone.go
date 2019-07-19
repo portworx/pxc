@@ -43,7 +43,7 @@ func init() {
 	createCmd.AddCommand(createCloneCmd)
 
 	createCloneCmd.Flags().StringVar(&ccReq.Name, "name", "", "Name of clone to be created (required)")
-	createCloneCmd.Flags().StringVar(&ccReq.ParentId, "volume", "", "Name/id of volume (required)")
+	createCloneCmd.Flags().StringVar(&ccReq.ParentId, "volume", "", "Name or id of volume (required)")
 	createCloneCmd.Flags().SortFlags = false
 
 	// TODO bring the flags from rootCmd
@@ -63,11 +63,17 @@ func createCloneExec(cmd *cobra.Command, args []string) error {
 		return util.PxErrorMessage(err, "Failed to create clone")
 	}
 
-	msg := fmt.Sprintf("Clone of %s created with id %s\n",
+	msg := fmt.Sprintf("Clone of %s created with id %s",
 		ccReq.GetParentId(),
 		resp.GetVolumeId())
 
 	output, _ := cmd.Flags().GetString("output")
-	util.PrintCreateOutput(output, "Create Clone", resp.GetVolumeId(), msg)
+	formattedOut := &util.DefaultFormatOutput{
+		Cmd:  "create clone",
+		Desc: msg,
+		Id:   []string{resp.GetVolumeId()},
+	}
+	formattedOut.SetFormat(output)
+	util.Printf("%v\n", formattedOut)
 	return nil
 }

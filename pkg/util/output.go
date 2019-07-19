@@ -27,12 +27,6 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-type Format struct {
-	Cmd  string   `json:"cmd,omitempty" yaml:"cmd,omitempty"`
-	Desc string   `json:"desc,omitempty" yaml:"desc,omitempty"`
-	Uuid []string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
-}
-
 var (
 	// Stdout points to the output buffer to send screen output
 	Stdout io.Writer = os.Stdout
@@ -52,24 +46,34 @@ func Eprintf(format string, args ...interface{}) {
 	fmt.Fprintf(Stderr, format, args...)
 }
 
-// PrintYaml prints the object to yaml to Stdout
-func PrintYaml(obj interface{}) {
+// GetYaml returns the yaml representation of obj
+func GetYaml(obj interface{}) string {
 	bytes, err := yaml.Marshal(obj)
 	if err != nil {
 		Eprintf("Unable to create yaml output")
-		return
+		return ""
 	}
-	Printf(string(bytes))
+	return string(bytes)
+}
+
+// PrintYaml prints the object to yaml to Stdout
+func PrintYaml(obj interface{}) {
+	Printf(GetYaml(obj))
+}
+
+// GetJson returns the json representation of obj
+func GetJson(obj interface{}) string {
+	bytes, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		Eprintf("Unable to create json output")
+		return ""
+	}
+	return string(bytes)
 }
 
 // PrintJson prints the object to json to Stdout
 func PrintJson(obj interface{}) {
-	bytes, err := json.MarshalIndent(obj, "", "  ")
-	if err != nil {
-		Eprintf("Unable to create json output")
-		return
-	}
-	Printf(string(bytes))
+	Printf(GetJson(obj))
 }
 
 // NewTabby is used to return a tabbing object set to the
@@ -77,28 +81,4 @@ func PrintJson(obj interface{}) {
 func NewTabby() *tabby.Tabby {
 	writer := tabwriter.NewWriter(Stdout, 0, 0, 2, ' ', 0)
 	return tabby.NewCustom(writer)
-}
-
-func PrintOutput(typeOfOutput string, f *Format) {
-	switch typeOfOutput {
-	case "yaml":
-		PrintYaml(f)
-	case "json":
-		PrintJson(f)
-	default:
-		Printf("%s", f.Desc)
-	}
-}
-
-func PrintCreateOutput(
-	typeOfOutput string,
-	cmd string,
-	idOfCreatedObject string,
-	msg string,
-) {
-	PrintOutput(typeOfOutput, &Format{
-		Uuid: []string{idOfCreatedObject},
-		Cmd:  cmd,
-		Desc: msg,
-	})
 }

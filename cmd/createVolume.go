@@ -98,11 +98,18 @@ func createVolumeExec(cmd *cobra.Command, args []string) error {
 	}
 
 	// Show user information
-	msg := fmt.Sprintf("Volume %s created with id %s\n",
+	msg := fmt.Sprintf("Volume %s created with id %s",
 		cvOpts.req.GetName(),
 		resp.GetVolumeId())
 
 	output, _ := cmd.Flags().GetString("output")
-	util.PrintCreateOutput(output, "Create Volume", resp.GetVolumeId(), msg)
+	formattedOut := &util.DefaultFormatOutput{
+		Cmd:  "create volume",
+		Desc: msg,
+		Id:   []string{resp.GetVolumeId()},
+	}
+	formattedOut.SetFormat(output)
+	util.Printf("%v\n", formattedOut)
+
 	return nil
 }
