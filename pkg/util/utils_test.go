@@ -17,8 +17,8 @@ limitations under the License.
 package util
 
 import (
-	"testing"
 	"reflect"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -27,7 +27,7 @@ import (
  To test postivive case of utils.ListContains function.
  Test if given element is present in the list.
  Assert if element is not found in the list.
- */
+*/
 func TestListContainsElement(t *testing.T) {
 	// list containg elements
 	elements := []string{"node", "drive", "volume"}
@@ -61,7 +61,7 @@ func TestListHaveMatchPresent(t *testing.T) {
 	match := []string{"portworx", "osd"}
 
 	ret := ListHaveMatch(elements, match)
-	assert.Equal(t, ret, true, "Elements %s not found in the list" ,match)
+	assert.Equal(t, ret, true, "Elements %s not found in the list", match)
 }
 
 /*
@@ -74,7 +74,7 @@ func TestListHaveMatchNotPresent(t *testing.T) {
 	match := []string{"oci", "osd"}
 
 	ret := ListHaveMatch(elements, match)
-	assert.Equal(t, ret, false, "One of the elements %s found in the list" ,match)
+	assert.Equal(t, ret, false, "One of the elements %s found in the list", match)
 }
 
 /*
@@ -83,15 +83,14 @@ Test if the given map can be converted to valid string.
 Assert on conversion failure.
 */
 func TestStringMapToCommaString(t *testing.T) {
-	elements := map[string]string {
-		"pod": "portworx",
+	elements := map[string]string{
+		"pod":     "portworx",
 		"cluster": "k8s",
 	}
 	expectedResult := "pod=portworx,cluster=k8s"
 	ret := StringMapToCommaString(elements)
 	assert.Equal(t, ret, expectedResult, "Failed to convert (k,v) to string")
 }
-
 
 /*
 Test for positive case of utils.CommaStringToStringMap
@@ -100,8 +99,8 @@ Asserts if the conversion fails
 */
 func TestCommaStringToStringMapPositive(t *testing.T) {
 	element := "pod=portworx,cluster=k8s"
-	expectedResult := map[string]string {
-		"pod": "portworx",
+	expectedResult := map[string]string{
+		"pod":     "portworx",
 		"cluster": "k8s",
 	}
 
@@ -118,25 +117,25 @@ Asserts if the conversion succeeds.
 func TestCommaStringToStringMapNegative(t *testing.T) {
 	// case 1
 	element := "pod+portworx,cluster/k8s"
-	expectedResult := map[string]string {
-		"pod": "portworx",
+	expectedResult := map[string]string{
+		"pod":     "portworx",
 		"cluster": "k8s",
 	}
 
 	state := deepCompare(element, expectedResult)
-	assert.Equal(t, state, false, "Successfully converted string %s to (k,v) pair " +
-				"which shouldn't have been!!!", element)
+	assert.Equal(t, state, false, "Successfully converted string %s to (k,v) pair "+
+		"which shouldn't have been!!!", element)
 
 	// case 2
 	element = "pod=portworx,cluster/k8s"
-	expectedResult = map[string]string {
-		"pod": "portworx",
+	expectedResult = map[string]string{
+		"pod":     "portworx",
 		"cluster": "k8s",
 	}
 
 	state = deepCompare(element, expectedResult)
-	assert.Equal(t, state, false, "Successfully converted string %s to (k,v) pair " +
-				"which shouldn't have been!!!", element)
+	assert.Equal(t, state, false, "Successfully converted string %s to (k,v) pair "+
+		"which shouldn't have been!!!", element)
 
 }
 
@@ -144,7 +143,7 @@ func TestCommaStringToStringMapNegative(t *testing.T) {
 Compares provided map with map generated as part of CommaStringToStringMap
 Return true or false
 */
-func deepCompare (element string, expectedResult map[string]string) (state bool) {
+func deepCompare(element string, expectedResult map[string]string) (state bool) {
 	//ret is a map
 	ret, _ := CommaStringToStringMap(element)
 	state = reflect.DeepEqual(ret, expectedResult)
