@@ -17,7 +17,7 @@ limitations under the License.
 package util
 
 type DefaultFormatOutput struct {
-	BaseFormatOutput `json:",omitempty" yaml:",omitempty"`
+	BaseFormatOutput `json:"-" yaml:"-"`
 	Cmd              string   `json:"cmd,omitempty" yaml:"cmd,omitempty"`
 	Desc             string   `json:"desc,omitempty" yaml:"desc,omitempty"`
 	Id               []string `json:"id,omitempty" yaml:"id,omitempty"`
@@ -36,4 +36,9 @@ func (dfo *DefaultFormatOutput) WideFormat() string {
 // String returns the formatted output of the object as per the format set.
 func (dfo *DefaultFormatOutput) String() string {
 	return GetFormattedOutput(dfo)
+}
+
+// Print writes the object to stdout
+func (dfo *DefaultFormatOutput) Print() {
+	Printf("%v\n", dfo)
 }

@@ -46,8 +46,8 @@ func Eprintf(format string, args ...interface{}) {
 	fmt.Fprintf(Stderr, format, args...)
 }
 
-// GetYaml returns the yaml representation of obj
-func GetYaml(obj interface{}) string {
+// ToYaml returns the yaml representation of obj
+func ToYaml(obj interface{}) string {
 	bytes, err := yaml.Marshal(obj)
 	if err != nil {
 		Eprintf("Unable to create yaml output")
@@ -58,11 +58,11 @@ func GetYaml(obj interface{}) string {
 
 // PrintYaml prints the object to yaml to Stdout
 func PrintYaml(obj interface{}) {
-	Printf(GetYaml(obj))
+	Printf(ToYaml(obj))
 }
 
-// GetJson returns the json representation of obj
-func GetJson(obj interface{}) string {
+// ToJson returns the json representation of obj
+func ToJson(obj interface{}) string {
 	bytes, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		Eprintf("Unable to create json output")
@@ -73,7 +73,7 @@ func GetJson(obj interface{}) string {
 
 // PrintJson prints the object to json to Stdout
 func PrintJson(obj interface{}) {
-	Printf(GetJson(obj))
+	Printf(ToJson(obj))
 }
 
 // NewTabby is used to return a tabbing object set to the

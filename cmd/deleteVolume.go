@@ -15,6 +15,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
@@ -56,7 +58,19 @@ func deleteVolumeExec(cmd *cobra.Command, args []string) error {
 		return util.PxErrorMessage(err, "Failed to delete volume")
 	}
 
-	util.Printf("Volume %s deleted\n", dvReq.GetVolumeId())
+	msg := fmt.Sprintf("Volume %s deleted", dvReq.GetVolumeId())
+
+	output, _ := cmd.Flags().GetString("output")
+
+	formattedOut := &util.DefaultFormatOutput{
+		BaseFormatOutput: util.BaseFormatOutput{
+			FormatType: output,
+		},
+		Cmd:  "delete volume",
+		Desc: msg,
+		Id:   []string{dvReq.GetVolumeId()},
+	}
+	formattedOut.Print()
 
 	return nil
 }

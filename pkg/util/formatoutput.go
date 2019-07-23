@@ -23,7 +23,7 @@ const (
 )
 
 // FormatOutput is the interface used to ensure proper formatting
-// json and yaml does not need methods since the GetYaml() and GetJson()
+// json and yaml does not need methods since the ToYaml() and ToJson()
 // functions are used to format these objects.
 type FormatOutput interface {
 	// SetFormat takes in as input the type of Formatting needed.
@@ -40,15 +40,18 @@ type FormatOutput interface {
 
 	// WideFormat formats the object in the "wide" format
 	WideFormat() string
+
+	// Print writes out the object in appropriate format
+	Print()
 }
 
 // GetFormattedOutput returns the formatted output
 func GetFormattedOutput(in FormatOutput) string {
 	switch in.GetFormat() {
 	case "yaml":
-		return GetYaml(in)
+		return ToYaml(in)
 	case "json":
-		return GetJson(in)
+		return ToJson(in)
 	case "wide":
 		return in.WideFormat()
 	default:
@@ -57,19 +60,19 @@ func GetFormattedOutput(in FormatOutput) string {
 }
 
 type BaseFormatOutput struct {
-	formatType string
+	FormatType string
 }
 
 // SetFormat takes in as input the type of Formatting needed.
 // Currently recoganized values are "wide", "json" and "yaml".
 // Any other string including "" will end up with DefaultFormat.
 func (bfo *BaseFormatOutput) SetFormat(typeOfOutput string) {
-	bfo.formatType = typeOfOutput
+	bfo.FormatType = typeOfOutput
 }
 
 // GetFormat returns the format type set
 func (bfo *BaseFormatOutput) GetFormat() string {
-	return bfo.formatType
+	return bfo.FormatType
 }
 
 // DefaultFormat just returns the Desc
@@ -85,4 +88,9 @@ func (bfo *BaseFormatOutput) WideFormat() string {
 // String returns the formatted output of the object as per the format set.
 func (bfo *BaseFormatOutput) String() string {
 	return GetFormattedOutput(bfo)
+}
+
+// Print writes the object to stdout
+func (bfo *BaseFormatOutput) Print() {
+	Printf("%v", bfo)
 }

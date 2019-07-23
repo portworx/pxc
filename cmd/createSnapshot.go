@@ -86,12 +86,15 @@ func createSnapshotExec(cmd *cobra.Command, args []string) error {
 
 	output, _ := cmd.Flags().GetString("output")
 	formattedOut := &util.DefaultFormatOutput{
+		BaseFormatOutput: util.BaseFormatOutput{
+			FormatType: output,
+		},
+
 		Cmd:  "create snapshot",
 		Desc: msg,
 		Id:   []string{resp.GetSnapshotId()},
 	}
-	formattedOut.SetFormat(output)
-	util.Printf("%v\n", formattedOut)
+	formattedOut.Print()
 
 	return nil
 }
