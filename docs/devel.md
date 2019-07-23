@@ -20,10 +20,17 @@ Remote commands behave much the same way as the commands from `kubectl`.
 If name of objects are passed to the command, then the list must only show those specific objects.
 
 ### px create
-`px create` is used to create an object on Portworx. For example `px create clusterpair` creates a pair token at the server. Output must be a single line of just a "Created successfully" or printing the id of the object created.
+`px create` is used to create an object on Portworx. For example `px create clusterpair <options...>` creates a pair token at the server. Output must be a single line of just a `Created successfully` or something like `Created <object> <id/name> successfully>`.
 
 #### `px create <object> <options...>`
 
 #### `px create <object> <values...> <options...>`
+
+### px delete
+`px delete` is used to delete an object on Portworx. For example `px delete snapshot <name>` deletes a snapshot at the server. Output must be a single line of just a `Deleted <object> <name> successfully`.
+
+#### `px delete <object> <options...>`
+
+#### `px delete <object> <values...> <options...>`
 
 
