@@ -49,7 +49,7 @@ func init() {
 	createCmd.AddCommand(createSnapshotCmd)
 
 	createSnapshotCmd.Flags().StringVar(&csOpts.req.Name, "name", "", "Name of snapshot to be created (required)")
-	createSnapshotCmd.Flags().StringVar(&csOpts.req.VolumeId, "volume", "", "Name/id of volume (required)")
+	createSnapshotCmd.Flags().StringVar(&csOpts.req.VolumeId, "volume", "", "Name or id of volume (required)")
 	createSnapshotCmd.Flags().StringVar(&csOpts.labelsAsString, "labels", "", "Comma separated list of labels as key-value pairs: 'k1=v1,k2=v2'")
 	createSnapshotCmd.Flags().SortFlags = false
 
@@ -79,12 +79,22 @@ func createSnapshotExec(cmd *cobra.Command, args []string) error {
 		return util.PxErrorMessage(err, "Failed to create snapshot")
 	}
 
-	// TODO: Show output in appropriate format
-
 	// Show user information
-	util.Printf("Snapshot of %s created with id %s\n",
+	msg := fmt.Sprintf("Snapshot of %s created with id %s",
 		csOpts.req.GetVolumeId(),
 		resp.GetSnapshotId())
+
+	output, _ := cmd.Flags().GetString("output")
+	formattedOut := &util.DefaultFormatOutput{
+		BaseFormatOutput: util.BaseFormatOutput{
+			FormatType: output,
+		},
+
+		Cmd:  "create snapshot",
+		Desc: msg,
+		Id:   []string{resp.GetSnapshotId()},
+	}
+	formattedOut.Print()
 
 	return nil
 }
