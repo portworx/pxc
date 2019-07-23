@@ -34,7 +34,7 @@ func TestListContainsElement(t *testing.T) {
 	matchString := "volume"
 
 	ret := ListContains(elements, matchString)
-	assert.Equal(t, ret, true, "%s entity not found in the list", matchString)
+	assert.Equal(t, ret, true)
 }
 
 /*
@@ -48,7 +48,7 @@ func TestListContainsNoElement(t *testing.T) {
 	matchString := "portworx"
 
 	ret := ListContains(elements, matchString)
-	assert.Equal(t, ret, false, "%s entity found in the list", matchString)
+	assert.Equal(t, ret, false)
 }
 
 /*
@@ -61,7 +61,7 @@ func TestListHaveMatchPresent(t *testing.T) {
 	match := []string{"portworx", "osd"}
 
 	ret := ListHaveMatch(elements, match)
-	assert.Equal(t, ret, true, "Elements %s not found in the list", match)
+	assert.Equal(t, ret, true)
 }
 
 /*
@@ -74,7 +74,7 @@ func TestListHaveMatchNotPresent(t *testing.T) {
 	match := []string{"oci", "osd"}
 
 	ret := ListHaveMatch(elements, match)
-	assert.Equal(t, ret, false, "One of the elements %s found in the list", match)
+	assert.Equal(t, ret, false)
 }
 
 /*
@@ -87,9 +87,11 @@ func TestStringMapToCommaString(t *testing.T) {
 		"pod":     "portworx",
 		"cluster": "k8s",
 	}
-	expectedResult := "pod=portworx,cluster=k8s"
+
 	ret := StringMapToCommaString(elements)
-	assert.Equal(t, ret, expectedResult, "Failed to convert (k,v) to string")
+	val, _ := CommaStringToStringMap(ret)
+	state := reflect.DeepEqual(val, elements)
+	assert.Equal(t, state, true)
 }
 
 /*
@@ -106,7 +108,7 @@ func TestCommaStringToStringMapPositive(t *testing.T) {
 
 	ret, _ := CommaStringToStringMap(element)
 	state := reflect.DeepEqual(ret, expectedResult)
-	assert.Equal(t, state, true, "Failed to convert string %s to (k,v) pair", element)
+	assert.Equal(t, state, true)
 }
 
 /*
@@ -123,8 +125,7 @@ func TestCommaStringToStringMapNegative(t *testing.T) {
 	}
 
 	state := deepCompare(element, expectedResult)
-	assert.Equal(t, state, false, "Successfully converted string %s to (k,v) pair "+
-		"which shouldn't have been!!!", element)
+	assert.Equal(t, state, false)
 
 	// case 2
 	element = "pod=portworx,cluster/k8s"
@@ -134,9 +135,7 @@ func TestCommaStringToStringMapNegative(t *testing.T) {
 	}
 
 	state = deepCompare(element, expectedResult)
-	assert.Equal(t, state, false, "Successfully converted string %s to (k,v) pair "+
-		"which shouldn't have been!!!", element)
-
+	assert.Equal(t, state, false)
 }
 
 /*
