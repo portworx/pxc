@@ -24,27 +24,32 @@ import (
 )
 
 var (
-	dvReq = &api.SdkVolumeDeleteRequest{}
+	ccReq = &api.SdkVolumeCloneRequest{}
 )
 
-// deleteVolumeCmd represents the deleteVolume command
-var deleteVolumeCmd = &cobra.Command{
-	Use:   "volume",
-	Short: "Delete a volume in Portworx",
+// createCloneCmd represents the createClone command
+var createCloneCmd = &cobra.Command{
+	Use:   "clone",
+	Short: "Create a volume clone",
+	Long: `Create a clone for the specified volume.
+Example: px create clone --name myclone --volume myvol'
+This creates a clone named myclone for the specified volume myvol.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return deleteVolumeExec(cmd, args)
+		return createCloneExec(cmd, args)
 	},
 }
 
 func init() {
-	deleteCmd.AddCommand(deleteVolumeCmd)
-	deleteVolumeCmd.Flags().StringVar(&dvReq.VolumeId, "name", "", "Name/Id of volume (required)")
-	deleteVolumeCmd.Flags().SortFlags = false
+	createCmd.AddCommand(createCloneCmd)
+
+	createCloneCmd.Flags().StringVar(&ccReq.Name, "name", "", "Name of clone to be created (required)")
+	createCloneCmd.Flags().StringVar(&ccReq.ParentId, "volume", "", "Name or id of volume (required)")
+	createCloneCmd.Flags().SortFlags = false
 
 	// TODO bring the flags from rootCmd
 }
 
-func deleteVolumeExec(cmd *cobra.Command, args []string) error {
+func createCloneExec(cmd *cobra.Command, args []string) error {
 	ctx, conn, err := portworx.PxConnectCurrent(GetConfigFile())
 	if err != nil {
 		return err
@@ -53,24 +58,24 @@ func deleteVolumeExec(cmd *cobra.Command, args []string) error {
 
 	// Send request
 	volumes := api.NewOpenStorageVolumeClient(conn)
-	_, err = volumes.Delete(ctx, dvReq)
+	resp, err := volumes.Clone(ctx, ccReq)
 	if err != nil {
-		return util.PxErrorMessage(err, "Failed to delete volume")
+		return util.PxErrorMessage(err, "Failed to create clone")
 	}
 
-	msg := fmt.Sprintf("Volume %s deleted", dvReq.GetVolumeId())
+	msg := fmt.Sprintf("Clone of %s created with id %s",
+		ccReq.GetParentId(),
+		resp.GetVolumeId())
 
 	output, _ := cmd.Flags().GetString("output")
-
 	formattedOut := &util.DefaultFormatOutput{
 		BaseFormatOutput: util.BaseFormatOutput{
 			FormatType: output,
 		},
-		Cmd:  "delete volume",
+		Cmd:  "create clone",
 		Desc: msg,
-		Id:   []string{dvReq.GetVolumeId()},
+		Id:   []string{resp.GetVolumeId()},
 	}
 	formattedOut.Print()
-
 	return nil
 }

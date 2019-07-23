@@ -24,7 +24,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/cheynewallace/tabby"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var (
@@ -46,24 +46,34 @@ func Eprintf(format string, args ...interface{}) {
 	fmt.Fprintf(Stderr, format, args...)
 }
 
-// PrintYaml prints the object to yaml to Stdout
-func PrintYaml(obj interface{}) {
+// ToYaml returns the yaml representation of obj
+func ToYaml(obj interface{}) string {
 	bytes, err := yaml.Marshal(obj)
 	if err != nil {
 		Eprintf("Unable to create yaml output")
-		return
+		return ""
 	}
-	Printf(string(bytes))
+	return string(bytes)
+}
+
+// PrintYaml prints the object to yaml to Stdout
+func PrintYaml(obj interface{}) {
+	Printf(ToYaml(obj))
+}
+
+// ToJson returns the json representation of obj
+func ToJson(obj interface{}) string {
+	bytes, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		Eprintf("Unable to create json output")
+		return ""
+	}
+	return string(bytes)
 }
 
 // PrintJson prints the object to json to Stdout
 func PrintJson(obj interface{}) {
-	bytes, err := json.MarshalIndent(obj, "", "  ")
-	if err != nil {
-		Eprintf("Unable to create json output")
-		return
-	}
-	Printf(string(bytes))
+	Printf(ToJson(obj))
 }
 
 // NewTabby is used to return a tabbing object set to the

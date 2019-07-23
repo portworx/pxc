@@ -109,3 +109,17 @@ func testCreateSnapshot(t *testing.T, volId string, snapName string) string {
 	// The last item in the message is the id
 	return words[len(words)-1]
 }
+
+// Takes a volume name and clone name. Returns the created clone's volume id.
+// For some reason our test container only recoganizes id and not name for some calls.
+func testCreateClone(t *testing.T, volId string, cloneName string) string {
+	cli := "px create clone --name " + cloneName + " --volume " + volId
+	lines := executeCli(cli)
+	assert.Equal(t, 2, len(lines), "Output does not match")
+	assert.Contains(t, lines[0], "Clone of "+volId+" created with id", "expected message not received")
+	fmt.Println(lines[0])
+	words := strings.Split(lines[0], " ")
+	assert.Equal(t, len(words), 7, "expected message not received")
+	// The last item in the message is the id
+	return words[len(words)-1]
+}
