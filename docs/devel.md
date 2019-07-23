@@ -4,6 +4,8 @@ This page describes how to develop software for `px`.
 # Overview
 The goal of `px` is to provide a tool for users to use from their client machine like `kubectl` and `nomad`. `px` is based on the `kubectl` style of commands lowering the rampup to learn this tool.
 
+Keep in mind that `px` will also be used as a plugin to `kubectl`. Therefore commands like `kubectl px get volumes` and `kubectl px get pvc` must be clear to the user.
+
 # Commands
 There are two style of commands: Local and remote commands.
 
@@ -32,5 +34,14 @@ We may have a future enhancement to do something like `px create -f <file.yml>` 
 
 #### `px describe <object> <name/id> <options...>`
 `px describe` with options can be used to output to json or yaml. If no option is provided, then the command shall print to the screen information about the object in simple format, not necessarily table format, as done in `kubectl describe...`
+
+## Local commands
+Local commands act on the local system and may also interact with the server. Here are some example local commands:
+
+* `px context`: Manages local context file
+* `px cp <file> <volume:/path.../file>`: A possible `cp` command to move a local file to the volume
+
+# Plugins
+TBD
 
 
