@@ -6,8 +6,18 @@ The goal of `px` is to provide a tool for users to use from their client machine
 
 Keep in mind that `px` will also be used as a plugin to `kubectl`. Therefore commands like `kubectl px get volumes` and `kubectl px get pvc` must be clear to the user.
 
+# Vendoring
+Try to not vendor anything from `github.com/libopenstorage/openstorage`. `px` is an OpenStorage SDK application independent of openstorage packages. If you need a package from openstorage, check to see if you can just copy it to the `pkg/` directory.
+
 # Commands
 There are two style of commands: Local and remote commands.
+
+## Adding a command
+
+* Install [cobra](https://github.com/spf13/cobra#installing)
+* Type: `cobra add <verb>` to add a root command
+
+* Adding a subcommand: `cobra add <verbName> -p <parent>Cmd` for example: `cobra add getPv -p getCmd`
 
 ## Remote Commands
 Remote commands behave much the same way as the commands from `kubectl`.
