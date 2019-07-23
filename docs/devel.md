@@ -27,13 +27,16 @@ If name of objects are passed to the command, then the list must only show those
 We may have a future enhancement to do something like `px create -f <file.yml>` where the file may have many objects, but that will be done after 1.0.
 
 ### px delete
-`px delete` is used to delete an object on Portworx. For example `px delete snapshot <name>` deletes a snapshot at the server. Output must be a single line of just a `Deleted <object> <name> successfully`.
+`px delete` is used to delete an object on Portworx. For example `px delete snapshot <name>` deletes a snapshot at the server. Output must be a single line of `Deleted <object> <name> successfully`.
 
 ### px describe
 `px describe` is used to show information about an object on Portworx. For example `px describe volume <name>` will display volume information.
 
 #### `px describe <object> <name/id> <options...>`
 `px describe` with options can be used to output to json or yaml. If no option is provided, then the command shall print to the screen information about the object in simple format, not necessarily table format, as done in `kubectl describe...`
+
+### px patch (update alias)
+`px patch` is used to update an object in the server as done in `kubectl`. For example `px patch volume <name> --size=234` would resize the volume. Output must be a single line of `Updated <object> <name> successfully`.
 
 ## Local commands
 Local commands act on the local system and may also interact with the server. Here are some example local commands:
