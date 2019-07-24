@@ -23,8 +23,6 @@ const (
 )
 
 // FormatOutput is the interface used to ensure proper formatting
-// json and yaml does not need methods since the ToYaml() and ToJson()
-// functions are used to format these objects.
 type FormatOutput interface {
 	// SetFormat takes in as input the type of Formatting needed.
 	// Currently recoganized values are "wide", "json" and "yaml".
@@ -41,6 +39,12 @@ type FormatOutput interface {
 	// WideFormat formats the object in the "wide" format
 	WideFormat() string
 
+	// YamlFormat formats the object in the "yaml" format
+	YamlFormat() string
+
+	// JsonFormat formats the object in the "json" format
+	JsonFormat() string
+
 	// Print writes out the object in appropriate format
 	Print()
 }
@@ -48,11 +52,11 @@ type FormatOutput interface {
 // GetFormattedOutput returns the formatted output
 func GetFormattedOutput(in FormatOutput) string {
 	switch in.GetFormat() {
-	case "yaml":
-		return ToYaml(in)
-	case "json":
-		return ToJson(in)
-	case "wide":
+	case FORMAT_YAML:
+		return in.YamlFormat()
+	case FORMAT_JSON:
+		return in.JsonFormat()
+	case FORMAT_WIDE:
 		return in.WideFormat()
 	default:
 		return in.DefaultFormat()
@@ -82,6 +86,16 @@ func (bfo *BaseFormatOutput) DefaultFormat() string {
 
 // WideFormat just returns the DefaultFormat
 func (bfo *BaseFormatOutput) WideFormat() string {
+	return ""
+}
+
+// JsonFormat just returns the DefaultFormat
+func (bfo *BaseFormatOutput) JsonFormat() string {
+	return ""
+}
+
+// YamlFormat just returns the YamlFormat
+func (bfo *BaseFormatOutput) YamlFormat() string {
 	return ""
 }
 

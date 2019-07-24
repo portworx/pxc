@@ -119,3 +119,19 @@ func testCreateClone(t *testing.T, volId string, cloneName string) string {
 	// The last item in the message is the id
 	return words[len(words)-1]
 }
+
+// Takes a list of volumes and returns a array of string, one volume description per string
+func testDescribeVolumes(t *testing.T, volNames []string) []string {
+	cli := "px describe volume"
+	for _, v := range volNames {
+		cli = fmt.Sprintf("%v %v", cli, v)
+	}
+	lines := executeCli(cli)
+	l := strings.Join(lines, "\n")
+	vols := strings.Split(l, "\n\n")
+	// There will be an empty last one in addition to the 3 volumes due to all
+	// of the split and join and again split
+	assert.Equal(t, len(vols), 4, "Num vols not matching")
+	// Remove the last one as it is spurious
+	return vols[0:3]
+}

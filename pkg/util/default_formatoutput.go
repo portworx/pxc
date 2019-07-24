@@ -23,14 +23,24 @@ type DefaultFormatOutput struct {
 	Id               []string `json:"id,omitempty" yaml:"id,omitempty"`
 }
 
-// DefaultFormat just returns the Desc
+// DefaultFormat returns the Desc
 func (dfo *DefaultFormatOutput) DefaultFormat() string {
 	return dfo.Desc
 }
 
-// WideFormat just returns the DefaultFormat
+// WideFormat returns the DefaultFormat
 func (dfo *DefaultFormatOutput) WideFormat() string {
 	return dfo.DefaultFormat()
+}
+
+// JsonFormat returns the object in json format
+func (dfo *DefaultFormatOutput) JsonFormat() string {
+	return ToJson(dfo)
+}
+
+// YamlFormat returns the object in yaml format
+func (dfo *DefaultFormatOutput) YamlFormat() string {
+	return ToYaml(dfo)
 }
 
 // String returns the formatted output of the object as per the format set.
