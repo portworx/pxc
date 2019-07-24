@@ -33,10 +33,14 @@
   version = "kubernetes-1.14.3"
 
 [[override]]
+	name = "golang.org/x/net"
+	branch = "master"
+
+[[override]]
   name = "k8s.io/api"
   version = "kubernetes-1.14.3"
 
-[[constraint]]
+[[override]]
   name = "github.com/grpc-ecosystem/go-grpc-middleware"
   version = "1.0.0"
 
