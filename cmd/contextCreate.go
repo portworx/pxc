@@ -87,8 +87,11 @@ func contextCreateExec(cmd *cobra.Command, args []string) error {
 		c.TlsData.Cacert = string(data)
 	}
 
-	config := contextconfig.NewConfigReference(cfgFile)
-	if err := config.Add(c); err != nil {
+	contextManager, err := contextconfig.NewContextManager(cfgFile)
+	if err != nil {
+		return err
+	}
+	if err := contextManager.Add(c); err != nil {
 		return err
 	}
 

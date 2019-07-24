@@ -18,6 +18,14 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:76dc72490af7174349349838f2fe118996381b31ea83243812a97e5a0fd5ed55"
+  name = "github.com/dgrijalva/jwt-go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
+
+[[projects]]
   digest = "1:4d02824a56d268f74a6b6fdd944b20b58a77c3d70e81008b3ee0c4f1a6777340"
   name = "github.com/gogo/protobuf"
   packages = [
@@ -203,7 +211,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2f357867bf425774d35beca5be718402a4488b8b23b1563ce8c5bb91d09285a7"
+  digest = "1:eae689808191546269bf951e1e66e0b6bc468be58a0498c0f037feeef2c67bab"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -216,7 +224,7 @@
     "trace",
   ]
   pruneopts = "UT"
-  revision = "3b0461eec859c4b73bb64fdc8285971fd33e3938"
+  revision = "ca1201d0de80cfde86cb01aea620983605dfe99b"
 
 [[projects]]
   branch = "master"
@@ -300,7 +308,7 @@
     "protobuf/field_mask",
   ]
   pruneopts = "UT"
-  revision = "6af8c5fc6601ab6b41cd32742a65ce2f5bd9db57"
+  revision = "c506a9f9061087022822e8da603a52fc387115a8"
 
 [[projects]]
   digest = "1:e8800ddadd6bce3bc0c5ffd7bc55dbdddc6e750956c10cc10271cade542fccbe"
@@ -545,6 +553,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/cheynewallace/tabby",
+    "github.com/dgrijalva/jwt-go",
     "github.com/grpc-ecosystem/go-grpc-middleware/util/metautils",
     "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang",
     "github.com/mitchellh/go-homedir",
@@ -560,6 +569,7 @@
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/tools/clientcmd",
+    "k8s.io/client-go/tools/clientcmd/api",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

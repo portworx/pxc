@@ -64,18 +64,16 @@ func init() {
 	createClusterpairCmd.Flags().StringVarP(&ccpOpts.mode, "mode", "m", "", "Pairing mode to use (optional)")
 	createClusterpairCmd.Flags().BoolVarP(&ccpOpts.req.SetDefault, "set-default", "", false, "Set this as the default cluster pair (optional)")
 	createClusterpairCmd.Flags().SortFlags = false
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// createClusterpairCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// createClusterpairCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func createClusterpairExec(cmd *cobra.Command, args []string) error {
+	contextManager, err := contextconfig.NewContextManager(GetConfigFile())
+	if err != nil {
+		return util.PxErrorMessagef(err, "Failed to load context configuration at path %s", GetConfigFile())
+	}
+
 	// Get connection info for destination cluster and remote cluster pair request
-	destContext, err := contextconfig.NewConfigReference(GetConfigFile()).GetNamedContext(ccpOpts.destination)
+	destContext, err := contextManager.GetNamedContext(ccpOpts.destination)
 	if err != nil {
 		return util.PxErrorMessage(err, "Failed to get destination context")
 	}
