@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -45,7 +44,7 @@ func init() {
 }
 
 func deleteVolumeExec(cmd *cobra.Command, args []string) error {
-	ctx, conn, err := portworx.PxConnectCurrent(GetConfigFile())
+	ctx, conn, err := PxConnectDefault()
 	if err != nil {
 		return err
 	}
