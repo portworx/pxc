@@ -60,6 +60,13 @@ type ContextManager struct {
 	cfg  *ContextConfig
 }
 
+// New returns an empty, unloaded context manager
+func New(configFile string) *ContextManager {
+	return &ContextManager{
+		path: configFile,
+	}
+}
+
 // GetContextManager loads an in memory reference of the Context Configuration file from disk.
 // This reference is the primary object to use when managing the user's context configuration.
 func NewContextManager(configFile string) (*ContextManager, error) {
@@ -82,6 +89,11 @@ func NewContextManager(configFile string) (*ContextManager, error) {
 // Add inserts a given clientContext into cm.cfg.Configurations, and
 // saves the context.
 func (cm *ContextManager) Add(clientContext *ClientContext) error {
+	if cm.cfg == nil {
+		cm.cfg = new(ContextConfig)
+		cm.cfg.Configurations = make([]ClientContext, 0)
+	}
+
 	if cm.cfg.Current == "" {
 		cm.cfg.Current = clientContext.Name
 	}

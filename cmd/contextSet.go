@@ -19,33 +19,32 @@ import (
 	"fmt"
 
 	"github.com/portworx/px/pkg/contextconfig"
+	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
 )
 
 // setCurrentContextCmd represents the setCurrentContext command
 var contextSetCmd = &cobra.Command{
-	Use:   "set",
-	Short: "Set the current context configuration",
-	Long:  ``,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return contextSetExec(cmd, args)
+	Use:     "set [NAME]",
+	Aliases: []string{"use"},
+	Example: "$ px context set mynewcontext",
+	Short:   "Set the current context configuration",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return fmt.Errorf("Must supply a name for context")
+		}
+		return nil
 	},
+	Long: ``,
+	RunE: contextSetExec,
 }
 
 func init() {
 	contextCmd.AddCommand(contextSetCmd)
-	contextSetCmd.Flags().String("name", "", "Name of current context to set")
 }
 
 func contextSetExec(cmd *cobra.Command, args []string) error {
-	var name string
-
-	if s, _ := cmd.Flags().GetString("name"); len(s) != 0 {
-		name = s
-	} else {
-		return fmt.Errorf("Must supply a name for the context")
-	}
-
+	name := args[0]
 	contextManager, err := contextconfig.NewContextManager(GetConfigFile())
 	if err != nil {
 		return err
@@ -54,6 +53,8 @@ func contextSetExec(cmd *cobra.Command, args []string) error {
 	if err := contextManager.SetCurrent(name); err != nil {
 		return err
 	}
+
+	util.Printf("%s is now the current context", name)
 
 	return nil
 }

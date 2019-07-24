@@ -22,30 +22,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	ccReq = &api.SdkVolumeCloneRequest{}
-)
-
 // createCloneCmd represents the createClone command
 var createCloneCmd = &cobra.Command{
-	Use:   "clone",
-	Short: "Create a volume clone",
-	Long: `Create a clone for the specified volume.
-Example: px create clone --name myclone --volume myvol'
-This creates a clone named myclone for the specified volume myvol.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return createCloneExec(cmd, args)
+	Use:   "volumeclone [VOLUME] [NAME]",
+	Short: "Creates a new volume from a volume or snapshot",
+	Long:  `Create a clone for the specified volume`,
+	Example: `$ px create volumeclone oldvolume newvolume
+This creates a new volume called 'newvolume' from an existing volume called 'oldvolume'`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 2 {
+			return fmt.Errorf("Must supply the volume to clone and a new name for the clone")
+		}
+		return nil
 	},
+	RunE: createCloneExec,
 }
 
 func init() {
 	createCmd.AddCommand(createCloneCmd)
-
-	createCloneCmd.Flags().StringVar(&ccReq.Name, "name", "", "Name of clone to be created (required)")
-	createCloneCmd.Flags().StringVar(&ccReq.ParentId, "volume", "", "Name or id of volume (required)")
-	createCloneCmd.Flags().SortFlags = false
-
-	// TODO bring the flags from rootCmd
 }
 
 func createCloneExec(cmd *cobra.Command, args []string) error {
@@ -54,6 +48,14 @@ func createCloneExec(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer conn.Close()
+
+	// Get args
+	volume := args[0]
+	name := args[1]
+	ccReq := &api.SdkVolumeCloneRequest{
+		Name:     name,
+		ParentId: volume,
+	}
 
 	// Send request
 	volumes := api.NewOpenStorageVolumeClient(conn)

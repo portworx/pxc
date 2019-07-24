@@ -27,21 +27,25 @@ import (
 
 // contextCreateCmd represents the contextCreate command
 var contextCreateCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create a context",
+	Use:     "create [NAME]",
+	Short:   "Create a context",
+	Example: "$ px context create mycluster --endpoint=123.456.1.10:9020",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return fmt.Errorf("Must supply a name for context")
+		}
+		return nil
+	},
 	Long: `A context is the information needed to connect to
 Portworx and any other system. This information will be saved
 to a file called config.yml in a directory called .px under
 your home directory.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return contextCreateExec(cmd, args)
-	},
+	RunE: contextCreateExec,
 }
 
 func init() {
 	contextCmd.AddCommand(contextCreateCmd)
 
-	contextCreateCmd.Flags().String("name", "", "User provided name for the context")
 	contextCreateCmd.Flags().String("token", "", "Token for use in this context")
 	contextCreateCmd.Flags().String("endpoint", "", "Portworx service endpoint. Ex. 127.0.0.1:9020")
 	contextCreateCmd.Flags().Bool("secure", false, "Use secure connection")
@@ -52,13 +56,23 @@ func init() {
 func contextCreateExec(cmd *cobra.Command, args []string) error {
 
 	c := new(contextconfig.ClientContext)
+	c.Name = args[0]
 
-	// Required
-	if s, _ := cmd.Flags().GetString("name"); len(s) != 0 {
-		c.Name = s
+	// Check if this an update
+	update := false
+	contextManager, err := contextconfig.NewContextManager(cfgFile)
+	if err == nil {
+		// Check if we need to update a context
+		existingContext, err := contextManager.GetNamedContext(c.Name)
+		if err == nil {
+			update = true
+			c = existingContext
+		}
 	} else {
-		return fmt.Errorf("Must supply a name for the context")
+		contextManager = contextconfig.New(cfgFile)
 	}
+
+	// Update endpoint
 	if s, _ := cmd.Flags().GetString("endpoint"); len(s) != 0 {
 		// TODO: If no port is provided, assume 9020
 		c.Endpoint = s
@@ -87,15 +101,15 @@ func contextCreateExec(cmd *cobra.Command, args []string) error {
 		c.TlsData.Cacert = string(data)
 	}
 
-	contextManager, err := contextconfig.NewContextManager(cfgFile)
-	if err != nil {
-		return err
-	}
-	if err := contextManager.Add(c); err != nil {
+	if err = contextManager.Add(c); err != nil {
 		return err
 	}
 
-	util.Printf("New context saved to %s\n", cfgFile)
+	if update {
+		util.Printf("Updated context %s in %s\n", c.Name, cfgFile)
+	} else {
+		util.Printf("New context %s saved to %s\n", c.Name, cfgFile)
+	}
 
 	return nil
 }

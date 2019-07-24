@@ -21,34 +21,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// contextGetCmd represents the contextGet command
-var contextListCmd = &cobra.Command{
-	Use:     "list",
-	Aliases: []string{"contexts", "ctx"},
-	Short:   "List all context configurations",
-	Long: `List all context configurations
-px get context`,
-	RunE: contextListExec,
+// contextCurrentCmd represents the contextCurrent command
+var contextCurrentCmd = &cobra.Command{
+	Use:     "current",
+	Aliases: []string{"show", "current-context"},
+	Short:   "Show current context name",
+	RunE:    contextCurrentExec,
 }
 
 func init() {
-	contextCmd.AddCommand(contextListCmd)
+	contextCmd.AddCommand(contextCurrentCmd)
 }
 
-func contextListExec(cmd *cobra.Command, args []string) error {
+func contextCurrentExec(cmd *cobra.Command, args []string) error {
 	contextManager, err := contextconfig.NewContextManager(GetConfigFile())
 	if err != nil {
 		return util.PxErrorMessagef(err, "Failed to get context configuration at location %s",
 			GetConfigFile())
 	}
-	cfg := contextManager.GetAll()
-
-	// add extra information
-	cfg = contextconfig.AddClaimsInfo(cfg)
-	cfg = contextconfig.MarkInvalidTokens(cfg)
-
-	// Print out config
-	util.PrintYaml(cfg)
-
+	pxctx, err := contextManager.GetCurrent()
+	if err != nil {
+		return err
+	}
+	util.Printf("%s\n", pxctx.Name)
 	return nil
 }

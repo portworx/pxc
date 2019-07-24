@@ -22,25 +22,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	dvReq = &api.SdkVolumeDeleteRequest{}
-)
-
 // deleteVolumeCmd represents the deleteVolume command
 var deleteVolumeCmd = &cobra.Command{
-	Use:   "volume",
-	Short: "Delete a volume in Portworx",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return deleteVolumeExec(cmd, args)
+	Use:     "volume [NAME]",
+	Short:   "Delete a volume in Portworx",
+	Example: "$ px delete volume myvolume",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return fmt.Errorf("Must supply a volume name")
+		}
+		return nil
 	},
+	RunE: deleteVolumeExec,
 }
 
 func init() {
 	deleteCmd.AddCommand(deleteVolumeCmd)
-	deleteVolumeCmd.Flags().StringVar(&dvReq.VolumeId, "name", "", "Name/Id of volume (required)")
-	deleteVolumeCmd.Flags().SortFlags = false
-
-	// TODO bring the flags from rootCmd
 }
 
 func deleteVolumeExec(cmd *cobra.Command, args []string) error {
@@ -52,12 +49,15 @@ func deleteVolumeExec(cmd *cobra.Command, args []string) error {
 
 	// Send request
 	volumes := api.NewOpenStorageVolumeClient(conn)
-	_, err = volumes.Delete(ctx, dvReq)
+	name := args[0]
+	_, err = volumes.Delete(ctx, &api.SdkVolumeDeleteRequest{
+		VolumeId: name,
+	})
 	if err != nil {
 		return util.PxErrorMessage(err, "Failed to delete volume")
 	}
 
-	msg := fmt.Sprintf("Volume %s deleted", dvReq.GetVolumeId())
+	msg := fmt.Sprintf("Volume %s deleted", name)
 
 	output, _ := cmd.Flags().GetString("output")
 
@@ -67,7 +67,7 @@ func deleteVolumeExec(cmd *cobra.Command, args []string) error {
 		},
 		Cmd:  "delete volume",
 		Desc: msg,
-		Id:   []string{dvReq.GetVolumeId()},
+		Id:   []string{name},
 	}
 	formattedOut.Print()
 

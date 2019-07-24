@@ -35,25 +35,23 @@ var (
 
 // createSnapshotCmd represents the createSnapshot command
 var createSnapshotCmd = &cobra.Command{
-	Use:   "snapshot",
+	Use:   "volumesnapshot [VOLUME] [NAME]",
 	Short: "Create a volume snapshot",
-	Long: `Create a snapshot for the specified volume.
-Example: px create snapshot --name mysnap --labels 'color=blue,fabric=wool --volume myvol'
+	Long:  `Create a snapshot for the specified volume`,
+	Example: `$ px create volumesnapshot mysnap --labels color=blue,fabric=wool --volume myvol
 This creates a snapshot named mysnap for the specified volume myvol.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return createSnapshotExec(cmd, args)
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 2 {
+			return fmt.Errorf("Must supply the volume to snap and a new name for the snapshot")
+		}
+		return nil
 	},
+	RunE: createSnapshotExec,
 }
 
 func init() {
 	createCmd.AddCommand(createSnapshotCmd)
-
-	createSnapshotCmd.Flags().StringVar(&csOpts.req.Name, "name", "", "Name of snapshot to be created (required)")
-	createSnapshotCmd.Flags().StringVar(&csOpts.req.VolumeId, "volume", "", "Name or id of volume (required)")
 	createSnapshotCmd.Flags().StringVar(&csOpts.labelsAsString, "labels", "", "Comma separated list of labels as key-value pairs: 'k1=v1,k2=v2'")
-	createSnapshotCmd.Flags().SortFlags = false
-
-	// TODO bring the flags from rootCmd
 }
 
 func createSnapshotExec(cmd *cobra.Command, args []string) error {
@@ -62,6 +60,10 @@ func createSnapshotExec(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer conn.Close()
+
+	// Get name
+	csOpts.req.VolumeId = args[0]
+	csOpts.req.Name = args[1]
 
 	// Get labels
 	if len(csOpts.labelsAsString) != 0 {

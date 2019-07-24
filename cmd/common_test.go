@@ -40,7 +40,7 @@ func executeCli(cli string) []string {
 // Takes a volume name and size. Returns the created volume id.
 // For some reason our test container only recoganizes id and not name for some calls.
 func testCreateVolume(t *testing.T, volName string, size uint64) string {
-	cli := "px create volume --name " + volName + " --size " + strconv.FormatUint(size, 10)
+	cli := "px create volume " + volName + " --size " + strconv.FormatUint(size, 10)
 	lines := executeCli(cli)
 	assert.Equal(t, 2, len(lines), "Output does not match")
 	assert.Contains(t, lines[0], "Volume "+volName+" created with id", "expected message not received")
@@ -91,7 +91,7 @@ func testGetAllVolumes(t *testing.T) ([]string, []string) {
 
 // Deletes specified volume
 func testDeleteVolume(t *testing.T, volName string) {
-	cli := "px delete volume --name " + volName
+	cli := "px delete volume " + volName
 	lines := executeCli(cli)
 	fmt.Println(len(lines), lines)
 }
@@ -99,7 +99,7 @@ func testDeleteVolume(t *testing.T, volName string) {
 // Takes a volume name and snapshot name. Returns the created snapshot's volume id.
 // For some reason our test container only recoganizes id and not name for some calls.
 func testCreateSnapshot(t *testing.T, volId string, snapName string) string {
-	cli := "px create snapshot --name " + snapName + " --volume " + volId
+	cli := fmt.Sprintf("px create volumesnapshot %s %s", volId, snapName)
 	lines := executeCli(cli)
 	assert.Equal(t, 2, len(lines), "Output does not match")
 	assert.Contains(t, lines[0], "Snapshot of "+volId+" created with id", "expected message not received")
@@ -113,7 +113,7 @@ func testCreateSnapshot(t *testing.T, volId string, snapName string) string {
 // Takes a volume name and clone name. Returns the created clone's volume id.
 // For some reason our test container only recoganizes id and not name for some calls.
 func testCreateClone(t *testing.T, volId string, cloneName string) string {
-	cli := "px create clone --name " + cloneName + " --volume " + volId
+	cli := fmt.Sprintf("px create volumeclone %s %s", volId, cloneName)
 	lines := executeCli(cli)
 	assert.Equal(t, 2, len(lines), "Output does not match")
 	assert.Contains(t, lines[0], "Clone of "+volId+" created with id", "expected message not received")
