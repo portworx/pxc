@@ -31,7 +31,11 @@ import (
 // The context will not have a timeout set, that should be setup by the caller
 // of the gRPC call.
 func PxConnectCurrent(cfgFile string) (context.Context, *grpc.ClientConn, error) {
-	pxctx, err := contextconfig.NewConfigReference(cfgFile).GetCurrent()
+	contextManager, err := contextconfig.NewContextManager(cfgFile)
+	if err != nil {
+		return nil, nil, err
+	}
+	pxctx, err := contextManager.GetCurrent()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -51,10 +55,15 @@ func PxConnectCurrent(cfgFile string) (context.Context, *grpc.ClientConn, error)
 // The context will not have a timeout set, that should be setup by the caller
 // of the gRPC call.
 func PxConnectNamed(cfgFile string, name string) (context.Context, *grpc.ClientConn, error) {
-	pxctx, err := contextconfig.NewConfigReference(cfgFile).GetNamedContext(name)
+	contextManager, err := contextconfig.NewContextManager(cfgFile)
 	if err != nil {
 		return nil, nil, err
 	}
+	pxctx, err := contextManager.GetCurrent()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	conn, err := pxgrpc.Connect(pxctx.Endpoint, []grpc.DialOption{grpc.WithInsecure()})
 	if err != nil {
 		return nil, nil, err

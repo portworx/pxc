@@ -37,10 +37,14 @@ func KubeConnect(cfgFile, context string) (clientcmd.ClientConfig, *kubernetes.C
 		err        error
 	)
 
+	contextManager, err := contextconfig.NewContextManager(cfgFile)
+	if err != nil {
+		return nil, nil, err
+	}
 	if len(context) == 0 {
-		pxctx, err = contextconfig.NewConfigReference(cfgFile).GetCurrent()
+		pxctx, err = contextManager.GetCurrent()
 	} else {
-		pxctx, err = contextconfig.NewConfigReference(cfgFile).GetNamedContext(context)
+		pxctx, err = contextManager.GetNamedContext(context)
 	}
 	if err != nil {
 		return nil, nil, err

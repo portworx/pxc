@@ -54,167 +54,199 @@ type ContextConfig struct {
 	Configurations []ClientContext `json:"configurations" yaml:"configurations"`
 }
 
-// ConfigReference is a reference to a ContextConfig and the path associated with it
-type ConfigReference struct {
+// ContextManager is a reference to a ContextConfig and the path associated with it
+type ContextManager struct {
 	path string
 	cfg  *ContextConfig
 }
 
-// NewContextConfig
-func NewConfigReference(configFile string) *ConfigReference {
-	return &ConfigReference{
+// GetContextManager loads an in memory reference of the Context Configuration file from disk.
+// This reference is the primary object to use when managing the user's context configuration.
+func NewContextManager(configFile string) (*ContextManager, error) {
+	if configFile == "" {
+		return nil, fmt.Errorf("Invalid configuration file path. Path must be non-empty.")
+	}
+
+	cm := &ContextManager{
 		path: configFile,
 	}
-}
 
-// TODO: Return error if exists already
-// TODO: Add Update support
-func (cr *ConfigReference) Add(cctx *ClientContext) error {
-	var ctx *ContextConfig
-
-	ctx, _ = cr.loadContext()
-	if ctx == nil {
-		ctx = new(ContextConfig)
-		ctx.Configurations = []ClientContext{*cctx}
-		ctx.Current = cctx.Name
-	} else {
-		ctx.Configurations = append(ctx.Configurations, *cctx)
+	err := cm.loadContext()
+	if err != nil {
+		return cm, err
 	}
 
-	return cr.saveContext(ctx)
+	return cm, nil
 }
 
-func (cr *ConfigReference) GetCurrent() (*ClientContext, error) {
-	ctx, err := cr.loadContext()
-	if err != nil {
+// Add inserts a given clientContext into cm.cfg.Configurations, and
+// saves the context.
+func (cm *ContextManager) Add(clientContext *ClientContext) error {
+	if cm.cfg.Current == "" {
+		cm.cfg.Current = clientContext.Name
+	}
+
+	// Check for existing configuration. If one exists,
+	// update it. Otherwise, we will append a new configuration.
+	for i := range cm.cfg.Configurations {
+		if cm.cfg.Configurations[i].Name == clientContext.Name {
+			cm.cfg.Configurations[i] = *clientContext
+			return cm.saveContext()
+		}
+	}
+
+	cm.cfg.Configurations = append(cm.cfg.Configurations, *clientContext)
+	return cm.saveContext()
+}
+
+func (cm *ContextManager) GetCurrent() (*ClientContext, error) {
+	if err := cm.loadContext(); err != nil {
 		return nil, err
 	}
 
-	if len(ctx.Configurations) == 0 {
-		return nil, fmt.Errorf("No configurations found in %s", cr.path)
+	if len(cm.cfg.Configurations) == 0 {
+		return nil, fmt.Errorf("No configurations found in %s", cm.path)
 	}
 
-	if len(ctx.Current) == 0 {
-		return &ctx.Configurations[0], nil
+	if len(cm.cfg.Current) == 0 {
+		return &cm.cfg.Configurations[0], nil
 	}
 
-	for _, cctx := range ctx.Configurations {
-		if cctx.Name == ctx.Current {
+	for _, cctx := range cm.cfg.Configurations {
+		if cctx.Name == cm.cfg.Current {
 			return &cctx, nil
 		}
 	}
 
 	return nil, fmt.Errorf("Default context %s not found in %s",
-		ctx.Current,
-		cr.path)
+		cm.cfg.Current,
+		cm.path)
 }
 
 // TODO have GetNamedContext and GetCurrent() call a common helper function
-func (cr *ConfigReference) GetNamedContext(name string) (*ClientContext, error) {
-	ctx, err := cr.loadContext()
-	if err != nil {
+func (cm *ContextManager) GetNamedContext(name string) (*ClientContext, error) {
+	if err := cm.loadContext(); err != nil {
 		return nil, err
 	}
 
-	if len(ctx.Configurations) == 0 {
-		return nil, fmt.Errorf("No configurations found in %s", cr.path)
+	if len(cm.cfg.Configurations) == 0 {
+		return nil, fmt.Errorf("No configurations found in %s", cm.path)
 	}
 
-	for _, cctx := range ctx.Configurations {
+	for _, cctx := range cm.cfg.Configurations {
 		if cctx.Name == name {
 			return &cctx, nil
 		}
 	}
 
 	return nil, fmt.Errorf("Context %s not found in %s",
-		ctx.Current,
-		cr.path)
+		cm.cfg.Current,
+		cm.path)
 
 }
 
-func (cr *ConfigReference) GetAll() (*ContextConfig, error) {
-	return cr.loadContext()
+// GetAll simply returns all configurations
+func (cm *ContextManager) GetAll() *ContextConfig {
+	return cm.cfg
 }
 
-// TODO:
-func (cr *ConfigReference) Remove(cctx *ClientContext) error {
-	return nil
+// contains checks if a context name exists in a given config reference.
+func (cm *ContextManager) contains(contextName string) bool {
+	for _, ccfg := range cm.cfg.Configurations {
+		if ccfg.Name == contextName {
+			return true
+		}
+	}
+
+	return false
 }
 
-func (cr *ConfigReference) Set(cctx *ClientContext) error {
-	return nil
+// Remove deletes a context from the configurations list
+func (cm *ContextManager) Remove(nameToDelete string) error {
+	removed := false
+	for i, acfg := range cm.cfg.Configurations {
+		if nameToDelete != "" && acfg.Name == nameToDelete {
+			cm.cfg.Configurations = append(cm.cfg.Configurations[:i],
+				cm.cfg.Configurations[i+1:]...)
+			if acfg.Name == cm.cfg.Current {
+				cm.cfg.Current = ""
+			}
+			removed = true
+			break
+		}
+	}
+
+	if !removed {
+		return fmt.Errorf("Context does not exist")
+	}
+
+	return cm.saveContext()
 }
 
-func (cr *ConfigReference) UnSet(cctx *ClientContext) error {
-	return nil
+func (cm *ContextManager) SetCurrent(name string) error {
+	// Unset is performed when no name is passed in.
+	if name == "" {
+		cm.cfg.Current = ""
+		return cm.saveContext()
+	}
+
+	// Otherwise, we set the context to the given name if it exist.
+	if cm.contains(name) {
+		cm.cfg.Current = name
+	} else {
+		return fmt.Errorf("Context %s does not exist", name)
+	}
+
+	return cm.saveContext()
 }
 
-// TODO: below
-// GetContext loads the context
-/*
-func GetContext(contextFile string) (*ContextConfig, error) {
-	//envToken := os.Getenv("PX_AUTH_TOKEN")
-	//envContextName := os.Getenv("PX_CONTEXT_NAME")
-
+// GetContext loads the context by name (if provided), or the current context set.
+func (cm *ContextManager) GetContext(contextName string) (*ClientContext, error) {
 	// Here we read context/auth input based on the following order
 	//
 	// Precedence for context/auth input, from highest to lowest
 	// 1. env var for token
 	// 2. env var for context
 	// 3. --context flag
-	// 4. currentcontext in PxContextCfg
+	// 4. currentcontext in cm.cfg
 
 	// Second, we handle context flag or current in contextconfig
-	/*
-		currentContext := PxContextCfg.Current
-		if contextFlag != "" {
-			currentContext = contextFlag
-		}
+	currentContext := cm.cfg.Current
+	if contextName != "" {
+		currentContext = contextName
+	}
 
-		if currentContext != "" {
-			for _, ccfg := range PxContextCfg.Configurations {
-				if ccfg.Name == currentContext {
-					return ccfg, nil
-				}
+	if currentContext != "" {
+		for _, ccfg := range cm.cfg.Configurations {
+			if ccfg.Name == currentContext {
+				return &ccfg, nil
 			}
+		}
 
-			return nil, fmt.Errorf("Context %s does not exist", currentContext)
-		}
-	if _, err := os.Stat(contextFile); err == nil {
-		c, err := loadContext(contextFile)
-		if err != nil {
-			return nil, err
-		}
-		return c, nil
+		return nil, fmt.Errorf("Context %s does not exist", currentContext)
 	}
 
 	return nil, fmt.Errorf("Context does not exist, please use 'px context create' to create one")
 }
 
-*/
-
-/*
 // UpdateCurrentContext loads the context file and sets a new
 // currentcontext name.
-func UpdateCurrentContext(contextName string) error {
-	if err := GetContext(contextName); err != nil {
-		return err
-	}
+func (cm *ContextManager) UpdateCurrentContext(contextName string) error {
 
 	// if contextName is empty, clear current name
 	if contextName == "" {
-		PxContextCfg.Current = ""
-		if err := SaveContext(PxContextCfg, PxContextFile); err != nil {
+		cm.cfg.Current = ""
+		if err := cm.saveContext(); err != nil {
 			return err
 		}
 		return nil
 	}
 
 	// only set if context name exists
-	for _, ac := range PxContextCfg.Configurations {
-		if acr.Name == contextName {
-			PxContextCfg.Current = contextName
-			if err := SaveContext(PxContextCfg, PxContextFile); err != nil {
+	for _, clientConfig := range cm.cfg.Configurations {
+		if clientConfig.Name == contextName {
+			cm.cfg.Current = contextName
+			if err := cm.saveContext(); err != nil {
 				return err
 			}
 
@@ -225,42 +257,40 @@ func UpdateCurrentContext(contextName string) error {
 	return fmt.Errorf("context %s does not exist.", contextName)
 }
 
-*/
-
-func (cr *ConfigReference) saveContext(ctx *ContextConfig) error {
-	if ctx == nil || cr.path == "" {
+// saveContext saves the currently set configuration to the given file reference location.
+func (cm *ContextManager) saveContext() error {
+	if cm.cfg == nil || cm.path == "" {
 		return fmt.Errorf("Failed to save context config data. Invalid data...")
 	}
 
-	contextYaml, err := yaml.Marshal(ctx)
+	contextYaml, err := yaml.Marshal(cm.cfg)
 	if err != nil {
 		return fmt.Errorf("Failed to create yaml parse: %v", err)
 	}
 
 	// Create the contextconfig location
-	err = os.MkdirAll(path.Dir(cr.path), 0700)
+	err = os.MkdirAll(path.Dir(cm.path), 0700)
 	if err != nil {
 		return fmt.Errorf("Failed to create context config dir: %v", err)
 	}
 
-	return ioutil.WriteFile(cr.path, contextYaml, 0600)
+	return ioutil.WriteFile(cm.path, contextYaml, 0600)
 }
 
-func (cr *ConfigReference) loadContext() (*ContextConfig, error) {
-	var contextCfg ContextConfig
-
-	if _, err := os.Stat(cr.path); err != nil {
-		return nil, fmt.Errorf("Context does not exist, please use 'px context create' to create one")
+// loadContext loads configuration data located at cm.path into cm.cfg
+func (cm *ContextManager) loadContext() error {
+	if _, err := os.Stat(cm.path); err != nil {
+		return fmt.Errorf("Context does not exist, please use 'px context create' to create one")
 	}
 
-	data, err := ioutil.ReadFile(cr.path)
+	data, err := ioutil.ReadFile(cm.path)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to load context config file, %v", err)
+		return fmt.Errorf("Failed to load context config file, %v", err)
 	}
 
-	if err := yaml.Unmarshal(data, &contextCfg); err != nil {
-		return nil, fmt.Errorf("Failed to process context config data, %v", err)
+	if err := yaml.Unmarshal(data, &cm.cfg); err != nil {
+		return fmt.Errorf("Failed to process context config data, %v", err)
 	}
 
-	return &contextCfg, err
+	return nil
 }
