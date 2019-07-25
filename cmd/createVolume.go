@@ -40,21 +40,24 @@ var (
 
 // createVolumeCmd represents the createVolume command
 var createVolumeCmd = &cobra.Command{
-	Use:   "volume",
+	Use:   "volume [NAME]",
 	Short: "Create a volume in Portworx",
 
 	// TODO:
-	Long: `TODO
-ADD EXAMPLES HERE.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return createVolumeExec(cmd, args)
+	Example: `$ px create volume myvolume --size=3
+This creates a volume called 'myvolume' of 3Gi.`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return fmt.Errorf("Must supply a name for volume")
+		}
+		return nil
 	},
+	RunE: createVolumeExec,
 }
 
 func init() {
 	createCmd.AddCommand(createVolumeCmd)
 
-	createVolumeCmd.Flags().StringVar(&cvOpts.req.Name, "name", "", "Name of volume (required)")
 	createVolumeCmd.Flags().IntVar(&cvOpts.sizeInGi, "size", 0, "Size in GiB")
 	createVolumeCmd.Flags().Int64Var(&cvOpts.req.Spec.HaLevel, "replicas", 0, "Number of replicas also called HA level [1-3]")
 	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Shared, "shared", false, "Shared volume")
@@ -72,6 +75,9 @@ func createVolumeExec(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer conn.Close()
+
+	// Get name
+	cvOpts.req.Name = args[0]
 
 	// Get labels
 	if len(cvOpts.labelsAsString) != 0 {

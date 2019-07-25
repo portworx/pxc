@@ -40,9 +40,7 @@ var createCloudmigrationCmd = &cobra.Command{
 	Use:   "cloudmigration",
 	Short: "Start a cloud migration",
 	Long:  `TODO Add long description`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return execCreateCloudmigration(cmd, args)
-	},
+	RunE:  createCloudmigrationExec,
 }
 
 func init() {
@@ -54,18 +52,9 @@ func init() {
 	createCloudmigrationCmd.Flags().StringVarP(&ccmOpts.req.ClusterId, "cluster-id", "c", "", "ID of the cluster in which volumes are to be migrated")
 	createCloudmigrationCmd.Flags().StringVarP(&ccmOpts.req.TaskId, "task-id", "t", "", "Unique name assocaiated with this migration for idempotency (optional).")
 	createCloudmigrationCmd.Flags().SortFlags = false
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// createCloudmigrationCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// createCloudmigrationCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func execCreateCloudmigration(cmd *cobra.Command, args []string) error {
+func createCloudmigrationExec(cmd *cobra.Command, args []string) error {
 	ctx, conn, err := PxConnectDefault()
 	if err != nil {
 		return err

@@ -29,9 +29,7 @@ var getNodesCmd = &cobra.Command{
 	Use:     "node",
 	Aliases: []string{"nodes"},
 	Short:   "Get Portworx node information",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return getNodesExec(cmd, args)
-	},
+	RunE:    getNodesExec,
 }
 
 func init() {

@@ -32,11 +32,10 @@ import (
 
 // getPvcCmd represents the getPvc command
 var getPvcCmd = &cobra.Command{
-	Use:   "pvc",
-	Short: "Show Portworx volume information for Kuberntes PVCs",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return getPvcExec(cmd, args)
-	},
+	Use:     "pvc",
+	Aliases: []string{"pvcs"},
+	Short:   "Show Portworx volume information for Kuberntes PVCs",
+	RunE:    getPvcExec,
 }
 
 func init() {

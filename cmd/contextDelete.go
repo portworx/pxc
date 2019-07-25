@@ -24,8 +24,15 @@ import (
 
 // contextDeleteCmd represents the contextDelete command
 var contextDeleteCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Deletes the given context",
+	Use:     "delete [NAME]",
+	Short:   "Deletes the given context",
+	Example: "$ px context delete mycontext",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return fmt.Errorf("Must supply a name for context")
+		}
+		return nil
+	},
 	Long: `Usage:
 px context delete --name context1
 	`,
@@ -40,12 +47,7 @@ func init() {
 }
 
 func contextDeleteExec(cmd *cobra.Command, args []string) error {
-	var nameToDelete string
-	if s, _ := cmd.Flags().GetString("name"); len(s) != 0 {
-		nameToDelete = s
-	} else {
-		return fmt.Errorf("Must supply a context name to delete")
-	}
+	nameToDelete := args[0]
 
 	contextManager, err := contextconfig.NewContextManager(cfgFile)
 	if err != nil {

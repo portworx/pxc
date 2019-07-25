@@ -35,9 +35,7 @@ var getVolumesCmd = &cobra.Command{
 	Use:     "volume",
 	Aliases: []string{"volumes"},
 	Short:   "Get information about Portworx volumes",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return getVolumesExec(cmd, args)
-	},
+	RunE:    getVolumesExec,
 }
 
 func init() {

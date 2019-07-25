@@ -45,13 +45,12 @@ var createClusterpairCmd = &cobra.Command{
 	Use:     "clusterpair",
 	Aliases: []string{"clusterpairs"},
 	Short:   "Pair this cluster with another Portworx cluster",
+	Example: "$ px create clusterpair TODO ADD EXAMPLEs",
 	Long: `TODO
 
 ADD EXAMPLES
 	`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return createClusterpairExec(cmd, args)
-	},
+	RunE: createClusterpairExec,
 }
 
 func init() {
