@@ -38,10 +38,15 @@ const (
 var describeVolumeCmd = &cobra.Command{
 	Use:     "volume",
 	Aliases: []string{"volumes"},
-	Short:   "Show detailed information of Portworx volumes",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return describeVolumesExec(cmd, args)
-	},
+	Short:   "Describe a Portworx volume",
+	Long:    "Show detailed information of Portworx volumes",
+	Example: `$ px describe volume
+  This describes all volumes
+$ px describe volume abc
+  This describes volume abc
+$ px describe volume abc xyz
+  This describes volumes abc and xyz`,
+	RunE: describeVolumesExec,
 }
 
 func init() {
