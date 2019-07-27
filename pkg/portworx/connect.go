@@ -59,7 +59,7 @@ func PxConnectNamed(cfgFile string, name string) (context.Context, *grpc.ClientC
 	if err != nil {
 		return nil, nil, err
 	}
-	pxctx, err := contextManager.GetCurrent()
+	pxctx, err := contextManager.GetNamedContext(name)
 	if err != nil {
 		return nil, nil, err
 	}
