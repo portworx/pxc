@@ -21,6 +21,16 @@ import (
 )
 
 // ListContains returns true when string s is found in the list
+func ListContainsSubString(list []string, s string) bool {
+	for _, value := range list {
+		if strings.Contains(value, s) {
+			return true
+		}
+	}
+	return false
+}
+
+// ListContains returns true when string s is found in the list
 func ListContains(list []string, s string) bool {
 	for _, value := range list {
 		if value == s {
