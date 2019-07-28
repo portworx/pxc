@@ -20,8 +20,10 @@ import (
 	"bytes"
 	"os"
 	"strings"
+	"testing"
 
 	"github.com/portworx/px/pkg/util"
+	"github.com/stretchr/testify/assert"
 )
 
 // From https://gist.github.com/imosquera/6716490#sthash.O4z2aQQp.LUHz2Cbb.dpuf
@@ -57,4 +59,37 @@ func pxTestSetupCli(args string) (*bytes.Buffer, *bytes.Buffer, Restorer) {
 		util.Stdout = oldStdout
 		util.Stderr = oldStderr
 	}
+}
+
+func runPx() error {
+	return rootCmd.Execute()
+}
+
+func TestMultipleClustersContextsFromCli(t *testing.T) {
+	// This test depends on the ./hack/config.yml to have
+	// a 'source' and 'target' context and two running mock-sdk-servers
+
+	// Create a volume on the source that is now in the target.
+	// We will use this to differentiate them.
+	vol := "mysourcevolume"
+	so, _, r := pxTestSetupCli("px create volume " + vol + " --size=10")
+	err := runPx()
+	r()
+	assert.NoError(t, err)
+
+	// Get the volume info on the source
+	so, _, r = pxTestSetupCli("px get volumes")
+	err = runPx()
+	r()
+	assert.NoError(t, err)
+	lines := strings.Split(so.String(), "\n")
+	assert.True(t, util.ListContainsSubString(lines, vol))
+
+	// Fail to get that information on the target
+	so, _, r = pxTestSetupCli("px --context=target get volumes")
+	err = runPx()
+	r()
+	assert.NoError(t, err)
+	lines = strings.Split(so.String(), "\n")
+	assert.False(t, util.ListContainsSubString(lines, vol))
 }

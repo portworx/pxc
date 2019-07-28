@@ -25,14 +25,13 @@ import (
 )
 
 func executeCli(cli string) []string {
-	fmt.Println(cli)
 	so, _, r := pxTestSetupCli(cli)
 
 	// Defer to cleanup state
 	defer r()
 
 	// Start the CLI
-	Execute()
+	runPx()
 
 	return strings.Split(so.String(), "\n")
 }
@@ -92,8 +91,7 @@ func testGetAllVolumes(t *testing.T) ([]string, []string) {
 // Deletes specified volume
 func testDeleteVolume(t *testing.T, volName string) {
 	cli := "px delete volume " + volName
-	lines := executeCli(cli)
-	fmt.Println(len(lines), lines)
+	executeCli(cli)
 }
 
 // Takes a volume name and snapshot name. Returns the created snapshot's volume id.
@@ -103,7 +101,6 @@ func testCreateSnapshot(t *testing.T, volId string, snapName string) string {
 	lines := executeCli(cli)
 	assert.Equal(t, 2, len(lines), "Output does not match")
 	assert.Contains(t, lines[0], "Snapshot of "+volId+" created with id", "expected message not received")
-	fmt.Println(lines[0])
 	words := strings.Split(lines[0], " ")
 	assert.Equal(t, len(words), 7, "expected message not received")
 	// The last item in the message is the id
@@ -117,7 +114,6 @@ func testCreateClone(t *testing.T, volId string, cloneName string) string {
 	lines := executeCli(cli)
 	assert.Equal(t, 2, len(lines), "Output does not match")
 	assert.Contains(t, lines[0], "Clone of "+volId+" created with id", "expected message not received")
-	fmt.Println(lines[0])
 	words := strings.Split(lines[0], " ")
 	assert.Equal(t, len(words), 7, "expected message not received")
 	// The last item in the message is the id

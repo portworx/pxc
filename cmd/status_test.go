@@ -32,7 +32,8 @@ func TestPxStatus(t *testing.T) {
 	defer r()
 
 	// Start the CLI
-	Execute()
+	err := runPx()
+	assert.NoError(t, err)
 
 	lines := strings.Split(so.String(), "\n")
 	assert.Contains(t, lines, "Cluster ID: mock")

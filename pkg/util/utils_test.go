@@ -23,6 +23,49 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestListContainsSubString(t *testing.T) {
+	tests := []struct {
+		list  []string
+		s     string
+		found bool
+	}{
+		{
+			list:  []string{"Hello", "World"},
+			s:     "ell",
+			found: true,
+		},
+		{
+			list:  []string{"Hello", "World"},
+			s:     "nothere",
+			found: false,
+		},
+		{
+			list:  []string{"Hello", "World"},
+			s:     "Hellow",
+			found: false,
+		},
+		{
+			list:  []string{"Hello", "World"},
+			s:     "Hello",
+			found: true,
+		},
+		{
+			list:  []string{},
+			s:     "Hello",
+			found: false,
+		},
+		{
+			list:  []string{},
+			s:     "",
+			found: false,
+		},
+	}
+
+	for _, test := range tests {
+		assert.True(t, test.found == ListContainsSubString(test.list, test.s))
+	}
+}
+
 /*
  To test postivive case of utils.ListContains function.
  Test if given element is present in the list.

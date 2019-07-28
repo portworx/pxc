@@ -1,7 +1,12 @@
-current: test
+current: source
 configurations:
-- context: test
+- context: source
   token: ""
   endpoint: localhost:9920
+  secure: false
+  kubeconfig: ""
+- context: target
+  token: ""
+  endpoint: localhost:9921
   secure: false
   kubeconfig: ""
