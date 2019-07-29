@@ -103,8 +103,9 @@ func TestListHaveMatchPresent(t *testing.T) {
 	elements := []string{"node", "drive", "volume", "portworx"}
 	match := []string{"portworx", "osd"}
 
-	ret := ListHaveMatch(elements, match)
+	m, ret := ListHaveMatch(elements, match)
 	assert.Equal(t, ret, true)
+	assert.Equal(t, m, "portworx")
 }
 
 /*
@@ -116,7 +117,7 @@ func TestListHaveMatchNotPresent(t *testing.T) {
 	elements := []string{"node", "drive", "volume", "portworx"}
 	match := []string{"oci", "osd"}
 
-	ret := ListHaveMatch(elements, match)
+	_, ret := ListHaveMatch(elements, match)
 	assert.Equal(t, ret, false)
 }
 

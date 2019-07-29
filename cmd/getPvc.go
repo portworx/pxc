@@ -16,19 +16,19 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
-	"fmt"
+	"bytes"
+	"math/big"
 	"strings"
+	"text/tabwriter"
 
-	"google.golang.org/grpc"
-
-	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+	"github.com/cheynewallace/tabby"
+	humanize "github.com/dustin/go-humanize"
 	"github.com/portworx/px/pkg/kubernetes"
 	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // getPvcCmd represents the getPvc command
@@ -46,101 +46,109 @@ func init() {
 }
 
 func getPvcExec(cmd *cobra.Command, args []string) error {
-	// Connect to Portworx
-	ctx, conn, err := PxConnectDefault()
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
+	// Parse out all of the common cli volume flags
+	cvi := GetCliVolumeInputs(cmd, make([]string, 0))
+	cvi.showK8s = true
+	cvi.GetNamespace(cmd)
 
-	// Connect to kubernetes
-	cc, kc, err := KubeConnectDefault()
+	// Create a cliVolumeOps object
+	cvOps := NewCliVolumeOps(cvi)
+
+	// Connect to px and k8s (if needed)
+	err := cvOps.Connect()
 	if err != nil {
 		return err
+	}
+	defer cvOps.Close()
+
+	// Create the parser object
+	pgf := NewPvcGetFormatter(cvOps)
+
+	// Print the details and return errors if any
+	return util.PrintFormatted(pgf)
+}
+
+type pvcGetFormatter struct {
+	cliVolumeOps
+}
+
+func NewPvcGetFormatter(cvOps *cliVolumeOps) *pvcGetFormatter {
+	return &pvcGetFormatter{
+		cliVolumeOps: *cvOps,
+	}
+}
+
+func (p *pvcGetFormatter) getPvcs() ([]*v1.PersistentVolumeClaim, error) {
+	pxpvcs, err := p.pxVolumeOps.GetPxPvcs()
+	if err != nil {
+		return make([]*v1.PersistentVolumeClaim, 0), err
+	}
+	pvcs := make([]*v1.PersistentVolumeClaim, len(pxpvcs))
+	for i, _ := range pvcs {
+		pvcs[i] = pxpvcs[i].Pvc
+	}
+	return pvcs, nil
+}
+
+// YamlFormat returns the yaml representation of the pvc
+func (p *pvcGetFormatter) YamlFormat() (string, error) {
+	pvcs, err := p.getPvcs()
+	if err != nil {
+		return "", err
+	}
+	return util.ToYaml(pvcs)
+}
+
+// JsonFormat returns the json representation of the pvc
+func (p *pvcGetFormatter) JsonFormat() (string, error) {
+	pvcs, err := p.getPvcs()
+	if err != nil {
+		return "", err
+	}
+	return util.ToJson(pvcs)
+}
+
+// WideFormat returns the wide string representation of the object
+func (p *pvcGetFormatter) WideFormat() (string, error) {
+	p.wide = true
+	return p.toTabbed()
+}
+
+// DefaultFormat returns the default string representation of the object
+func (p *pvcGetFormatter) DefaultFormat() (string, error) {
+	return p.toTabbed()
+}
+
+func (p *pvcGetFormatter) toTabbed() (string, error) {
+	var b bytes.Buffer
+	writer := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
+	t := tabby.NewCustom(writer)
+
+	pvcs, err := p.pxVolumeOps.GetPxPvcs()
+	if err != nil {
+		return "", err
 	}
 
-	// Determine namespace
-	namespace, _, err := cc.Namespace()
-	if err != nil {
-		return err
-	}
-	flagNamespace, _ := cmd.Flags().GetString("namespace")
-	allNamespaces, _ := cmd.Flags().GetBool("all-namespaces")
-	if len(flagNamespace) != 0 {
-		namespace = flagNamespace
-	}
-	if allNamespaces {
-		namespace = ""
-	}
-
-	// Get all the PVCs according to the request
-	pvcClient := kc.CoreV1().PersistentVolumeClaims(namespace)
-	pvcList, err := pvcClient.List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	pvcs := pvcList.Items
 	if len(pvcs) == 0 {
 		util.Printf("No resources found\n")
-		return nil
+		return "", nil
 	}
 
-	// Get all pods in the namespace
-	podClient := kc.CoreV1().Pods(namespace)
-	podList, err := podClient.List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	pods := podList.Items
-
-	// Get all volumes
-	volumes := api.NewOpenStorageVolumeClient(conn)
-	volsInfo, err := volumes.InspectWithFilters(ctx, &api.SdkVolumeInspectWithFiltersRequest{})
-	if err != nil {
-		return util.PxErrorMessage(err, "Failed to get volumes")
-	}
-	vols := volsInfo.GetVolumes()
-
-	// Collect data
-	pxpvcs := make([]*kubernetes.PxPvc, len(pvcs))
-	for i, pvc := range pvcs {
-		pxpvcs[i] = kubernetes.NewPxPvc(&pvc)
-		pxpvcs[i].SetVolume(vols)
-		pxpvcs[i].SetPods(pods)
-	}
-
-	// Get output
-	output, _ := cmd.Flags().GetString("output")
-	// Determine if it is a wide output
-	wide := output == "wide"
-	// Determine if we need to show labels
-	showLabels, _ := cmd.Flags().GetBool("show-labels")
-
-	// Print
-	t := util.NewTabby()
-	f := &getPvcColumnFormatter{
-		wide:       wide,
-		showLabels: showLabels,
-		ctx:        ctx,
-		conn:       conn,
-	}
-	t.AddHeader(f.getHeader()...)
-	for _, pxpvc := range pxpvcs {
-		t.AddLine(f.getLine(pxpvc)...)
+	// Start the columns
+	t.AddHeader(p.getHeader()...)
+	for _, n := range pvcs {
+		l, err := p.getLine(n)
+		if err != nil {
+			return "", err
+		}
+		t.AddLine(l...)
 	}
 	t.Print()
 
-	return nil
+	return b.String(), err
 }
 
-type getPvcColumnFormatter struct {
-	wide       bool
-	showLabels bool
-	ctx        context.Context
-	conn       *grpc.ClientConn
-}
-
-func (p *getPvcColumnFormatter) getHeader() []interface{} {
+func (p *pvcGetFormatter) getHeader() []interface{} {
 	var header []interface{}
 	if p.wide {
 		header = []interface{}{"NAME", "VOLUME", "VOLUME ID", "HA", "CAPACITY", "SHARED", "STATUS", "STATE", "SNAP ENABLED", "ENCRYPTED", "PODS"}
@@ -154,68 +162,22 @@ func (p *getPvcColumnFormatter) getHeader() []interface{} {
 	return header
 }
 
-func (p *getPvcColumnFormatter) getLine(pxpvc *kubernetes.PxPvc) []interface{} {
-
+func (p *pvcGetFormatter) getLine(pxpvc *kubernetes.PxPvc) ([]interface{}, error) {
 	v := pxpvc.GetVolume()
-
 	if v == nil {
-		return []interface{}{pxpvc.Name}
-		/*
-			if p.wide {
-				return []interface{}{
-					pxpvc.Name,
-					"",
-					"",
-					"",
-					"",
-					"",
-					"",
-					"",
-					"",
-					"",
-				}
-			} else {
-			}
-		*/
+		return []interface{}{pxpvc.Name}, nil
 	}
+
+	var line []interface{}
+
 	spec := v.GetSpec()
-
-	// Get node information if it is attached
-	// TODO: Make this a pkg/volume call
-	// This shares code with cmd/getVolume
-	//  -- start--
-	var node *api.StorageNode
-	if len(v.GetAttachedOn()) != 0 {
-		nodes := api.NewOpenStorageNodeClient(p.conn)
-		nodeInfo, err := nodes.Inspect(
-			p.ctx,
-			&api.SdkNodeInspectRequest{NodeId: v.GetAttachedOn()})
-		if err != nil {
-			util.Eprintf("%v\n",
-				util.PxErrorMessagef(err,
-					"Failed to get node information where volume %s is attached",
-					v.GetLocator().GetName()))
-			return nil
-		}
-		node = nodeInfo.GetNode()
+	state, err := p.pxVolumeOps.GetAttachedState(v)
+	if err != nil {
+		return line, err
 	}
+	size := humanize.BigIBytes(big.NewInt(int64(spec.GetSize())))
+	pods := strings.Join(pxpvc.PodNames, ",")
 
-	// Determine the status of the volume
-	state := "Detached"
-	if v.State == api.VolumeState_VOLUME_STATE_ATTACHED {
-		if node != nil {
-			state = "on " + node.GetHostname()
-		} else {
-			state = "Attached"
-		}
-	} else if v.State == api.VolumeState_VOLUME_STATE_DETATCHING {
-		if node != nil {
-			state = "Was on " + node.GetHostname()
-		} else {
-			state = "Detaching"
-		}
-	}
-	// -- end --
 	/*
 	   $ px get pvc
 	   NAME        VOLUME                                    CAPACITY  SHARED  STATE  PODS
@@ -229,38 +191,32 @@ func (p *getPvcColumnFormatter) getLine(pxpvc *kubernetes.PxPvc) []interface{} {
 	   mysql-data  pvc-d2a47415-1aef-428c-b998-5aee138d93a9  605625582897896102  1   2         1       false   UP     on lpabon-k8s-1-node2  false      false  default/mysql-59b76b98f9-grcvd
 	*/
 
-	// Size needs to be done better
-	var line []interface{}
 	if p.wide {
 		line = []interface{}{
 			pxpvc.Name,
 			v.GetLocator().GetName(),
 			v.GetId(),
-
 			spec.GetHaLevel(),
-			fmt.Sprintf("%d Gi", spec.GetSize()/Gi),
-			spec.GetShared() || spec.GetSharedv4(),
-
+			size,
+			portworx.SharedString(v),
 			portworx.PrettyStatus(v),
 			state,
 			spec.GetSnapshotSchedule() != "",
-
 			spec.GetEncrypted(),
-			strings.Join(pxpvc.PodNames, ","),
+			pods,
 		}
 	} else {
 		line = []interface{}{
 			pxpvc.Name,
 			v.GetLocator().GetName(),
-			fmt.Sprintf("%d Gi", spec.GetSize()/Gi),
-
-			spec.GetShared() || spec.GetSharedv4(),
+			size,
+			portworx.SharedString(v),
 			state,
-			strings.Join(pxpvc.PodNames, ","),
+			pods,
 		}
 	}
 	if p.showLabels {
 		line = append(line, util.StringMapToCommaString(v.GetLocator().GetVolumeLabels()))
 	}
-	return line
+	return line, nil
 }

@@ -18,6 +18,7 @@ package portworx
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
@@ -48,6 +49,11 @@ var (
 		`pvc-6fc1fe2d-25f4-40b0-a616-04c019572154`: `{"Rsi":[{"Id":0,"NodeInfo":["ip-70-0-87-200.brbnca.spcsdns.net (Pool 1)","ip-70-0-87-203.brbnca.spcsdns.net (Pool 1)"],"HaIncrease":"","ReAddOn":[]}],"Status":"UP"}`,
 		`tp3`: `{"Rsi":[{"Id":0,"NodeInfo":["ip-70-0-87-233.brbnca.spcsdns.net (Pool 0)"],"HaIncrease":"","ReAddOn":[]},{"Id":1,"NodeInfo":["ip-70-0-87-200.brbnca.spcsdns.net (Pool 1)"],"HaIncrease":"","ReAddOn":[]},{"Id":2,"NodeInfo":["ip-70-0-87-203.brbnca.spcsdns.net (Pool 0)"],"HaIncrease":"","ReAddOn":[]}],"Status":"UP"}`,
 		`pvc-34d0f15c-65b9-4229-8b3e-b7bb912e382f`: `{"Rsi":[{"Id":0,"NodeInfo":["ip-70-0-87-200.brbnca.spcsdns.net (Pool 1)","ip-70-0-87-233.brbnca.spcsdns.net (Pool 1)"],"HaIncrease":"","ReAddOn":[]}],"Status":"UP"}`,
+	}
+
+	pvcInfo = map[string]string{
+		"pvc-6fc1fe2d-25f4-40b0-a616-04c019572154": "mysql-pvc-1",
+		"pvc-34d0f15c-65b9-4229-8b3e-b7bb912e382f": "wp-pv-claim",
 	}
 )
 
@@ -90,5 +96,23 @@ func TestPxVolumeOps(t *testing.T) {
 	for _, sv := range svols {
 		v := sv.GetVolume()
 		testPxVolumeOps(t, volOps, v)
+	}
+
+	pxPvcs, err := volOps.GetPxPvcs()
+	assert.Equal(t, err, nil, "Got error while trying to get PxPvcs")
+	for _, pxPvc := range pxPvcs {
+		vname := pxPvc.PxVolume.GetLocator().GetName()
+		assert.Equal(t, pxPvc.Name, pxPvc.Pvc.GetName(), "pvc names don't match")
+		assert.Equal(t, vname, pxPvc.Pvc.Spec.VolumeName, "Volume name does not match")
+		assert.Equal(t, pxPvc.Namespace, pxPvc.Pvc.GetNamespace(), "pxPvc's namespace does not match with pxPvc.Pvc's namespace")
+		ePvcName := pvcInfo[vname]
+		assert.Equal(t, pxPvc.Name, ePvcName, "pvc names don't match")
+		podNames := pxPvc.PodNames
+		for _, p := range podNames {
+			n := strings.Split(p, "/")
+			assert.Equalf(t, pxPvc.Namespace, n[0], "namespace of pod not correct %s", p)
+			vn := podToVolume[n[1]]
+			assert.Equalf(t, vn, vname, "%s should be using %s", n[1], vname)
+		}
 	}
 }

@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -164,12 +165,29 @@ func verifyVolumeDescription(
 	verifyKeyValue(t, k, v, "Replication Status", "Detached")
 }
 
+// Takes a list of volumes and returns a array of string, one volume description per string
+func testDescribeVolumes(t *testing.T, volNames []string) ([]string, error) {
+	cli := "px describe volume"
+	for _, v := range volNames {
+		cli = fmt.Sprintf("%v %v", cli, v)
+	}
+	lines, _, err := executeCli(cli)
+	if err != nil {
+		return make([]string, 0), err
+	}
+
+	l := strings.Join(lines, "\n")
+	vols := strings.Split(l, "\n\n")
+	return vols, nil
+}
+
 func testDescribeListedVolumes(t *testing.T, td *testData) {
 	v := make([]string, 3)
 	v[0] = td.volName
 	v[1] = td.snapName
 	v[2] = td.cloneName
-	desc := testDescribeVolumes(t, v)
+	desc, err := testDescribeVolumes(t, v)
+	assert.NoError(t, err)
 	for _, d := range desc {
 		switch d {
 		case td.volName:
@@ -183,7 +201,8 @@ func testDescribeListedVolumes(t *testing.T, td *testData) {
 }
 
 func testDescribeAllVolumes(t *testing.T, td *testData) {
-	desc := testDescribeVolumes(t, make([]string, 0))
+	desc, err := testDescribeVolumes(t, make([]string, 0))
+	assert.NoError(t, err)
 	assert.Equal(t, len(desc) >= 3, true, "Got wrong number of volumes")
 	for _, d := range desc {
 		dd := strings.Split(d, "\n")
@@ -206,7 +225,11 @@ func testDescribeAllVolumes(t *testing.T, td *testData) {
 }
 
 func testDescribeNonExistantVolume(t *testing.T, td *testData) {
-	// TODO:Implement this once unit test infrastructure cleanup is done
+	v := make([]string, 2)
+	v[0] = "nonexistent-1"
+	v[1] = "nonexistent-2"
+	_, err := testDescribeVolumes(t, v)
+	assert.Error(t, err)
 }
 
 func TestDescribeVolume(t *testing.T) {

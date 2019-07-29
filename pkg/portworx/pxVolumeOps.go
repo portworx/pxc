@@ -24,6 +24,7 @@ import (
 
 	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+	"github.com/portworx/px/pkg/kubernetes"
 	"github.com/portworx/px/pkg/util"
 
 	"google.golang.org/grpc"
@@ -55,6 +56,8 @@ type PxVolumeOpsInfo struct {
 	Namespace string
 	// volumeNames. Using
 	VolNames []string
+	// node ids
+	NodeIds []string
 }
 
 func (p *PxVolumeOpsInfo) Close() {
@@ -87,12 +90,22 @@ type PxVolumeOps interface {
 	GetReplicationInfo(v *api.Volume) (*ReplicationInfo, error)
 	// GetStats returns the stats for the specified volume
 	GetStats(v *api.Volume) (*api.Stats, error)
+	// GetPxPvcs returns the list of PxPvcs
+	GetPxPvcs() ([]*kubernetes.PxPvc, error)
+	// EnumerateNodes returns list of nodes  ids
+	EnumerateNodes() ([]string, error)
+	// GetNode returns details of given node
+	GetNode(id string) (*api.StorageNode, error)
 }
 
 type pxVolumeOps struct {
 	pxVolumeOpsInfo *PxVolumeOpsInfo
 	// array of volume objects based on the list of volume names specified
 	Vols []*api.SdkVolumeInspectResponse
+	// arrays of PxPvcs in the specified namespace
+	pxPvcs []*kubernetes.PxPvc
+	// List of all pvcs in the spacified namespace
+	Pvcs []v1.PersistentVolumeClaim
 	// List of all pods in the specified namespace
 	Pods []v1.Pod
 	// A cache of node ids to StorageNodes. Build as and when we see new node ids
@@ -184,7 +197,20 @@ func (p *pxVolumeOps) PodsUsingVolume(v *api.Volume) ([]v1.Pod, error) {
 	return usedPods, nil
 }
 
-func (p *pxVolumeOps) getNode(nodeId string) (*api.StorageNode, error) {
+func (p *pxVolumeOps) EnumerateNodes() ([]string, error) {
+	if len(p.pxVolumeOpsInfo.NodeIds) != 0 {
+		return p.pxVolumeOpsInfo.NodeIds, nil
+	}
+
+	nodes := api.NewOpenStorageNodeClient(p.pxVolumeOpsInfo.Conn)
+	nodesInfo, err := nodes.Enumerate(p.pxVolumeOpsInfo.Ctx, &api.SdkNodeEnumerateRequest{})
+	if err != nil {
+		return make([]string, 0), err
+	}
+	return nodesInfo.GetNodeIds(), nil
+}
+
+func (p *pxVolumeOps) GetNode(nodeId string) (*api.StorageNode, error) {
 	// Check if we have already queried for the node. If so just return from cachew
 	if n, ok := p.NodeMap[nodeId]; ok {
 		return n, nil
@@ -207,7 +233,7 @@ func (p *pxVolumeOps) getNode(nodeId string) (*api.StorageNode, error) {
 
 func (p *pxVolumeOps) getAttachedOn(v *api.Volume) (*api.StorageNode, error) {
 	if len(v.GetAttachedOn()) != 0 {
-		node, err := p.getNode(v.GetAttachedOn())
+		node, err := p.GetNode(v.GetAttachedOn())
 		if err != nil {
 			return nil, err
 		}
@@ -322,7 +348,7 @@ func (p *pxVolumeOps) GetReplicationInfo(v *api.Volume) (*ReplicationInfo, error
 					}
 				}
 				var hn string
-				n, err := p.getNode(newNodeMid)
+				n, err := p.GetNode(newNodeMid)
 				if err != nil {
 					util.Eprintf("%v\n",
 						util.PxErrorMessagef(err,
@@ -344,7 +370,7 @@ func (p *pxVolumeOps) GetReplicationInfo(v *api.Volume) (*ReplicationInfo, error
 				if numReAdd > 0 {
 					for k := 0; k < len(reAddNodes); k++ {
 						var hn string
-						n, err := p.getNode(reAddNodes[k])
+						n, err := p.GetNode(reAddNodes[k])
 						if err != nil {
 							util.Eprintf("%v\n",
 								util.PxErrorMessagef(err,
@@ -384,7 +410,7 @@ func (p *pxVolumeOps) GetReplicationInfo(v *api.Volume) (*ReplicationInfo, error
 			}
 
 			var hn string
-			node, err := p.getNode(id)
+			node, err := p.GetNode(id)
 			if err != nil {
 				util.Eprintf("%v\n",
 					util.PxErrorMessagef(err,
@@ -416,4 +442,54 @@ func (p *pxVolumeOps) GetReplicationInfo(v *api.Volume) (*ReplicationInfo, error
 	}
 	rinfo.Status = replStatus
 	return rinfo, nil
+}
+
+func (p *pxVolumeOps) getPvcs() ([]v1.PersistentVolumeClaim, error) {
+	if p.Pvcs != nil {
+		return p.Pvcs, nil
+	}
+
+	p.pxVolumeOpsInfo.ClientSet.CoreV1().Pods(p.pxVolumeOpsInfo.Namespace)
+	pvcClient := p.pxVolumeOpsInfo.ClientSet.CoreV1().PersistentVolumeClaims(
+		p.pxVolumeOpsInfo.Namespace)
+
+	pvcList, err := pvcClient.List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	p.Pvcs = pvcList.Items
+	return p.Pvcs, nil
+}
+
+func (p *pxVolumeOps) GetPxPvcs() ([]*kubernetes.PxPvc, error) {
+	if p.pxPvcs != nil {
+		return p.pxPvcs, nil
+	}
+
+	k8sPvcs, err := p.getPvcs()
+	if err != nil {
+		return nil, err
+	}
+
+	vols, err := p.GetVolumes()
+	if err != nil {
+		return nil, err
+	}
+
+	pods, err := p.getPods()
+	if err != nil {
+		return nil, err
+	}
+
+	p.pxPvcs = make([]*kubernetes.PxPvc, 0, len(k8sPvcs))
+	for i, _ := range k8sPvcs {
+		pxpvc := kubernetes.NewPxPvc(&k8sPvcs[i])
+		vExists := pxpvc.SetVolume(vols)
+		if vExists == true {
+			pxpvc.SetPods(pods)
+			p.pxPvcs = append(p.pxPvcs, pxpvc)
+		}
+	}
+	return p.pxPvcs, nil
 }
