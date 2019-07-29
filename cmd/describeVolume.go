@@ -24,8 +24,8 @@ import (
 	"github.com/cheynewallace/tabby"
 	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+	prototime "github.com/portworx/px/pkg/openstorage/proto/time"
 	"github.com/portworx/px/pkg/portworx"
-	prototime "github.com/portworx/px/pkg/proto/time"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
 )
