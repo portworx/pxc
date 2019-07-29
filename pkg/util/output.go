@@ -82,3 +82,21 @@ func NewTabby() *tabby.Tabby {
 	writer := tabwriter.NewWriter(Stdout, 0, 0, 2, ' ', 0)
 	return tabby.NewCustom(writer)
 }
+
+// Adds a full map to tabby. One key value pair per line
+func AddMap(t *tabby.Tabby, name string, strMap map[string]string) {
+	label := name
+	for k, v := range strMap {
+		t.AddLine(label, k+"="+v)
+		label = ""
+	}
+}
+
+// Adds a full array to tabby. One element per line
+func AddArray(t *tabby.Tabby, name string, strArr []string) {
+	label := name
+	for _, a := range strArr {
+		t.AddLine(label, a)
+		label = ""
+	}
+}

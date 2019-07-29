@@ -19,15 +19,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// deleteCmd represents the delete command
-var deleteCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete an object in Portworx",
+// describeCmd represents the describe command
+var describeCmd = &cobra.Command{
+	Use:   "describe",
+	Short: "Show detailed information of Portworx resources",
 	Run: func(cmd *cobra.Command, args []string) {
-		util.Printf("Please see px delete --help for more information")
+		util.Printf("Please see px describe --help for more information")
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(deleteCmd)
+	rootCmd.AddCommand(describeCmd)
 }

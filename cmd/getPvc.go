@@ -24,6 +24,7 @@ import (
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/px/pkg/kubernetes"
+	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
 
 	"github.com/spf13/cobra"
@@ -240,7 +241,7 @@ func (p *getPvcColumnFormatter) getLine(pxpvc *kubernetes.PxPvc) []interface{} {
 			fmt.Sprintf("%d Gi", spec.GetSize()/Gi),
 			spec.GetShared() || spec.GetSharedv4(),
 
-			prettyStatus(v),
+			portworx.PrettyStatus(v),
 			state,
 			spec.GetSnapshotSchedule() != "",
 

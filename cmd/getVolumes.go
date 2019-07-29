@@ -1,5 +1,5 @@
 /*
-Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+Copyright © 2019 Portworx
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,18 +16,15 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
+	"bytes"
 	"strings"
+	"text/tabwriter"
 
+	"github.com/cheynewallace/tabby"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
-
-	"google.golang.org/grpc"
-
 	"github.com/spf13/cobra"
-
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // getVolumesCmd represents the getVolumes command
@@ -49,100 +46,86 @@ func init() {
 }
 
 func getVolumesExec(cmd *cobra.Command, args []string) error {
-	ctx, conn, err := PxConnectDefault()
+	vf, err := newVolumeFormatter(cmd, args)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer vf.close()
 
-	// Check if we need to get information from Kubernetes
-	var pods []v1.Pod
-	showK8s, _ := cmd.Flags().GetBool("show-k8s-info")
-	if showK8s {
-		_, kc, err := KubeConnectDefault()
-		if err != nil {
-			return err
-		}
-		podClient := kc.CoreV1().Pods("")
-		podList, err := podClient.List(metav1.ListOptions{})
-		if err != nil {
-			return err
-		}
-		pods = podList.Items
+	vcf := volumeGetFormatter{
+		volumeFormatter: *vf,
 	}
-
-	// Get volume information
-	volumes := api.NewOpenStorageVolumeClient(conn)
-	var vols []*api.SdkVolumeInspectResponse
-
-	// Determine if we should get all the volumes or specific ones
-	if len(args) != 0 {
-		vols = make([]*api.SdkVolumeInspectResponse, 0, len(args))
-		for _, v := range args {
-			vol, err := volumes.Inspect(ctx, &api.SdkVolumeInspectRequest{VolumeId: v})
-			if err != nil {
-				return util.PxErrorMessage(err, "Failed to get volume")
-			}
-			vols = append(vols, vol)
-		}
-	} else {
-		// If it is no volumes (all)
-		volsInfo, err := volumes.InspectWithFilters(ctx, &api.SdkVolumeInspectWithFiltersRequest{})
-		if err != nil {
-			return util.PxErrorMessage(err, "Failed to get volumes")
-		}
-		vols = volsInfo.GetVolumes()
-	}
-
-	// Get output
-	output, _ := cmd.Flags().GetString("output")
-
-	// Determine if we need to output the object
-	switch output {
-	case "yaml":
-		util.PrintYaml(vols)
-		return nil
-	case "json":
-		util.PrintJson(vols)
-		return nil
-	}
-
-	// Determine if it is a wide output
-	wide := output == "wide"
-
-	// Determine if we need to show labels
-	showLabels, _ := cmd.Flags().GetBool("show-labels")
-
-	// Start the columns
-	t := util.NewTabby()
-	np := &volumeColumnFormatter{
-		wide:       wide,
-		showLabels: showLabels,
-		showK8s:    showK8s,
-		ctx:        ctx,
-		conn:       conn,
-		pods:       pods,
-	}
-	t.AddHeader(np.getHeader()...)
-
-	for _, n := range vols {
-		t.AddLine(np.getLine(n)...)
-	}
-	t.Print()
-
+	vcf.Print()
 	return nil
 }
 
-type volumeColumnFormatter struct {
-	wide       bool
-	showLabels bool
-	showK8s    bool
-	ctx        context.Context
-	conn       *grpc.ClientConn
-	pods       []v1.Pod
+type volumeGetFormatter struct {
+	volumeFormatter
 }
 
-func (p *volumeColumnFormatter) getHeader() []interface{} {
+// String returns the formatted output of the object as per the format set.
+func (p *volumeGetFormatter) String() string {
+	return util.GetFormattedOutput(p)
+}
+
+// Print writes the object to stdout
+func (p *volumeGetFormatter) Print() {
+	util.Printf("%v\n", p)
+}
+
+// YamlFormat returns the yaml representation of the object
+func (p *volumeGetFormatter) YamlFormat() string {
+	vols, err := p.pxVolumeOps.GetVolumes()
+	if err != nil {
+		util.Eprintf("%v\n", err)
+		return ""
+	}
+	return util.ToYaml(vols)
+}
+
+// JsonFormat returns the json representation of the object
+func (p *volumeGetFormatter) JsonFormat() string {
+	vols, err := p.pxVolumeOps.GetVolumes()
+	if err != nil {
+		util.Eprintf("%v\n", err)
+		return ""
+	}
+	return util.ToJson(vols)
+}
+
+// WideFormat returns the wide string representation of the object
+func (p *volumeGetFormatter) WideFormat() string {
+	p.wide = true
+	return p.toTabbed()
+}
+
+// DefaultFormat returns the default string representation of the object
+func (p *volumeGetFormatter) DefaultFormat() string {
+	return p.toTabbed()
+}
+
+func (p *volumeGetFormatter) toTabbed() string {
+	var b bytes.Buffer
+	writer := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
+	t := tabby.NewCustom(writer)
+
+	// Start the columns
+	t.AddHeader(p.getHeader()...)
+
+	vols, err := p.pxVolumeOps.GetVolumes()
+	if err != nil {
+		util.Eprintf("%v\n", err)
+		return ""
+	}
+	for _, n := range vols {
+		t.AddLine(p.getLine(n)...)
+	}
+	t.Print()
+
+	return b.String()
+}
+
+func (p *volumeGetFormatter) getHeader() []interface{} {
 	var header []interface{}
 	if p.wide {
 		header = []interface{}{"Id", "Name", "Size Gi", "HA", "Shared", "Encrypted", "Io Profile", "Status", "State", "Snap Enabled"}
@@ -159,43 +142,12 @@ func (p *volumeColumnFormatter) getHeader() []interface{} {
 	return header
 }
 
-func (p *volumeColumnFormatter) getLine(resp *api.SdkVolumeInspectResponse) []interface{} {
+func (p *volumeGetFormatter) getLine(resp *api.SdkVolumeInspectResponse) []interface{} {
 
 	v := resp.GetVolume()
 	spec := v.GetSpec()
 
-	// Get node information if it is attached
-	var node *api.StorageNode
-	if len(v.GetAttachedOn()) != 0 {
-		nodes := api.NewOpenStorageNodeClient(p.conn)
-		nodeInfo, err := nodes.Inspect(
-			p.ctx,
-			&api.SdkNodeInspectRequest{NodeId: v.GetAttachedOn()})
-		if err != nil {
-			util.Eprintf("%v\n",
-				util.PxErrorMessagef(err,
-					"Failed to get node information where volume %s is attached",
-					v.GetLocator().GetName()))
-			return nil
-		}
-		node = nodeInfo.GetNode()
-	}
-
-	// Determine the status of the volume
-	state := "Detached"
-	if v.State == api.VolumeState_VOLUME_STATE_ATTACHED {
-		if node != nil {
-			state = "on " + node.GetHostname()
-		} else {
-			state = "Attached"
-		}
-	} else if v.State == api.VolumeState_VOLUME_STATE_DETATCHING {
-		if node != nil {
-			state = "Was on " + node.GetHostname()
-		} else {
-			state = "Detaching"
-		}
-	}
+	state := p.pxVolumeOps.GetAttachedState(v)
 
 	// Size needs to be done better
 	var line []interface{}
@@ -203,12 +155,12 @@ func (p *volumeColumnFormatter) getLine(resp *api.SdkVolumeInspectResponse) []in
 		line = []interface{}{
 			v.GetId(), v.GetLocator().GetName(), spec.GetSize() / Gi, spec.GetHaLevel(),
 			spec.GetShared() || spec.GetSharedv4(), spec.GetEncrypted(),
-			spec.GetCos(), prettyStatus(v), state, spec.GetSnapshotSchedule() != "",
+			spec.GetCos(), portworx.PrettyStatus(v), state, spec.GetSnapshotSchedule() != "",
 		}
 	} else {
 		line = []interface{}{
 			v.GetLocator().GetName(), spec.GetSize() / Gi, spec.GetHaLevel(),
-			spec.GetShared() || spec.GetSharedv4(), prettyStatus(v), state,
+			spec.GetShared() || spec.GetSharedv4(), portworx.PrettyStatus(v), state,
 		}
 	}
 	if p.showK8s {
@@ -220,26 +172,12 @@ func (p *volumeColumnFormatter) getLine(resp *api.SdkVolumeInspectResponse) []in
 	return line
 }
 
-func prettyStatus(v *api.Volume) string {
-	return strings.TrimPrefix(v.GetStatus().String(), "VOLUME_STATUS_")
-}
-
-func (p *volumeColumnFormatter) podsUsingVolume(v *api.Volume) string {
-	usedPods := make([]string, 0)
-	// get the pvc name
-	pvc := v.Locator.VolumeLabels["pvc"]
+func (p *volumeGetFormatter) podsUsingVolume(v *api.Volume) string {
+	usedPods := p.pxVolumeOps.PodsUsingVolume(v)
+	usedPodNames := make([]string, 0)
 	namespace := v.Locator.VolumeLabels["namespace"]
-	for _, pod := range p.pods {
-		if pod.Namespace == namespace {
-			for _, volumeInfo := range pod.Spec.Volumes {
-				if volumeInfo.PersistentVolumeClaim != nil {
-					if volumeInfo.PersistentVolumeClaim.ClaimName == pvc {
-						usedPods = append(usedPods, namespace+"/"+pod.Name)
-					}
-				}
-			}
-		}
+	for _, pod := range usedPods {
+		usedPodNames = append(usedPodNames, namespace+"/"+pod.Name)
 	}
-
-	return strings.Join(usedPods, ",")
+	return strings.Join(usedPodNames, ",")
 }
