@@ -63,18 +63,21 @@ func testGetPxVolumeOps(t *testing.T) PxVolumeOps {
 
 func testPxVolumeOps(t *testing.T, volOps PxVolumeOps, v *api.Volume) {
 	name := v.GetLocator().GetName()
-	state := volOps.GetAttachedState(v)
+	state, err := volOps.GetAttachedState(v)
+	assert.Equal(t, err, nil, "Got error getting attached state")
 	expectedState := attachedState[name]
 	assert.Equalf(t, state, expectedState, "Attached state is not correct for %s", name)
-	pods := volOps.PodsUsingVolume(v)
+	pods, err := volOps.PodsUsingVolume(v)
+	assert.Equal(t, err, nil, "Got error getting pods using volume")
 	for _, pod := range pods {
 		vn := podToVolume[pod.Name]
 		assert.Equalf(t, vn, name, "%s should be using %s", pod.Name, name)
 	}
-	replInfo := volOps.GetReplicationInfo(v)
+	replInfo, err := volOps.GetReplicationInfo(v)
+	assert.Equal(t, err, nil, "Got error getting replication info")
 	ejson := volumeToReplicationInfo[name]
 	eReplInfo := &ReplicationInfo{}
-	err := json.Unmarshal([]byte(ejson), eReplInfo)
+	err = json.Unmarshal([]byte(ejson), eReplInfo)
 	assert.Equal(t, err, nil, "Got error unmarshalling replication info")
 	b := reflect.DeepEqual(replInfo, eReplInfo)
 	assert.Equalf(t, b, true, "ReplicationInfo is not same for %s", name)

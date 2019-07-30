@@ -58,7 +58,8 @@ var (
 
 func testVolumeCommon(t *testing.T, volOps PxVolumeOps, v *api.Volume) {
 	name := v.GetLocator().GetName()
-	snapSchedule := SchedSummary(v)
+	snapSchedule, err := SchedSummary(v)
+	assert.Equal(t, err, nil, "Got error parsing snapshot schedule")
 	eSnapSchedule := expectedSchedule[name]
 	for _, s := range snapSchedule {
 		assert.Equalf(t, util.ListContains(eSnapSchedule, s), true, "Wrong schedule summary for %s", name)
