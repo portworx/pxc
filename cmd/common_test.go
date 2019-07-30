@@ -17,9 +17,11 @@ package cmd
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -34,6 +36,11 @@ func executeCli(cli string) []string {
 	runPx()
 
 	return strings.Split(so.String(), "\n")
+}
+
+func getRandom() uint64 {
+	rand.Seed(time.Now().UTC().Unix())
+	return rand.Uint64()
 }
 
 // Takes a volume name and size. Returns the created volume id.
@@ -129,9 +136,5 @@ func testDescribeVolumes(t *testing.T, volNames []string) []string {
 	lines := executeCli(cli)
 	l := strings.Join(lines, "\n")
 	vols := strings.Split(l, "\n\n")
-	// There will be an empty last one in addition to the 3 volumes due to all
-	// of the split and join and again split
-	assert.Equal(t, len(vols), 4, "Num vols not matching")
-	// Remove the last one as it is spurious
-	return vols[0:3]
+	return vols
 }
