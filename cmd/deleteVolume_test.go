@@ -16,30 +16,23 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/portworx/px/pkg/util"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPxDeleteVolume(t *testing.T) {
-	volName := fmt.Sprintf("%v-%v", "testVol", getRandom())
+	volName := genVolName("testVol")
 
 	// Create Volume
-	volId := testCreateVolume(t, volName, 1)
-
-	// Verify that the volume got created
-	exists := testGetVolume(t, volId, volName)
-	assert.Equal(t, exists, true, "Volume create failed")
+	testCreateVolume(t, volName, 1)
+	assert.True(t, testHasVolume(volName))
 
 	// Delete Volume
-	testDeleteVolume(t, volId)
-
-	// Verify that volume got deleted
-	vols, _ := testGetAllVolumes(t)
-	assert.Equal(t, util.ListContains(vols, volId), false, "Volume delete failed")
+	testDeleteVolume(t, volName)
+	assert.False(t, testHasVolume(volName))
 
 	// Delete it again to ensure we don't get an error
-	testDeleteVolume(t, volId)
+	testDeleteVolume(t, volName)
+	assert.False(t, testHasVolume(volName))
 }

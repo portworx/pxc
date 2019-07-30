@@ -16,7 +16,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -26,54 +25,46 @@ import (
 
 type testData struct {
 	volName   string
-	volId     string
 	cloneName string
-	cloneId   string
 	snapName  string
-	snapId    string
 }
 
 func testCreateAll(t *testing.T, td *testData) {
 	// Create Volume
-	td.volId = testCreateVolume(t, td.volName, 1)
-
-	// Verify that the volume got created
-	exists := testGetVolume(t, td.volId, td.volName)
-	assert.Equal(t, exists, true, "Volume create failed")
+	testCreateVolume(t, td.volName, 1)
+	assert.True(t, testHasVolume(td.volName))
 
 	// Create clone
-	td.cloneId = testCreateClone(t, td.volId, td.cloneName)
-
-	//Verify that the clone got created
-	exists = testGetVolume(t, td.cloneId, td.cloneName)
-	assert.Equal(t, exists, true, "Clone create failed")
+	testCreateClone(t, td.volName, td.cloneName)
+	assert.True(t, testHasVolume(td.cloneName))
 
 	// Create Snapshot
-	td.snapId = testCreateSnapshot(t, td.volId, td.snapName)
-
-	//Verify that the clone got created
-	exists = testGetVolume(t, td.snapId, td.snapName)
-	assert.Equal(t, exists, true, "Clone create failed")
+	testCreateSnapshot(t, td.volName, td.snapName)
+	assert.True(t, testHasVolume(td.snapName))
 }
 
 func testDeleteAll(t *testing.T, td *testData) {
 	// Delete volume. Only clone and snapshot must exist
-	testDeleteVolume(t, td.volId)
-	vols, _ := testGetAllVolumes(t)
-	assert.Equal(t, util.ListContains(vols, td.volId), false, "Volume delete failed")
-	assert.Equal(t, util.ListContains(vols, td.snapId), true, "Volume delete failed")
-	assert.Equal(t, util.ListContains(vols, td.cloneId), true, "Volume delete failed")
+	testDeleteVolume(t, td.volName)
+
+	vols := testGetAllVolumes(t)
+	assert.False(t, util.ListContains(vols, td.volName), "Volume delete failed")
+	assert.True(t, util.ListContains(vols, td.snapName), "Volume delete failed")
+	assert.True(t, util.ListContains(vols, td.cloneName), "Volume delete failed")
 
 	// Delete clone, Only snapshot must exist
-	testDeleteVolume(t, td.cloneId)
-	vols, _ = testGetAllVolumes(t)
-	assert.Equal(t, util.ListContains(vols, td.cloneId), false, "Volume delete failed")
-	assert.Equal(t, util.ListContains(vols, td.snapId), true, "Volume delete failed")
+	testDeleteVolume(t, td.cloneName)
+	vols = testGetAllVolumes(t)
+	assert.False(t, util.ListContains(vols, td.volName), "Volume delete failed")
+	assert.False(t, util.ListContains(vols, td.cloneName), "Volume delete failed")
+	assert.True(t, util.ListContains(vols, td.snapName), "Volume delete failed")
 
 	// Delete clone, Only snapshot must exist
-	testDeleteVolume(t, td.snapId)
-	vols, _ = testGetAllVolumes(t)
-	assert.Equal(t, util.ListContains(vols, td.snapId), false, "Volume delete failed")
+	testDeleteVolume(t, td.snapName)
+	vols = testGetAllVolumes(t)
+	assert.False(t, util.ListContains(vols, td.volName), "Volume delete failed")
+	assert.False(t, util.ListContains(vols, td.cloneName), "Volume delete failed")
+	assert.False(t, util.ListContains(vols, td.snapName), "Volume delete failed")
 }
 
 func getKeyValue(s string) (string, string) {
@@ -97,7 +88,6 @@ func verifyKeyValue(
 func verifyVolumeDescription(
 	t *testing.T,
 	volName string,
-	volId string,
 	parent string,
 	desc string,
 ) {
@@ -107,7 +97,7 @@ func verifyVolumeDescription(
 	}
 	index := 0
 	k, v := getKeyValue(d[index])
-	verifyKeyValue(t, k, v, "Volume", volId)
+	verifyKeyValue(t, k, v, "Volume", volName)
 	index++
 	k, v = getKeyValue(d[index])
 	verifyKeyValue(t, k, v, "Name", volName)
@@ -130,7 +120,8 @@ func verifyVolumeDescription(
 	index++
 	if parent != "" {
 		k, v = getKeyValue(d[index])
-		verifyKeyValue(t, k, v, "Parent", parent)
+		parentInfo := testVolumeInfo(t, parent)
+		verifyKeyValue(t, k, v, "Parent", parentInfo.GetId())
 		index++
 	}
 	k, v = getKeyValue(d[index])
@@ -175,18 +166,18 @@ func verifyVolumeDescription(
 
 func testDescribeListedVolumes(t *testing.T, td *testData) {
 	v := make([]string, 3)
-	v[0] = td.volId
-	v[1] = td.snapId
-	v[2] = td.cloneId
+	v[0] = td.volName
+	v[1] = td.snapName
+	v[2] = td.cloneName
 	desc := testDescribeVolumes(t, v)
 	for _, d := range desc {
 		switch d {
-		case td.volId:
-			verifyVolumeDescription(t, td.volName, td.volId, "", d)
-		case td.snapId:
-			verifyVolumeDescription(t, td.snapName, td.snapId, td.volId, d)
-		case td.cloneId:
-			verifyVolumeDescription(t, td.cloneName, td.cloneId, td.volId, desc[2])
+		case td.volName:
+			verifyVolumeDescription(t, td.volName, "", d)
+		case td.snapName:
+			verifyVolumeDescription(t, td.snapName, td.volName, d)
+		case td.cloneName:
+			verifyVolumeDescription(t, td.cloneName, td.volName, desc[2])
 		}
 	}
 }
@@ -204,12 +195,12 @@ func testDescribeAllVolumes(t *testing.T, td *testData) {
 		}
 		_, v := getKeyValue(dd[0])
 		switch v {
-		case td.volId:
-			verifyVolumeDescription(t, td.volName, td.volId, "", d)
-		case td.snapId:
-			verifyVolumeDescription(t, td.snapName, td.snapId, td.volId, d)
-		case td.cloneId:
-			verifyVolumeDescription(t, td.cloneName, td.cloneId, td.volId, d)
+		case td.volName:
+			verifyVolumeDescription(t, td.volName, "", d)
+		case td.snapName:
+			verifyVolumeDescription(t, td.snapName, td.volName, d)
+		case td.cloneName:
+			verifyVolumeDescription(t, td.cloneName, td.volName, d)
 		}
 	}
 }
@@ -219,11 +210,10 @@ func testDescribeNonExistantVolume(t *testing.T, td *testData) {
 }
 
 func TestDescribeVolume(t *testing.T) {
-	r := getRandom()
 	td := &testData{
-		volName:   fmt.Sprintf("%v-%v", "testVol", r),
-		cloneName: fmt.Sprintf("%v-%v", "cloneVol", r),
-		snapName:  fmt.Sprintf("%v-%v", "snapVol", r),
+		volName:   genVolName("testVol"),
+		cloneName: genVolName("cloneVol"),
+		snapName:  genVolName("snapVol"),
 	}
 
 	testCreateAll(t, td)
