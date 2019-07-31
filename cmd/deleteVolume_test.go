@@ -16,13 +16,15 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/portworx/px/pkg/util"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPxDeleteVolume(t *testing.T) {
-	volName := "testVol"
+	volName := fmt.Sprintf("%v-%v", "testVol", getRandom())
 
 	// Create Volume
 	volId := testCreateVolume(t, volName, 1)
@@ -36,7 +38,7 @@ func TestPxDeleteVolume(t *testing.T) {
 
 	// Verify that volume got deleted
 	vols, _ := testGetAllVolumes(t)
-	assert.Equal(t, len(vols), 0, "Volume delete failed")
+	assert.Equal(t, util.ListContains(vols, volId), false, "Volume delete failed")
 
 	// Delete it again to ensure we don't get an error
 	testDeleteVolume(t, volId)

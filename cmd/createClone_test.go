@@ -16,14 +16,17 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/portworx/px/pkg/util"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPxCreateclone(t *testing.T) {
-	volName := "testVol"
-	cloneName := "cloneVol"
+	r := getRandom()
+	volName := fmt.Sprintf("%v-%v", "testVol", r)
+	cloneName := fmt.Sprintf("%v-%v", "cloneVol", r)
 
 	// Create Volume
 	volId := testCreateVolume(t, volName, 1)
@@ -38,13 +41,14 @@ func TestPxCreateclone(t *testing.T) {
 	//Verify that the clone got created
 	exists = testGetVolume(t, cloneId, cloneName)
 
-	// Delete volume. Only clone must exist
+	// Delete volume
 	testDeleteVolume(t, volId)
 	vols, _ := testGetAllVolumes(t)
-	assert.Equal(t, len(vols), 1, "Volume delete failed")
+	assert.Equal(t, util.ListContains(vols, volId), false, "Volume delete failed")
+	assert.Equal(t, util.ListContains(vols, cloneId), true, "Volume delete failed")
 
-	// Delete clone, No volumes must remain
+	// Delete clone
 	testDeleteVolume(t, cloneId)
 	vols, _ = testGetAllVolumes(t)
-	assert.Equal(t, len(vols), 0, "Volume delete failed")
+	assert.Equal(t, util.ListContains(vols, cloneId), false, "Volume delete failed")
 }

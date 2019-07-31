@@ -16,9 +16,11 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/portworx/px/pkg/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -58,17 +60,20 @@ func testDeleteAll(t *testing.T, td *testData) {
 	// Delete volume. Only clone and snapshot must exist
 	testDeleteVolume(t, td.volId)
 	vols, _ := testGetAllVolumes(t)
-	assert.Equal(t, len(vols), 2, "Volume delete failed")
+	assert.Equal(t, util.ListContains(vols, td.volId), false, "Volume delete failed")
+	assert.Equal(t, util.ListContains(vols, td.snapId), true, "Volume delete failed")
+	assert.Equal(t, util.ListContains(vols, td.cloneId), true, "Volume delete failed")
 
 	// Delete clone, Only snapshot must exist
 	testDeleteVolume(t, td.cloneId)
 	vols, _ = testGetAllVolumes(t)
-	assert.Equal(t, len(vols), 1, "Volume delete failed")
+	assert.Equal(t, util.ListContains(vols, td.cloneId), false, "Volume delete failed")
+	assert.Equal(t, util.ListContains(vols, td.snapId), true, "Volume delete failed")
 
 	// Delete clone, Only snapshot must exist
 	testDeleteVolume(t, td.snapId)
 	vols, _ = testGetAllVolumes(t)
-	assert.Equal(t, len(vols), 0, "Volume delete failed")
+	assert.Equal(t, util.ListContains(vols, td.snapId), false, "Volume delete failed")
 }
 
 func getKeyValue(s string) (string, string) {
@@ -174,17 +179,26 @@ func testDescribeListedVolumes(t *testing.T, td *testData) {
 	v[1] = td.snapId
 	v[2] = td.cloneId
 	desc := testDescribeVolumes(t, v)
-	assert.Equal(t, len(desc), 3, "Got wrong number of volumes")
-	verifyVolumeDescription(t, td.volName, td.volId, "", desc[0])
-	verifyVolumeDescription(t, td.snapName, td.snapId, td.volId, desc[1])
-	verifyVolumeDescription(t, td.cloneName, td.cloneId, td.volId, desc[2])
+	for _, d := range desc {
+		switch d {
+		case td.volId:
+			verifyVolumeDescription(t, td.volName, td.volId, "", d)
+		case td.snapId:
+			verifyVolumeDescription(t, td.snapName, td.snapId, td.volId, d)
+		case td.cloneId:
+			verifyVolumeDescription(t, td.cloneName, td.cloneId, td.volId, desc[2])
+		}
+	}
 }
 
 func testDescribeAllVolumes(t *testing.T, td *testData) {
 	desc := testDescribeVolumes(t, make([]string, 0))
-	assert.Equal(t, len(desc), 3, "Got wrong number of volumes")
+	assert.Equal(t, len(desc) >= 3, true, "Got wrong number of volumes")
 	for _, d := range desc {
 		dd := strings.Split(d, "\n")
+		if len(dd) == 1 {
+			continue
+		}
 		if dd[0] == "" {
 			dd = dd[1:]
 		}
@@ -196,17 +210,16 @@ func testDescribeAllVolumes(t *testing.T, td *testData) {
 			verifyVolumeDescription(t, td.snapName, td.snapId, td.volId, d)
 		case td.cloneId:
 			verifyVolumeDescription(t, td.cloneName, td.cloneId, td.volId, d)
-		default:
-			assert.Equal(t, 1, 2, "Unknown vol id")
 		}
 	}
 }
 
 func TestDescribeVolume(t *testing.T) {
+	r := getRandom()
 	td := &testData{
-		volName:   "testVol",
-		cloneName: "cloneVol",
-		snapName:  "snapVol",
+		volName:   fmt.Sprintf("%v-%v", "testVol", r),
+		cloneName: fmt.Sprintf("%v-%v", "cloneVol", r),
+		snapName:  fmt.Sprintf("%v-%v", "snapVol", r),
 	}
 
 	testCreateAll(t, td)
