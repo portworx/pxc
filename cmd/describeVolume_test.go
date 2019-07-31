@@ -214,6 +214,10 @@ func testDescribeAllVolumes(t *testing.T, td *testData) {
 	}
 }
 
+func testDescribeNonExistantVolume(t *testing.T, td *testData) {
+	// TODO:Implement this once unit test infrastructure cleanup is done
+}
+
 func TestDescribeVolume(t *testing.T) {
 	r := getRandom()
 	td := &testData{
@@ -225,5 +229,6 @@ func TestDescribeVolume(t *testing.T) {
 	testCreateAll(t, td)
 	testDescribeListedVolumes(t, td)
 	testDescribeAllVolumes(t, td)
+	testDescribeNonExistantVolume(t, td)
 	testDeleteAll(t, td)
 }

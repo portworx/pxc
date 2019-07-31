@@ -46,83 +46,93 @@ func init() {
 }
 
 func getVolumesExec(cmd *cobra.Command, args []string) error {
-	vf, err := newVolumeFormatter(cmd, args)
+	// Parse out all of the common cli volume flags
+	cvi := GetCliVolumeInputs(cmd, args)
+
+	// Create a cliVolumeOps object
+	cvOps := NewCliVolumeOps(cvi)
+
+	// Connect to px and k8s (if needed)
+	err := cvOps.Connect()
 	if err != nil {
 		return err
 	}
-	defer vf.close()
+	defer cvOps.Close()
 
-	vcf := volumeGetFormatter{
-		volumeFormatter: *vf,
-	}
-	vcf.Print()
-	return nil
+	// Create the parser object
+	vgf := NewVolumeGetFormatter(cvOps)
+
+	// Print the details and return errors if any
+	return util.PrintFormatted(vgf)
 }
 
 type volumeGetFormatter struct {
-	volumeFormatter
+	cliVolumeOps
 }
 
-// String returns the formatted output of the object as per the format set.
-func (p *volumeGetFormatter) String() string {
-	return util.GetFormattedOutput(p)
-}
-
-// Print writes the object to stdout
-func (p *volumeGetFormatter) Print() {
-	util.Printf("%v\n", p)
+func NewVolumeGetFormatter(cvOps *cliVolumeOps) *volumeGetFormatter {
+	return &volumeGetFormatter{
+		cliVolumeOps: *cvOps,
+	}
 }
 
 // YamlFormat returns the yaml representation of the object
-func (p *volumeGetFormatter) YamlFormat() string {
+func (p *volumeGetFormatter) YamlFormat() (string, error) {
 	vols, err := p.pxVolumeOps.GetVolumes()
 	if err != nil {
-		util.Eprintf("%v\n", err)
-		return ""
+		return "", err
 	}
 	return util.ToYaml(vols)
 }
 
 // JsonFormat returns the json representation of the object
-func (p *volumeGetFormatter) JsonFormat() string {
+func (p *volumeGetFormatter) JsonFormat() (string, error) {
 	vols, err := p.pxVolumeOps.GetVolumes()
 	if err != nil {
-		util.Eprintf("%v\n", err)
-		return ""
+		return "", err
 	}
 	return util.ToJson(vols)
 }
 
 // WideFormat returns the wide string representation of the object
-func (p *volumeGetFormatter) WideFormat() string {
+func (p *volumeGetFormatter) WideFormat() (string, error) {
 	p.wide = true
 	return p.toTabbed()
 }
 
 // DefaultFormat returns the default string representation of the object
-func (p *volumeGetFormatter) DefaultFormat() string {
+func (p *volumeGetFormatter) DefaultFormat() (string, error) {
 	return p.toTabbed()
 }
 
-func (p *volumeGetFormatter) toTabbed() string {
+func (p *volumeGetFormatter) toTabbed() (string, error) {
 	var b bytes.Buffer
 	writer := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
 	t := tabby.NewCustom(writer)
 
+	vols, err := p.pxVolumeOps.GetVolumes()
+	if err != nil {
+		return "", err
+	}
+
+	if len(vols) == 0 {
+		util.Printf("No resources found\n")
+		return "", nil
+	}
+
 	// Start the columns
 	t.AddHeader(p.getHeader()...)
 
-	vols, err := p.pxVolumeOps.GetVolumes()
-	if err != nil {
-		util.Eprintf("%v\n", err)
-		return ""
-	}
 	for _, n := range vols {
-		t.AddLine(p.getLine(n)...)
+		l, err := p.getLine(n)
+		if err != nil {
+			return "", nil
+		}
+		t.AddLine(l...)
 	}
 	t.Print()
 
-	return b.String()
+	return b.String(), nil
 }
 
 func (p *volumeGetFormatter) getHeader() []interface{} {
@@ -142,15 +152,18 @@ func (p *volumeGetFormatter) getHeader() []interface{} {
 	return header
 }
 
-func (p *volumeGetFormatter) getLine(resp *api.SdkVolumeInspectResponse) []interface{} {
-
+func (p *volumeGetFormatter) getLine(resp *api.SdkVolumeInspectResponse) ([]interface{}, error) {
 	v := resp.GetVolume()
 	spec := v.GetSpec()
 
-	state := p.pxVolumeOps.GetAttachedState(v)
+	var line []interface{}
+
+	state, err := p.pxVolumeOps.GetAttachedState(v)
+	if err != nil {
+		return line, err
+	}
 
 	// Size needs to be done better
-	var line []interface{}
 	if p.wide {
 		line = []interface{}{
 			v.GetId(), v.GetLocator().GetName(), spec.GetSize() / Gi, spec.GetHaLevel(),
@@ -164,20 +177,27 @@ func (p *volumeGetFormatter) getLine(resp *api.SdkVolumeInspectResponse) []inter
 		}
 	}
 	if p.showK8s {
-		line = append(line, p.podsUsingVolume(v))
+		pods, err := p.podsUsingVolume(v)
+		if err != nil {
+			return line, err
+		}
+		line = append(line, pods)
 	}
 	if p.showLabels {
 		line = append(line, util.StringMapToCommaString(v.GetLocator().GetVolumeLabels()))
 	}
-	return line
+	return line, nil
 }
 
-func (p *volumeGetFormatter) podsUsingVolume(v *api.Volume) string {
-	usedPods := p.pxVolumeOps.PodsUsingVolume(v)
+func (p *volumeGetFormatter) podsUsingVolume(v *api.Volume) (string, error) {
+	usedPods, err := p.pxVolumeOps.PodsUsingVolume(v)
+	if err != nil {
+		return "", err
+	}
 	usedPodNames := make([]string, 0)
 	namespace := v.Locator.VolumeLabels["namespace"]
 	for _, pod := range usedPods {
 		usedPodNames = append(usedPodNames, namespace+"/"+pod.Name)
 	}
-	return strings.Join(usedPodNames, ",")
+	return strings.Join(usedPodNames, ","), nil
 }

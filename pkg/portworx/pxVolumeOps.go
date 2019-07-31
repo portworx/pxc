@@ -80,13 +80,13 @@ type PxVolumeOps interface {
 	// filtered by the list of volume names specified
 	GetVolumes() ([]*api.SdkVolumeInspectResponse, error)
 	// PodsUsingVolume returns the list of pods uing the given volume
-	PodsUsingVolume(v *api.Volume) []v1.Pod
-	// GetAttachedOn returns the attached state of the specified volume
-	GetAttachedState(v *api.Volume) string
+	PodsUsingVolume(v *api.Volume) ([]v1.Pod, error)
+	// GetAttachedState returns the attached state of the specified volume
+	GetAttachedState(v *api.Volume) (string, error)
 	// GetReplicationInfo returns the details of the replicas of the specified volume
-	GetReplicationInfo(v *api.Volume) *ReplicationInfo
+	GetReplicationInfo(v *api.Volume) (*ReplicationInfo, error)
 	// GetStats returns the stats for the specified volume
-	GetStats(v *api.Volume) *api.Stats
+	GetStats(v *api.Volume) (*api.Stats, error)
 }
 
 type pxVolumeOps struct {
@@ -162,14 +162,10 @@ func (p *pxVolumeOps) getPods() ([]v1.Pod, error) {
 	return p.Pods, nil
 }
 
-func (p *pxVolumeOps) PodsUsingVolume(v *api.Volume) []v1.Pod {
+func (p *pxVolumeOps) PodsUsingVolume(v *api.Volume) ([]v1.Pod, error) {
 	pods, err := p.getPods()
 	if err != nil {
-		util.Eprintf("%v\n",
-			util.PxErrorMessagef(err,
-				"Failed to get pod information for volume %s",
-				v.GetLocator().GetName()))
-		return nil
+		return nil, err
 	}
 	usedPods := make([]v1.Pod, 0)
 	namespace := v.Locator.VolumeLabels["namespace"]
@@ -185,7 +181,7 @@ func (p *pxVolumeOps) PodsUsingVolume(v *api.Volume) []v1.Pod {
 			}
 		}
 	}
-	return usedPods
+	return usedPods, nil
 }
 
 func (p *pxVolumeOps) getNode(nodeId string) (*api.StorageNode, error) {
@@ -209,39 +205,34 @@ func (p *pxVolumeOps) getNode(nodeId string) (*api.StorageNode, error) {
 	return n, nil
 }
 
-func (p *pxVolumeOps) getAttachedOn(v *api.Volume) *api.StorageNode {
+func (p *pxVolumeOps) getAttachedOn(v *api.Volume) (*api.StorageNode, error) {
 	if len(v.GetAttachedOn()) != 0 {
 		node, err := p.getNode(v.GetAttachedOn())
 		if err != nil {
-			util.Eprintf("%v\n",
-				util.PxErrorMessagef(err,
-					"Failed to get node information where volume %s is attached",
-					v.GetLocator().GetName()))
-			return nil
+			return nil, err
 		}
-		return node
+		return node, nil
 	}
-	return nil
+	return nil, nil
 }
 
-func (p *pxVolumeOps) GetAttachedState(v *api.Volume) string {
-	n := p.getAttachedOn(v)
-	return getState(v, n)
+func (p *pxVolumeOps) GetAttachedState(v *api.Volume) (string, error) {
+	n, err := p.getAttachedOn(v)
+	if err != nil {
+		return "", err
+	}
+	return getState(v, n), nil
 }
 
-func (p *pxVolumeOps) GetStats(v *api.Volume) *api.Stats {
+func (p *pxVolumeOps) GetStats(v *api.Volume) (*api.Stats, error) {
 	volumes := api.NewOpenStorageVolumeClient(p.pxVolumeOpsInfo.Conn)
 	volStats, err := volumes.Stats(
 		p.pxVolumeOpsInfo.Ctx,
 		&api.SdkVolumeStatsRequest{VolumeId: v.GetId()})
 	if err != nil {
-		util.Eprintf("%v\n",
-			util.PxErrorMessagef(err,
-				"Failed to get stats for volume %s",
-				v.GetLocator().GetName()))
-		return &api.Stats{}
+		return &api.Stats{}, err
 	}
-	return volStats.GetStats()
+	return volStats.GetStats(), nil
 }
 
 const (
@@ -259,7 +250,7 @@ const (
 	RuntimeStateResyncFailed = "resync_failed"
 )
 
-func (p *pxVolumeOps) GetReplicationInfo(v *api.Volume) *ReplicationInfo {
+func (p *pxVolumeOps) GetReplicationInfo(v *api.Volume) (*ReplicationInfo, error) {
 	numResync := 0
 	nodesDown := false
 	numResyncFailed := 0
@@ -424,5 +415,5 @@ func (p *pxVolumeOps) GetReplicationInfo(v *api.Volume) *ReplicationInfo {
 		replStatus = "Resync"
 	}
 	rinfo.Status = replStatus
-	return rinfo
+	return rinfo, nil
 }

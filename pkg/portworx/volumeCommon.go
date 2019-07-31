@@ -26,13 +26,13 @@ const (
 )
 
 // SchedSummary returns the formatted string version of the schedule
-func SchedSummary(v *api.Volume) []string {
+func SchedSummary(v *api.Volume) ([]string, error) {
 	schedule := v.GetSpec().GetSnapshotSchedule()
 	sspec, policies, err := sched.ParseScheduleAndPolicies(schedule)
 	if err != nil {
-		return make([]string, 0)
+		return make([]string, 0), err
 	}
-	return scheduleSummary(sspec, policies)
+	return scheduleSummary(sspec, policies), nil
 }
 
 func scheduleSummary(items []sched.RetainInterval, policyTags *sched.PolicyTags) []string {

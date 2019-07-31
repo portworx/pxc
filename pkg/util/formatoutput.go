@@ -34,23 +34,20 @@ type FormatOutput interface {
 
 	// DefaultFormat formats the output as a regular string
 	// This is called when either "wide", "yaml" or "json" is not set
-	DefaultFormat() string
+	DefaultFormat() (string, error)
 
 	// WideFormat formats the object in the "wide" format
-	WideFormat() string
+	WideFormat() (string, error)
 
 	// YamlFormat formats the object in the "yaml" format
-	YamlFormat() string
+	YamlFormat() (string, error)
 
 	// JsonFormat formats the object in the "json" format
-	JsonFormat() string
-
-	// Print writes out the object in appropriate format
-	Print()
+	JsonFormat() (string, error)
 }
 
 // GetFormattedOutput returns the formatted output
-func GetFormattedOutput(in FormatOutput) string {
+func GetFormattedOutput(in FormatOutput) (string, error) {
 	switch in.GetFormat() {
 	case FORMAT_YAML:
 		return in.YamlFormat()
@@ -61,6 +58,17 @@ func GetFormattedOutput(in FormatOutput) string {
 	default:
 		return in.DefaultFormat()
 	}
+}
+
+// Print the formatted output to stdout
+// In case of any  error, just return the error
+func PrintFormatted(in FormatOutput) error {
+	str, err := GetFormattedOutput(in)
+	if err != nil {
+		return err
+	}
+	Printf("%s", str)
+	return nil
 }
 
 type BaseFormatOutput struct {
@@ -80,31 +88,21 @@ func (bfo *BaseFormatOutput) GetFormat() string {
 }
 
 // DefaultFormat just returns the Desc
-func (bfo *BaseFormatOutput) DefaultFormat() string {
-	return ""
+func (bfo *BaseFormatOutput) DefaultFormat() (string, error) {
+	return "", nil
 }
 
 // WideFormat just returns the DefaultFormat
-func (bfo *BaseFormatOutput) WideFormat() string {
-	return ""
+func (bfo *BaseFormatOutput) WideFormat() (string, error) {
+	return "", nil
 }
 
 // JsonFormat just returns the DefaultFormat
-func (bfo *BaseFormatOutput) JsonFormat() string {
-	return ""
+func (bfo *BaseFormatOutput) JsonFormat() (string, error) {
+	return "", nil
 }
 
 // YamlFormat just returns the YamlFormat
-func (bfo *BaseFormatOutput) YamlFormat() string {
-	return ""
-}
-
-// String returns the formatted output of the object as per the format set.
-func (bfo *BaseFormatOutput) String() string {
-	return GetFormattedOutput(bfo)
-}
-
-// Print writes the object to stdout
-func (bfo *BaseFormatOutput) Print() {
-	Printf("%v", bfo)
+func (bfo *BaseFormatOutput) YamlFormat() (string, error) {
+	return "", nil
 }

@@ -24,31 +24,21 @@ type DefaultFormatOutput struct {
 }
 
 // DefaultFormat returns the Desc
-func (dfo *DefaultFormatOutput) DefaultFormat() string {
-	return dfo.Desc
+func (dfo *DefaultFormatOutput) DefaultFormat() (string, error) {
+	return dfo.Desc, nil
 }
 
 // WideFormat returns the DefaultFormat
-func (dfo *DefaultFormatOutput) WideFormat() string {
+func (dfo *DefaultFormatOutput) WideFormat() (string, error) {
 	return dfo.DefaultFormat()
 }
 
 // JsonFormat returns the object in json format
-func (dfo *DefaultFormatOutput) JsonFormat() string {
+func (dfo *DefaultFormatOutput) JsonFormat() (string, error) {
 	return ToJson(dfo)
 }
 
 // YamlFormat returns the object in yaml format
-func (dfo *DefaultFormatOutput) YamlFormat() string {
+func (dfo *DefaultFormatOutput) YamlFormat() (string, error) {
 	return ToYaml(dfo)
-}
-
-// String returns the formatted output of the object as per the format set.
-func (dfo *DefaultFormatOutput) String() string {
-	return GetFormattedOutput(dfo)
-}
-
-// Print writes the object to stdout
-func (dfo *DefaultFormatOutput) Print() {
-	Printf("%v\n", dfo)
 }

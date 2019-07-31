@@ -117,6 +117,6 @@ func createVolumeExec(cmd *cobra.Command, args []string) error {
 		Desc: msg,
 		Id:   []string{resp.GetVolumeId()},
 	}
-	formattedOut.Print()
+	util.PrintFormatted(formattedOut)
 	return nil
 }

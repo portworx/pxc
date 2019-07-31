@@ -58,66 +58,76 @@ func init() {
 }
 
 func describeVolumesExec(cmd *cobra.Command, args []string) error {
-	vf, err := newVolumeFormatter(cmd, args)
+	// Parse out all of the common cli volume flags
+	cvi := GetCliVolumeInputs(cmd, args)
+
+	// Create a cliVolumeOps object
+	cvOps := NewCliVolumeOps(cvi)
+
+	// Connect to px and k8s (if needed)
+	err := cvOps.Connect()
 	if err != nil {
 		return err
 	}
-	defer vf.close()
+	defer cvOps.Close()
 
-	vcf := volumeInspectFormatter{
-		volumeFormatter: *vf,
-	}
-	vcf.Print()
-	return nil
+	// Create the parser object
+	vcf := NewVolumeInspectFormatter(cvOps)
+
+	// Print details and return any errors found during parsing
+	return util.PrintFormatted(vcf)
 }
 
 type volumeInspectFormatter struct {
-	volumeFormatter
+	cliVolumeOps
 }
 
-// String returns the formatted output of the object as per the format set.
-func (p *volumeInspectFormatter) String() string {
-	return util.GetFormattedOutput(p)
-}
-
-// Print writes the object to stdout
-func (p *volumeInspectFormatter) Print() {
-	util.Printf("%v\n", p)
+func NewVolumeInspectFormatter(cvOps *cliVolumeOps) *volumeInspectFormatter {
+	return &volumeInspectFormatter{
+		cliVolumeOps: *cvOps,
+	}
 }
 
 // YamlFormat returns the default representation as there is no yaml format support for describe
-func (p *volumeInspectFormatter) YamlFormat() string {
+func (p *volumeInspectFormatter) YamlFormat() (string, error) {
 	return p.DefaultFormat()
 }
 
 // JsonFormat returns the default representation as there is no json format support for describe
-func (p *volumeInspectFormatter) JsonFormat() string {
+func (p *volumeInspectFormatter) JsonFormat() (string, error) {
 	return p.DefaultFormat()
 }
 
 // WideFormat returns the default representation as there is no wide format support for describe
-func (p *volumeInspectFormatter) WideFormat() string {
+func (p *volumeInspectFormatter) WideFormat() (string, error) {
 	return p.DefaultFormat()
 }
 
 // DefaultFormat returns the default string representation of the object
-func (p *volumeInspectFormatter) DefaultFormat() string {
+func (p *volumeInspectFormatter) DefaultFormat() (string, error) {
 	return p.toTabbed()
 }
 
-func (p *volumeInspectFormatter) toTabbed() string {
+func (p *volumeInspectFormatter) toTabbed() (string, error) {
 	var b bytes.Buffer
 	writer := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
 	t := tabby.NewCustom(writer)
 
 	vols, err := p.pxVolumeOps.GetVolumes()
 	if err != nil {
-		util.Eprintf("%v\n", err)
-		return ""
+		return "", err
+	}
+
+	if len(vols) == 0 {
+		util.Printf("No resources found\n")
+		return "", nil
 	}
 
 	for i, n := range vols {
-		p.addVolumeDetails(n, t)
+		err := p.addVolumeDetails(n, t)
+		if err != nil {
+			return "", err
+		}
 		// Put two empty lines between volumes
 		if len(vols) > 1 && i != len(vols)-1 {
 			t.AddLine("")
@@ -126,30 +136,45 @@ func (p *volumeInspectFormatter) toTabbed() string {
 	}
 	t.Print()
 
-	return b.String()
+	return b.String(), nil
 }
 
 func (p *volumeInspectFormatter) addVolumeDetails(
 	resp *api.SdkVolumeInspectResponse,
 	t *tabby.Tabby,
-) {
+) error {
 
 	v := resp.GetVolume()
-	p.addVolumeBasicInfo(v, t)
-	p.addVolumeStatsInfo(v, t)
-	p.addVolumeReplicationInfo(v, t)
-	p.addVolumeK8sInfo(v, t)
-
+	err := p.addVolumeBasicInfo(v, t)
+	if err != nil {
+		return err
+	}
+	err = p.addVolumeStatsInfo(v, t)
+	if err != nil {
+		return err
+	}
+	err = p.addVolumeReplicationInfo(v, t)
+	if err != nil {
+		return err
+	}
+	err = p.addVolumeK8sInfo(v, t)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (p *volumeInspectFormatter) addVolumeBasicInfo(
 	v *api.Volume,
 	t *tabby.Tabby,
-) {
+) error {
 	spec := v.GetSpec()
 
 	// Determine the state of the volume
-	state := p.pxVolumeOps.GetAttachedState(v)
+	state, err := p.pxVolumeOps.GetAttachedState(v)
+	if err != nil {
+		return err
+	}
 
 	// Print basic info
 	t.AddLine("Volume:", v.GetId())
@@ -159,7 +184,7 @@ func (p *volumeInspectFormatter) addVolumeBasicInfo(
 	}
 	if v.GetFormat() == api.FSType_FS_TYPE_FUSE {
 		t.AddLine("Type:", "Namespace Volume Group")
-		return
+		return nil
 	}
 	t.AddLine("Size:", humanize.BigIBytes(big.NewInt(int64(spec.GetSize()))))
 	t.AddLine("Format:",
@@ -171,7 +196,10 @@ func (p *volumeInspectFormatter) addVolumeBasicInfo(
 	if v.GetSource() != nil && len(v.GetSource().GetParent()) != 0 {
 		t.AddLine("Parent:", v.GetSource().GetParent())
 	}
-	snapSched := portworx.SchedSummary(v)
+	snapSched, err := portworx.SchedSummary(v)
+	if err != nil {
+		return err
+	}
 	if len(snapSched) != 0 {
 		util.AddArray(t, "Snapshot Schedule:", snapSched)
 	}
@@ -194,13 +222,17 @@ func (p *volumeInspectFormatter) addVolumeBasicInfo(
 	if len(v.GetLocator().GetVolumeLabels()) != 0 {
 		util.AddMap(t, "Labels:", v.GetLocator().GetVolumeLabels())
 	}
+	return nil
 }
 
 func (p *volumeInspectFormatter) addVolumeStatsInfo(
 	v *api.Volume,
 	t *tabby.Tabby,
-) {
-	stats := p.pxVolumeOps.GetStats(v)
+) error {
+	stats, err := p.pxVolumeOps.GetStats(v)
+	if err != nil {
+		return err
+	}
 	t.AddLine("Stats:")
 	t.AddLine("  Reads:", stats.GetReads())
 	t.AddLine("  Reads MS:", stats.GetReadMs())
@@ -210,13 +242,17 @@ func (p *volumeInspectFormatter) addVolumeStatsInfo(
 	t.AddLine("  Bytes Written:", stats.GetWriteBytes())
 	t.AddLine("  IOs in progress:", stats.GetIoProgress())
 	t.AddLine("  Bytes used:", humanize.BigIBytes(big.NewInt(int64(stats.BytesUsed))))
+	return nil
 }
 
 func (p *volumeInspectFormatter) addVolumeReplicationInfo(
 	v *api.Volume,
 	t *tabby.Tabby,
-) {
-	replInfo := p.pxVolumeOps.GetReplicationInfo(v)
+) error {
+	replInfo, err := p.pxVolumeOps.GetReplicationInfo(v)
+	if err != nil {
+		return err
+	}
 	t.AddLine("Replication Status:", replInfo.Status)
 	if len(replInfo.Rsi) > 0 {
 		t.AddLine("Replica sets on nodes:")
@@ -231,13 +267,17 @@ func (p *volumeInspectFormatter) addVolumeReplicationInfo(
 			util.AddArray(t, "    Re-add on:", rsi.ReAddOn)
 		}
 	}
+	return nil
 }
 
 func (p *volumeInspectFormatter) addVolumeK8sInfo(
 	v *api.Volume,
 	t *tabby.Tabby,
-) {
-	usedPods := p.pxVolumeOps.PodsUsingVolume(v)
+) error {
+	usedPods, err := p.pxVolumeOps.PodsUsingVolume(v)
+	if err != nil {
+		return err
+	}
 	if len(usedPods) > 0 {
 		t.AddLine("Pods:")
 		for _, consumer := range usedPods {
@@ -253,4 +293,5 @@ func (p *volumeInspectFormatter) addVolumeK8sInfo(
 			util.AddArray(t, "    Controlled by:", o)
 		}
 	}
+	return nil
 }
