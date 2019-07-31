@@ -17,7 +17,10 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -191,4 +194,43 @@ func deepCompare(element string, expectedResult map[string]string) (state bool) 
 	ret, _ := CommaStringToStringMap(element)
 	state = reflect.DeepEqual(ret, expectedResult)
 	return
+}
+
+var isFileExistsTests = []struct {
+	testCase string
+	status   bool
+}{
+	{
+		"existsFile",
+		true,
+	},
+	{
+		"nonExistsFile",
+		false,
+	},
+}
+
+/*
+Test function to test various possible case of IsFileExists util function
+*/
+func TestIsFileExists(t *testing.T) {
+	var filename = ""
+
+	for _, test := range isFileExistsTests {
+
+		filename = fmt.Sprintf("/tmp/%s", GetRandomName(test.testCase))
+		if strings.Compare(test.testCase, "existsFile") == 0 {
+			// Create the file with random name
+			_, err := os.Create(filename)
+			assert.Equal(t, err, nil)
+		}
+		status := IsFileExists(filename)
+		assert.Equal(t, test.status, status)
+
+		if strings.Compare(test.testCase, "existsFile") == 0 {
+			// Remove the file
+			err := os.Remove(filename)
+			assert.Equal(t, err, nil)
+		}
+	}
 }

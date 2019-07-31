@@ -23,7 +23,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/px/pkg/tests"
@@ -64,7 +63,7 @@ func runPx() error {
 
 // genVolName generates a unique name for a volume appended to a prefix
 func genVolName(prefix string) string {
-	return fmt.Sprintf("%s-%v", prefix, time.Now().Unix())
+	return util.GetRandomName(prefix)
 }
 
 // Execute cli and return the buffers of standard out, standard error,
