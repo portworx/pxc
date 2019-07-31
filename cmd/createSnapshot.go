@@ -96,7 +96,6 @@ func createSnapshotExec(cmd *cobra.Command, args []string) error {
 		Desc: msg,
 		Id:   []string{resp.GetSnapshotId()},
 	}
-	formattedOut.Print()
 
-	return nil
+	return util.PrintFormatted(formattedOut)
 }

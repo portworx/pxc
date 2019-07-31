@@ -62,11 +62,8 @@ func getVolumesExec(cmd *cobra.Command, args []string) error {
 	// Create the parser object
 	vgf := NewVolumeGetFormatter(cvOps)
 
-	// Print the details
-	vgf.Print()
-
-	// Return any errors found during parsing
-	return vgf.GetError()
+	// Print the details and return errors if any
+	return util.PrintFormatted(vgf)
 }
 
 type volumeGetFormatter struct {
@@ -79,61 +76,48 @@ func NewVolumeGetFormatter(cvOps *cliVolumeOps) *volumeGetFormatter {
 	}
 }
 
-// String returns the formatted output of the object as per the format set.
-func (p *volumeGetFormatter) String() string {
-	return util.GetFormattedOutput(p)
-}
-
-// Print writes the object to stdout
-func (p *volumeGetFormatter) Print() {
-	util.Printf("%v", p)
-}
-
 // YamlFormat returns the yaml representation of the object
-func (p *volumeGetFormatter) YamlFormat() string {
+func (p *volumeGetFormatter) YamlFormat() (string, error) {
 	vols, err := p.pxVolumeOps.GetVolumes()
 	if err != nil {
-		p.SetError(err)
-		return ""
+		return "", err
 	}
 	return util.ToYaml(vols)
 }
 
 // JsonFormat returns the json representation of the object
-func (p *volumeGetFormatter) JsonFormat() string {
+func (p *volumeGetFormatter) JsonFormat() (string, error) {
 	vols, err := p.pxVolumeOps.GetVolumes()
 	if err != nil {
-		p.SetError(err)
-		return ""
+		return "", err
 	}
 	return util.ToJson(vols)
 }
 
 // WideFormat returns the wide string representation of the object
-func (p *volumeGetFormatter) WideFormat() string {
+func (p *volumeGetFormatter) WideFormat() (string, error) {
 	p.wide = true
 	return p.toTabbed()
 }
 
 // DefaultFormat returns the default string representation of the object
-func (p *volumeGetFormatter) DefaultFormat() string {
+func (p *volumeGetFormatter) DefaultFormat() (string, error) {
 	return p.toTabbed()
 }
 
-func (p *volumeGetFormatter) toTabbed() string {
+func (p *volumeGetFormatter) toTabbed() (string, error) {
 	var b bytes.Buffer
 	writer := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
 	t := tabby.NewCustom(writer)
 
 	vols, err := p.pxVolumeOps.GetVolumes()
 	if err != nil {
-		p.SetError(err)
-		return ""
+		return "", err
 	}
 
 	if len(vols) == 0 {
 		util.Printf("No resources found\n")
-		return ""
+		return "", nil
 	}
 
 	// Start the columns
@@ -142,14 +126,13 @@ func (p *volumeGetFormatter) toTabbed() string {
 	for _, n := range vols {
 		l, err := p.getLine(n)
 		if err != nil {
-			p.SetError(err)
-			return ""
+			return "", nil
 		}
 		t.AddLine(l...)
 	}
 	t.Print()
 
-	return b.String()
+	return b.String(), nil
 }
 
 func (p *volumeGetFormatter) getHeader() []interface{} {

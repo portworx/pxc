@@ -48,7 +48,7 @@ func getRandom() uint64 {
 func testCreateVolume(t *testing.T, volName string, size uint64) string {
 	cli := "px create volume " + volName + " --size " + strconv.FormatUint(size, 10)
 	lines := executeCli(cli)
-	assert.Equal(t, 2, len(lines), "Output does not match")
+	assert.Equal(t, 1, len(lines), "Output does not match")
 	assert.Contains(t, lines[0], "Volume "+volName+" created with id", "expected message not received")
 	words := strings.Split(lines[0], " ")
 	assert.Equal(t, len(words), 6, "expected message not received")
@@ -106,7 +106,7 @@ func testDeleteVolume(t *testing.T, volName string) {
 func testCreateSnapshot(t *testing.T, volId string, snapName string) string {
 	cli := fmt.Sprintf("px create volumesnapshot %s %s", volId, snapName)
 	lines := executeCli(cli)
-	assert.Equal(t, 2, len(lines), "Output does not match")
+	assert.Equal(t, 1, len(lines), "Output does not match")
 	assert.Contains(t, lines[0], "Snapshot of "+volId+" created with id", "expected message not received")
 	words := strings.Split(lines[0], " ")
 	assert.Equal(t, len(words), 7, "expected message not received")
@@ -119,7 +119,7 @@ func testCreateSnapshot(t *testing.T, volId string, snapName string) string {
 func testCreateClone(t *testing.T, volId string, cloneName string) string {
 	cli := fmt.Sprintf("px create volumeclone %s %s", volId, cloneName)
 	lines := executeCli(cli)
-	assert.Equal(t, 2, len(lines), "Output does not match")
+	assert.Equal(t, 1, len(lines), "Output does not match")
 	assert.Contains(t, lines[0], "Clone of "+volId+" created with id", "expected message not received")
 	words := strings.Split(lines[0], " ")
 	assert.Equal(t, len(words), 7, "expected message not received")

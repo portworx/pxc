@@ -38,7 +38,6 @@ type cliVolumeInputs struct {
 type cliVolumeOps struct {
 	cliVolumeInputs
 	pxVolumeOps portworx.PxVolumeOps
-	err         error
 }
 
 // Look for all of the common flags and create a new cliVolumeInputs object
@@ -133,12 +132,4 @@ func (p *cliVolumeOps) Connect() error {
 
 func (p *cliVolumeOps) Close() {
 	p.pxVolumeOps.GetPxVolumeOpsInfo().Close()
-}
-
-func (p *cliVolumeOps) SetError(err error) {
-	p.err = err
-}
-
-func (p *cliVolumeOps) GetError() error {
-	return p.err
 }

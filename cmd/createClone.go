@@ -77,6 +77,5 @@ func createCloneExec(cmd *cobra.Command, args []string) error {
 		Desc: msg,
 		Id:   []string{resp.GetVolumeId()},
 	}
-	formattedOut.Print()
-	return nil
+	return util.PrintFormatted(formattedOut)
 }

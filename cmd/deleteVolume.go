@@ -69,7 +69,5 @@ func deleteVolumeExec(cmd *cobra.Command, args []string) error {
 		Desc: msg,
 		Id:   []string{name},
 	}
-	formattedOut.Print()
-
-	return nil
+	return util.PrintFormatted(formattedOut)
 }

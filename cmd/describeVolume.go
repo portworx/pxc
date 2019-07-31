@@ -74,11 +74,8 @@ func describeVolumesExec(cmd *cobra.Command, args []string) error {
 	// Create the parser object
 	vcf := NewVolumeInspectFormatter(cvOps)
 
-	// Print the details
-	vcf.Print()
-
-	// Return any errors found during parsing
-	return vcf.GetError()
+	// Print details and return any errors found during parsing
+	return util.PrintFormatted(vcf)
 }
 
 type volumeInspectFormatter struct {
@@ -91,57 +88,45 @@ func NewVolumeInspectFormatter(cvOps *cliVolumeOps) *volumeInspectFormatter {
 	}
 }
 
-// String returns the formatted output of the object as per the format set.
-func (p *volumeInspectFormatter) String() string {
-	return util.GetFormattedOutput(p)
-}
-
-// Print writes the object to stdout
-func (p *volumeInspectFormatter) Print() {
-	util.Printf("%v", p)
-}
-
 // YamlFormat returns the default representation as there is no yaml format support for describe
-func (p *volumeInspectFormatter) YamlFormat() string {
+func (p *volumeInspectFormatter) YamlFormat() (string, error) {
 	return p.DefaultFormat()
 }
 
 // JsonFormat returns the default representation as there is no json format support for describe
-func (p *volumeInspectFormatter) JsonFormat() string {
+func (p *volumeInspectFormatter) JsonFormat() (string, error) {
 	return p.DefaultFormat()
 }
 
 // WideFormat returns the default representation as there is no wide format support for describe
-func (p *volumeInspectFormatter) WideFormat() string {
+func (p *volumeInspectFormatter) WideFormat() (string, error) {
 	return p.DefaultFormat()
 }
 
 // DefaultFormat returns the default string representation of the object
-func (p *volumeInspectFormatter) DefaultFormat() string {
+func (p *volumeInspectFormatter) DefaultFormat() (string, error) {
 	return p.toTabbed()
 }
 
-func (p *volumeInspectFormatter) toTabbed() string {
+func (p *volumeInspectFormatter) toTabbed() (string, error) {
 	var b bytes.Buffer
 	writer := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
 	t := tabby.NewCustom(writer)
 
 	vols, err := p.pxVolumeOps.GetVolumes()
 	if err != nil {
-		p.SetError(err)
-		return ""
+		return "", err
 	}
 
 	if len(vols) == 0 {
 		util.Printf("No resources found\n")
-		return ""
+		return "", nil
 	}
 
 	for i, n := range vols {
 		err := p.addVolumeDetails(n, t)
 		if err != nil {
-			p.SetError(err)
-			return ""
+			return "", err
 		}
 		// Put two empty lines between volumes
 		if len(vols) > 1 && i != len(vols)-1 {
@@ -151,7 +136,7 @@ func (p *volumeInspectFormatter) toTabbed() string {
 	}
 	t.Print()
 
-	return b.String()
+	return b.String(), nil
 }
 
 func (p *volumeInspectFormatter) addVolumeDetails(

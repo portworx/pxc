@@ -17,12 +17,18 @@ package util
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	yaml "gopkg.in/yaml.v2"
 )
+
+func checkOutput(t *testing.T, out *DefaultFormatOutput, formatStr string) {
+	out.SetFormat(formatStr)
+	v, err := GetFormattedOutput(out)
+	assert.Equal(t, err, nil, "Got error in formatting")
+	assert.Equalf(t, v, out.Desc, "%s output is not correct", formatStr)
+}
 
 func TestDefaultFormatOutput(t *testing.T) {
 	out := &DefaultFormatOutput{
@@ -31,18 +37,14 @@ func TestDefaultFormatOutput(t *testing.T) {
 		Desc: "Create Test with new uuid successful",
 	}
 
-	out.SetFormat("wide")
-	v := fmt.Sprintf("%v", out)
-	assert.Equal(t, v, out.Desc, "Default output is not correct")
-
-	out.SetFormat("")
-	v = fmt.Sprintf("%v", out)
-	assert.Equal(t, v, out.Desc, "Default output is not correct")
+	checkOutput(t, out, "wide")
+	checkOutput(t, out, "")
 
 	out.SetFormat("yaml")
-	v = fmt.Sprintf("%v", out)
+	v, err := GetFormattedOutput(out)
+	assert.Equal(t, err, nil, "Got error in formatting")
 	var newout DefaultFormatOutput
-	err := yaml.Unmarshal([]byte(v), &newout)
+	err = yaml.Unmarshal([]byte(v), &newout)
 	assert.NoError(t, err, "yaml unmarshal failed")
 	assert.Equal(t, newout.Id[0], out.Id[0], "yaml output not correct for Id")
 	assert.Equal(t, newout.Cmd, out.Cmd, "yaml output not correct for Cmd")
@@ -50,7 +52,8 @@ func TestDefaultFormatOutput(t *testing.T) {
 
 	newout = DefaultFormatOutput{}
 	out.SetFormat("json")
-	v = fmt.Sprintf("%v", out)
+	v, err = GetFormattedOutput(out)
+	assert.Equal(t, err, nil, "Got error in formatting")
 	err = json.Unmarshal([]byte(v), &newout)
 	assert.NoError(t, err, "yaml unmarshal failed")
 	assert.Equal(t, newout.Id[0], out.Id[0], "yaml output not correct for Id")
