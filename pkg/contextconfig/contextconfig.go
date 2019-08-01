@@ -111,7 +111,7 @@ func (cm *ContextManager) Add(clientContext *ClientContext) error {
 	return cm.saveContext()
 }
 
-func (cm *ContextManager) GetCurrent() (*ClientContext, error) {
+func (cm *ContextManager) getContextDetails(name string) (*ClientContext, error) {
 	if err := cm.loadContext(); err != nil {
 		return nil, err
 	}
@@ -120,29 +120,11 @@ func (cm *ContextManager) GetCurrent() (*ClientContext, error) {
 		return nil, fmt.Errorf("No configurations found in %s", cm.path)
 	}
 
-	if len(cm.cfg.Current) == 0 {
-		return &cm.cfg.Configurations[0], nil
-	}
-
-	for _, cctx := range cm.cfg.Configurations {
-		if cctx.Name == cm.cfg.Current {
-			return &cctx, nil
+	if len(name) == 0 {
+		if len(cm.cfg.Current) == 0 {
+			return &cm.cfg.Configurations[0], nil
 		}
-	}
-
-	return nil, fmt.Errorf("Default context %s not found in %s",
-		cm.cfg.Current,
-		cm.path)
-}
-
-// TODO have GetNamedContext and GetCurrent() call a common helper function
-func (cm *ContextManager) GetNamedContext(name string) (*ClientContext, error) {
-	if err := cm.loadContext(); err != nil {
-		return nil, err
-	}
-
-	if len(cm.cfg.Configurations) == 0 {
-		return nil, fmt.Errorf("No configurations found in %s", cm.path)
+		name = cm.cfg.Current
 	}
 
 	for _, cctx := range cm.cfg.Configurations {
@@ -154,7 +136,16 @@ func (cm *ContextManager) GetNamedContext(name string) (*ClientContext, error) {
 	return nil, fmt.Errorf("Context %s not found in %s",
 		cm.cfg.Current,
 		cm.path)
+}
 
+func (cm *ContextManager) GetCurrent() (*ClientContext, error) {
+	ctx, err := cm.getContextDetails("")
+	return ctx, err
+}
+
+func (cm *ContextManager) GetNamedContext(name string) (*ClientContext, error) {
+	ctx, err := cm.getContextDetails(name)
+	return ctx, err
 }
 
 // GetAll simply returns all configurations
@@ -298,6 +289,9 @@ func (cm *ContextManager) loadContext() error {
 	data, err := ioutil.ReadFile(cm.path)
 	if err != nil {
 		return fmt.Errorf("Failed to load context config file, %v", err)
+	}
+	if len(data) == 0 {
+		return fmt.Errorf("The config file is empty")
 	}
 
 	if err := yaml.Unmarshal(data, &cm.cfg); err != nil {
