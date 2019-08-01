@@ -17,10 +17,12 @@ package cmd
 
 import (
 	"bytes"
+	"math/big"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/cheynewallace/tabby"
+	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
@@ -164,16 +166,16 @@ func (p *volumeGetFormatter) getLine(resp *api.SdkVolumeInspectResponse) ([]inte
 		return line, err
 	}
 
-	// Size needs to be done better
+	size := humanize.BigIBytes(big.NewInt(int64(spec.GetSize())))
 	if p.wide {
 		line = []interface{}{
-			v.GetId(), v.GetLocator().GetName(), spec.GetSize() / Gi, spec.GetHaLevel(),
+			v.GetId(), v.GetLocator().GetName(), size, spec.GetHaLevel(),
 			spec.GetShared() || spec.GetSharedv4(), spec.GetEncrypted(),
 			spec.GetCos(), portworx.PrettyStatus(v), state, spec.GetSnapshotSchedule() != "",
 		}
 	} else {
 		line = []interface{}{
-			v.GetLocator().GetName(), spec.GetSize() / Gi, spec.GetHaLevel(),
+			v.GetLocator().GetName(), size, spec.GetHaLevel(),
 			spec.GetShared() || spec.GetSharedv4(), portworx.PrettyStatus(v), state,
 		}
 	}

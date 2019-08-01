@@ -536,6 +536,93 @@ var dummyInputJson = `{
       }
     }
   ],
+  "Pvcs": [
+    {
+      "metadata": {
+        "name": "mysql-pvc-1",
+        "namespace": "wp1",
+        "selfLink": "/api/v1/namespaces/wp1/persistentvolumeclaims/mysql-pvc-1",
+        "uid": "6fc1fe2d-25f4-40b0-a616-04c019572154",
+        "resourceVersion": "2163115",
+        "creationTimestamp": "2019-07-25T08:49:58Z",
+        "annotations": {
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"PersistentVolumeClaim\",\"metadata\":{\"annotations\":{\"volume.beta.kubernetes.io/storage-class\":\"portworx-sc\"},\"name\":\"mysql-pvc-1\",\"namespace\":\"wp1\"},\"spec\":{\"accessModes\":[\"ReadWriteOnce\"],\"resources\":{\"requests\":{\"storage\":\"20Gi\"}}}}\n",
+          "pv.kubernetes.io/bind-completed": "yes",
+          "pv.kubernetes.io/bound-by-controller": "yes",
+          "volume.beta.kubernetes.io/storage-class": "portworx-sc",
+          "volume.beta.kubernetes.io/storage-provisioner": "kubernetes.io/portworx-volume"
+        },
+        "finalizers": [
+          "kubernetes.io/pvc-protection"
+        ]
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "20Gi"
+          }
+        },
+        "volumeName": "pvc-6fc1fe2d-25f4-40b0-a616-04c019572154",
+        "volumeMode": "Filesystem"
+      },
+      "status": {
+        "phase": "Bound",
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "capacity": {
+          "storage": "20Gi"
+        }
+      }
+    },
+    {
+      "metadata": {
+        "name": "wp-pv-claim",
+        "namespace": "wp1",
+        "selfLink": "/api/v1/namespaces/wp1/persistentvolumeclaims/wp-pv-claim",
+        "uid": "34d0f15c-65b9-4229-8b3e-b7bb912e382f",
+        "resourceVersion": "2163066",
+        "creationTimestamp": "2019-07-25T08:49:58Z",
+        "labels": {
+          "app": "wordpress"
+        },
+        "annotations": {
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"PersistentVolumeClaim\",\"metadata\":{\"annotations\":{\"volume.beta.kubernetes.io/storage-class\":\"portworx-sc-shared\"},\"labels\":{\"app\":\"wordpress\"},\"name\":\"wp-pv-claim\",\"namespace\":\"wp1\"},\"spec\":{\"accessModes\":[\"ReadWriteMany\"],\"resources\":{\"requests\":{\"storage\":\"10Gi\"}}}}\n",
+          "pv.kubernetes.io/bind-completed": "yes",
+          "pv.kubernetes.io/bound-by-controller": "yes",
+          "volume.beta.kubernetes.io/storage-class": "portworx-sc-shared",
+          "volume.beta.kubernetes.io/storage-provisioner": "kubernetes.io/portworx-volume"
+        },
+        "finalizers": [
+          "kubernetes.io/pvc-protection"
+        ]
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteMany"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "10Gi"
+          }
+        },
+        "volumeName": "pvc-34d0f15c-65b9-4229-8b3e-b7bb912e382f",
+        "volumeMode": "Filesystem"
+      },
+      "status": {
+        "phase": "Bound",
+        "accessModes": [
+          "ReadWriteMany"
+        ],
+        "capacity": {
+          "storage": "10Gi"
+        }
+      }
+    }
+  ],
   "Pods": [
     {
       "metadata": {

@@ -40,14 +40,14 @@ func ListContains(list []string, s string) bool {
 	return false
 }
 
-// ListsHaveMatch returns true when any one string is found in both lists
-func ListHaveMatch(list, match []string) bool {
+// ListsHaveMatch returns the string and true if any one string is found in both lists
+func ListHaveMatch(list, match []string) (string, bool) {
 	for _, s := range match {
 		if ListContains(list, s) {
-			return true
+			return s, true
 		}
 	}
-	return false
+	return "", false
 }
 
 // StringMapToCommaString returns a comma separated k=v as a single string

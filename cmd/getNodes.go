@@ -16,8 +16,13 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"fmt"
+	"math/big"
+	"text/tabwriter"
 
+	"github.com/cheynewallace/tabby"
+	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/px/pkg/util"
 
@@ -38,87 +43,144 @@ func init() {
 }
 
 func getNodesExec(cmd *cobra.Command, args []string) error {
-	ctx, conn, err := PxConnectDefault()
+	// Parse out all of the common cli volume flags
+	cvi := GetCliVolumeInputs(cmd, make([]string, 0))
+
+	// Create a cliVolumeOps object
+	cvOps := NewCliVolumeOps(cvi)
+
+	// Connect to px and k8s (if needed)
+	err := cvOps.Connect()
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer cvOps.Close()
 
-	// Get all node Ids
-	nodes := api.NewOpenStorageNodeClient(conn)
-	nodesInfo, err := nodes.Enumerate(ctx, &api.SdkNodeEnumerateRequest{})
+	// Create the parser object
+	ngf := NewNodesGetFormatter(cvOps, args)
+
+	// Print the details and return errors if any
+	return util.PrintFormatted(ngf)
+
+}
+
+type nodesGetFormatter struct {
+	cliVolumeOps
+	nodeIdentifiers []string
+}
+
+func NewNodesGetFormatter(cvOps *cliVolumeOps, nodeIdentifiers []string) *nodesGetFormatter {
+	return &nodesGetFormatter{
+		cliVolumeOps:    *cvOps,
+		nodeIdentifiers: nodeIdentifiers,
+	}
+}
+
+func (p *nodesGetFormatter) getNodes() ([]*api.StorageNode, error) {
+	ns, err := p.pxVolumeOps.EnumerateNodes()
 	if err != nil {
-		return util.PxErrorMessage(err, "Failed to get node information")
+		return make([]*api.StorageNode, 0), err
 	}
 
-	// Get all node info
-	storageNodes := make([]*api.StorageNode, 0, len(nodesInfo.GetNodeIds()))
-	for _, nid := range nodesInfo.GetNodeIds() {
-		node, err := nodes.Inspect(ctx, &api.SdkNodeInspectRequest{NodeId: nid})
+	nodes := make([]*api.StorageNode, 0, len(ns))
+
+	// Store all of the found ids
+	foundNodes := make(map[string]bool)
+	for _, nid := range ns {
+		n, err := p.pxVolumeOps.GetNode(nid)
 		if err != nil {
 			// Just print it and continue to other nodes
 			util.PrintPxErrorMessagef(err, "Failed to get information about node %s", nid)
 			continue
 		}
-		n := node.GetNode()
-
-		// Check if we have been asked for specific node
-		if len(args) != 0 &&
-			!util.ListHaveMatch(args,
+		if len(p.nodeIdentifiers) != 0 {
+			str, found := util.ListHaveMatch(p.nodeIdentifiers,
 				[]string{n.GetId(),
 					n.GetHostname(),
 					n.GetMgmtIp(),
-					n.GetSchedulerNodeName()}) {
-			continue
+					n.GetSchedulerNodeName()})
+			if found == false {
+				continue
+			} else {
+				// Keep track of found nodes
+				foundNodes[str] = true
+			}
 		}
-
-		storageNodes = append(storageNodes, node.GetNode())
+		nodes = append(nodes, n)
 	}
 
-	// Get output
-	output, _ := cmd.Flags().GetString("output")
-	switch output {
-	case "yaml":
-		util.PrintYaml(storageNodes)
-	case "json":
-		util.PrintJson(storageNodes)
-	case "wide":
-		// We can have a special one here, but for simplicity, we will use the
-		// default printer
-		fallthrough
-	default:
-		getNodesDefaultPrinter(cmd, args, storageNodes)
+	// If some node is specified, and it is not found return error
+	if len(p.nodeIdentifiers) != 0 {
+		for _, f := range p.nodeIdentifiers {
+			_, ok := foundNodes[f]
+			if ok == false {
+				return nodes, fmt.Errorf("Node with %s not found", f)
+			}
+		}
 	}
-
-	return nil
+	return nodes, nil
 }
 
-func getNodesDefaultPrinter(cmd *cobra.Command, args []string, storageNodes []*api.StorageNode) {
+// YamlFormat returns the yaml representation of the object
+func (p *nodesGetFormatter) YamlFormat() (string, error) {
+	nodes, err := p.getNodes()
+	if err != nil {
+		return "", err
+	}
+	return util.ToYaml(nodes)
+}
 
-	// Determine if it is a wide output
-	output, _ := cmd.Flags().GetString("output")
-	wide := output == "wide"
+// JsonFormat returns the json representation of the object
+func (p *nodesGetFormatter) JsonFormat() (string, error) {
+	nodes, err := p.getNodes()
+	if err != nil {
+		return "", err
+	}
+	return util.ToJson(nodes)
+}
 
-	// Determine if we need to show labels
-	showLabels, _ := cmd.Flags().GetBool("show-labels")
+// WideFormat returns the wide string representation of the object
+func (p *nodesGetFormatter) WideFormat() (string, error) {
+	p.wide = true
+	return p.toTabbed()
+}
+
+// DefaultFormat returns the default string representation of the object
+func (p *nodesGetFormatter) DefaultFormat() (string, error) {
+	return p.toTabbed()
+}
+
+func (p *nodesGetFormatter) toTabbed() (string, error) {
+	var b bytes.Buffer
+	writer := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
+	t := tabby.NewCustom(writer)
+
+	nodes, err := p.getNodes()
+	if err != nil {
+		return "", err
+	}
+
+	if len(nodes) == 0 {
+		util.Printf("No resources found\n")
+		return "", nil
+	}
 
 	// Start the columns
-	t := util.NewTabby()
-	np := &nodeColumnFormatter{wide: wide, showLabels: showLabels}
-	t.AddHeader(np.getHeader()...)
+	t.AddHeader(p.getHeader()...)
 
-	for _, n := range storageNodes {
-		t.AddLine(np.getLine(n)...)
+	for _, n := range nodes {
+		l, err := p.getLine(n)
+		if err != nil {
+			return "", nil
+		}
+		t.AddLine(l...)
 	}
 	t.Print()
+
+	return b.String(), nil
 }
 
-type nodeColumnFormatter struct {
-	wide       bool
-	showLabels bool
-}
-
-func (p *nodeColumnFormatter) getHeader() []interface{} {
+func (p *nodesGetFormatter) getHeader() []interface{} {
 	var header []interface{}
 	if p.wide {
 		header = []interface{}{"Id", "Hostname", "IP", "Data IP", "SchedulerNodeName", "Used", "Capacity", "# Disks", "# Pools", "Status"}
@@ -132,8 +194,7 @@ func (p *nodeColumnFormatter) getHeader() []interface{} {
 	return header
 }
 
-func (p *nodeColumnFormatter) getLine(n *api.StorageNode) []interface{} {
-
+func (p *nodesGetFormatter) getLine(n *api.StorageNode) ([]interface{}, error) {
 	// Calculate used
 	var (
 		used, capacity uint64
@@ -142,8 +203,9 @@ func (p *nodeColumnFormatter) getLine(n *api.StorageNode) []interface{} {
 		used += pool.GetUsed()
 		capacity += pool.GetTotalSize()
 	}
-	usedStr := fmt.Sprintf("%d Gi", used/Gi)
-	capacityStr := fmt.Sprintf("%d Gi", capacity/Gi)
+
+	usedStr := humanize.BigIBytes(big.NewInt(int64(used)))
+	capacityStr := humanize.BigIBytes(big.NewInt(int64(capacity)))
 
 	// Return a line
 	var line []interface{}
@@ -163,5 +225,5 @@ func (p *nodeColumnFormatter) getLine(n *api.StorageNode) []interface{} {
 	if p.showLabels {
 		line = append(line, util.StringMapToCommaString(n.GetNodeLabels()))
 	}
-	return line
+	return line, nil
 }

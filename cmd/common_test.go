@@ -178,18 +178,3 @@ func testCreateClone(t *testing.T, volId string, cloneName string) {
 
 	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Clone of %s created with id", volId)))
 }
-
-// Takes a list of volumes and returns a array of string, one volume description per string
-// TODO This should probably be part of the TestXXX call, and not a library call
-func testDescribeVolumes(t *testing.T, volNames []string) []string {
-	cli := "px describe volume"
-	for _, v := range volNames {
-		cli = fmt.Sprintf("%v %v", cli, v)
-	}
-	lines, _, err := executeCli(cli)
-	assert.NoError(t, err)
-
-	l := strings.Join(lines, "\n")
-	vols := strings.Split(l, "\n\n")
-	return vols
-}
