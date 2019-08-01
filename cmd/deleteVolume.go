@@ -59,12 +59,7 @@ func deleteVolumeExec(cmd *cobra.Command, args []string) error {
 
 	msg := fmt.Sprintf("Volume %s deleted", name)
 
-	output, _ := cmd.Flags().GetString("output")
-
 	formattedOut := &util.DefaultFormatOutput{
-		BaseFormatOutput: util.BaseFormatOutput{
-			FormatType: output,
-		},
 		Cmd:  "delete volume",
 		Desc: msg,
 		Id:   []string{name},

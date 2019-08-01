@@ -86,12 +86,7 @@ func createSnapshotExec(cmd *cobra.Command, args []string) error {
 		csOpts.req.GetVolumeId(),
 		resp.GetSnapshotId())
 
-	output, _ := cmd.Flags().GetString("output")
 	formattedOut := &util.DefaultFormatOutput{
-		BaseFormatOutput: util.BaseFormatOutput{
-			FormatType: output,
-		},
-
 		Cmd:  "create snapshot",
 		Desc: msg,
 		Id:   []string{resp.GetSnapshotId()},
