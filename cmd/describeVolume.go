@@ -72,43 +72,28 @@ func describeVolumesExec(cmd *cobra.Command, args []string) error {
 	defer cvOps.Close()
 
 	// Create the parser object
-	vcf := NewVolumeInspectFormatter(cvOps)
+	vcf := NewVolumeDescribeFormatter(cvOps)
 
 	// Print details and return any errors found during parsing
 	return util.PrintFormatted(vcf)
 }
 
-type volumeInspectFormatter struct {
+type volumeDescribeFormatter struct {
 	cliVolumeOps
 }
 
-func NewVolumeInspectFormatter(cvOps *cliVolumeOps) *volumeInspectFormatter {
-	return &volumeInspectFormatter{
+func NewVolumeDescribeFormatter(cvOps *cliVolumeOps) *volumeDescribeFormatter {
+	return &volumeDescribeFormatter{
 		cliVolumeOps: *cvOps,
 	}
 }
 
-// YamlFormat returns the default representation as there is no yaml format support for describe
-func (p *volumeInspectFormatter) YamlFormat() (string, error) {
-	return p.DefaultFormat()
-}
-
-// JsonFormat returns the default representation as there is no json format support for describe
-func (p *volumeInspectFormatter) JsonFormat() (string, error) {
-	return p.DefaultFormat()
-}
-
-// WideFormat returns the default representation as there is no wide format support for describe
-func (p *volumeInspectFormatter) WideFormat() (string, error) {
-	return p.DefaultFormat()
-}
-
 // DefaultFormat returns the default string representation of the object
-func (p *volumeInspectFormatter) DefaultFormat() (string, error) {
+func (p *volumeDescribeFormatter) DefaultFormat() (string, error) {
 	return p.toTabbed()
 }
 
-func (p *volumeInspectFormatter) toTabbed() (string, error) {
+func (p *volumeDescribeFormatter) toTabbed() (string, error) {
 	var b bytes.Buffer
 	writer := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
 	t := tabby.NewCustom(writer)
@@ -139,7 +124,7 @@ func (p *volumeInspectFormatter) toTabbed() (string, error) {
 	return b.String(), nil
 }
 
-func (p *volumeInspectFormatter) addVolumeDetails(
+func (p *volumeDescribeFormatter) addVolumeDetails(
 	resp *api.SdkVolumeInspectResponse,
 	t *tabby.Tabby,
 ) error {
@@ -164,7 +149,7 @@ func (p *volumeInspectFormatter) addVolumeDetails(
 	return nil
 }
 
-func (p *volumeInspectFormatter) addVolumeBasicInfo(
+func (p *volumeDescribeFormatter) addVolumeBasicInfo(
 	v *api.Volume,
 	t *tabby.Tabby,
 ) error {
@@ -225,7 +210,7 @@ func (p *volumeInspectFormatter) addVolumeBasicInfo(
 	return nil
 }
 
-func (p *volumeInspectFormatter) addVolumeStatsInfo(
+func (p *volumeDescribeFormatter) addVolumeStatsInfo(
 	v *api.Volume,
 	t *tabby.Tabby,
 ) error {
@@ -245,7 +230,7 @@ func (p *volumeInspectFormatter) addVolumeStatsInfo(
 	return nil
 }
 
-func (p *volumeInspectFormatter) addVolumeReplicationInfo(
+func (p *volumeDescribeFormatter) addVolumeReplicationInfo(
 	v *api.Volume,
 	t *tabby.Tabby,
 ) error {
@@ -270,7 +255,7 @@ func (p *volumeInspectFormatter) addVolumeReplicationInfo(
 	return nil
 }
 
-func (p *volumeInspectFormatter) addVolumeK8sInfo(
+func (p *volumeDescribeFormatter) addVolumeK8sInfo(
 	v *api.Volume,
 	t *tabby.Tabby,
 ) error {

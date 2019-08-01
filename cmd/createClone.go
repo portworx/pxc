@@ -68,11 +68,7 @@ func createCloneExec(cmd *cobra.Command, args []string) error {
 		ccReq.GetParentId(),
 		resp.GetVolumeId())
 
-	output, _ := cmd.Flags().GetString("output")
 	formattedOut := &util.DefaultFormatOutput{
-		BaseFormatOutput: util.BaseFormatOutput{
-			FormatType: output,
-		},
 		Cmd:  "create clone",
 		Desc: msg,
 		Id:   []string{resp.GetVolumeId()},

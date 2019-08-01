@@ -43,6 +43,7 @@ func init() {
 	getCmd.AddCommand(getPvcCmd)
 	getPvcCmd.Flags().StringP("namespace", "n", "", "Kubernetes namespace")
 	getPvcCmd.Flags().Bool("all-namespaces", false, "Kubernetes namespace")
+	getPvcCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
 }
 
 func getPvcExec(cmd *cobra.Command, args []string) error {

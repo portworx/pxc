@@ -108,11 +108,7 @@ func createVolumeExec(cmd *cobra.Command, args []string) error {
 		cvOpts.req.GetName(),
 		resp.GetVolumeId())
 
-	output, _ := cmd.Flags().GetString("output")
 	formattedOut := &util.DefaultFormatOutput{
-		BaseFormatOutput: util.BaseFormatOutput{
-			FormatType: output,
-		},
 		Cmd:  "create volume",
 		Desc: msg,
 		Id:   []string{resp.GetVolumeId()},
