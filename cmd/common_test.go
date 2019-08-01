@@ -95,7 +95,17 @@ func executeCli(cli string) ([]string, []string, error) {
 // Takes a volume name and size. Returns the created volume id.
 // For some reason our test container only recoganizes id and not name for some calls.
 func testCreateVolume(t *testing.T, volName string, size uint64) {
-	cli := "px create volume " + volName + " --size " + strconv.FormatUint(size, 10)
+	cli := fmt.Sprintf("px create volume %s --size %s", volName, strconv.FormatUint(size, 10))
+	lines, _, err := executeCli(cli)
+	assert.NoError(t, err)
+
+	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Volume %s created with id", volName)))
+}
+
+// Takes a volume name and size. Returns the created volume id.
+func testCreateVolumeWithLabel(t *testing.T, volName string, size uint64, labels string) {
+	cli := fmt.Sprintf("px create volume %s --size %s --labels %s",
+		volName, strconv.FormatUint(size, 10), labels)
 	lines, _, err := executeCli(cli)
 	assert.NoError(t, err)
 
@@ -109,6 +119,18 @@ func testHasVolume(id string) bool {
 	_, _, err := executeCli(cli)
 
 	return err == nil
+}
+
+func testGetVolumeWithLabels(t *testing.T, selector string) (*bytes.Buffer, error) {
+	cli := fmt.Sprintf("px get volume --show-labels --selector %s", selector)
+	so, _, err := executeCliRaw(cli)
+	return so, err
+}
+
+func testGetVolumeWithNameSelector(t *testing.T, volName string, selector string) {
+	cli := fmt.Sprintf("px get volume %s --show-labels --selector %s", volName, selector)
+	_, _, err := executeCliRaw(cli)
+	assert.Error(t, err)
 }
 
 // Return volume information
@@ -134,7 +156,7 @@ func testVolumeInfo(t *testing.T, id string) *api.Volume {
 //       parse, and as a library function, it may be easier to
 //       get a specific volume.
 func testGetAllVolumes(t *testing.T) []string {
-	cli := "px get volume"
+	cli := fmt.Sprintf("px get volume")
 	lines, _, err := executeCli(cli)
 	assert.NoError(t, err)
 
@@ -152,7 +174,7 @@ func testGetAllVolumes(t *testing.T) []string {
 
 // Deletes specified volume
 func testDeleteVolume(t *testing.T, volName string) {
-	cli := "px delete volume " + volName
+	cli := fmt.Sprintf("px delete volume %s", volName)
 	_, _, err := executeCli(cli)
 	assert.NoError(t, err)
 }
