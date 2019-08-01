@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"text/tabwriter"
 
@@ -41,11 +42,36 @@ func init() {
 	getVolumesCmd.Flags().String("volumegroup", "", "Volume group id")
 	getVolumesCmd.Flags().Bool("deep", false, "Collect more information, this may delay the request")
 	getVolumesCmd.Flags().Bool("show-k8s-info", false, "Show kubernetes information")
-
+	getVolumesCmd.Flags().String("labels", "", "list of comma-separated name=value pairs")
 	// TODO: Place here support for selectors and move the flags from the rootCmd
 }
 
+// Validating the user provided options
+func validateCliInput(cmd *cobra.Command, args []string) error {
+	labels, _ := cmd.Flags().GetString("labels")
+	// A case in which user mentions args like <volname> along with label flag but
+	// not mentioning labels (k,v) pair. Need to error out in this case.
+	if len(args) > 0 && len(labels) > 0 {
+		return fmt.Errorf("name cannot be provided when a selector is specified")
+	}
+
+	if len(labels) > 0 {
+		_, err := util.CommaStringToStringMap(labels)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func getVolumesExec(cmd *cobra.Command, args []string) error {
+	// Check if any flag value is not provided, error out
+	valErr := validateCliInput(cmd, args)
+	if valErr != nil {
+		return valErr
+	}
+
 	// Parse out all of the common cli volume flags
 	cvi := GetCliVolumeInputs(cmd, args)
 
@@ -58,7 +84,6 @@ func getVolumesExec(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer cvOps.Close()
-
 	// Create the parser object
 	vgf := NewVolumeGetFormatter(cvOps)
 

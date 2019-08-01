@@ -106,6 +106,16 @@ func testCreateVolume(t *testing.T, volName string, size uint64) {
 	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Volume %s created with id", volName)))
 }
 
+// Takes a volume name and size. Returns the created volume id.
+func testCreateVolumeWithLabel(t *testing.T, volName string, size uint64, labels string) {
+	cli := "px create volume " + volName + " --size " + strconv.FormatUint(size, 10) +
+		" --labels " + labels
+	lines, _, err := executeCli(cli)
+	assert.NoError(t, err)
+
+	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Volume %s created with id", volName)))
+}
+
 // Takes a volume id assert volume exists
 func testHasVolume(id string) bool {
 	// Get volume information
@@ -113,6 +123,19 @@ func testHasVolume(id string) bool {
 	_, _, err := executeCli(cli)
 
 	return err == nil
+}
+
+func testHasVolumeWithEmptyLabels(t *testing.T, id string) {
+	cli := fmt.Sprintf("px get volume %s --show-labels --labels", id)
+	_, _, err := executeCliRaw(cli)
+	assert.Error(t, err)
+}
+
+func testHasVolumeWithLabels(t *testing.T, labels string) (*bytes.Buffer, error) {
+	cli := fmt.Sprintf("px get volume --show-labels --labels %s", labels)
+	so, _, err := executeCliRaw(cli)
+
+	return so, err
 }
 
 // Return volume information

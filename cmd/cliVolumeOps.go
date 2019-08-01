@@ -33,6 +33,7 @@ type cliVolumeInputs struct {
 	// if namespace is "", use all-namespaces
 	// else use specified namespace
 	namespace *string
+	labels    map[string]string
 }
 
 type cliVolumeOps struct {
@@ -46,15 +47,33 @@ func GetCliVolumeInputs(cmd *cobra.Command, args []string) *cliVolumeInputs {
 	output, _ := cmd.Flags().GetString("output")
 	showLabels, _ := cmd.Flags().GetBool("show-labels")
 	namespace := string("")
-	return &cliVolumeInputs{
-		BaseFormatOutput: util.BaseFormatOutput{
-			FormatType: output,
-		},
-		showK8s:     showK8s,
-		showLabels:  showLabels,
-		volumeNames: args,
-		namespace:   &namespace, // In most places use all namespaces
+	labels, _ := cmd.Flags().GetString("labels")
+	//convert string to map
+	mlabels, _ := util.CommaStringToStringMap(labels)
+	// If valid label is present, we need to pass it.
+	if len(mlabels) != 0 {
+		return &cliVolumeInputs{
+			BaseFormatOutput: util.BaseFormatOutput{
+				FormatType: output,
+			},
+			showK8s:     showK8s,
+			showLabels:  showLabels,
+			volumeNames: args,
+			namespace:   &namespace, // In most places use all namespaces
+			labels:      mlabels,
+		}
+	} else {
+		return &cliVolumeInputs{
+			BaseFormatOutput: util.BaseFormatOutput{
+				FormatType: output,
+			},
+			showK8s:     showK8s,
+			showLabels:  showLabels,
+			volumeNames: args,
+			namespace:   &namespace, // In most places use all namespaces
+		}
 	}
+	
 }
 
 // Checks if namespace is specified and if so set it
@@ -124,6 +143,7 @@ func (p *cliVolumeOps) Connect() error {
 		},
 		Namespace: *p.namespace,
 		VolNames:  p.volumeNames,
+		Labels:    p.labels,
 	}
 
 	p.pxVolumeOps, err = portworx.NewPxVolumeOps(volOpsInfo)

@@ -55,6 +55,7 @@ type PxVolumeOpsInfo struct {
 	Namespace string
 	// volumeNames. Using
 	VolNames []string
+	Labels   map[string]string
 }
 
 func (p *PxVolumeOpsInfo) Close() {
@@ -135,8 +136,25 @@ func (p *pxVolumeOps) GetVolumes() ([]*api.SdkVolumeInspectResponse, error) {
 		}
 	} else {
 		// If it is no volumes (all)
-		volsInfo, err := volumes.InspectWithFilters(p.pxVolumeOpsInfo.Ctx,
-			&api.SdkVolumeInspectWithFiltersRequest{})
+		var (
+			err      error
+			volsInfo *api.SdkVolumeInspectWithFiltersResponse
+		)
+		
+		// if label is set, use them as filter
+		fmt.Println("line 145 get volumes len : ", len(p.GetPxVolumeOpsInfo().Labels))
+		if len(p.GetPxVolumeOpsInfo().Labels) == 0 {
+			// Without any filters
+			fmt.Printf(" getvolume line 153")
+			volsInfo, err = volumes.InspectWithFilters(p.pxVolumeOpsInfo.Ctx,
+				&api.SdkVolumeInspectWithFiltersRequest{})
+		} else {
+			volsInfo, err = volumes.InspectWithFilters(p.pxVolumeOpsInfo.Ctx,
+				&api.SdkVolumeInspectWithFiltersRequest{
+					Labels: p.GetPxVolumeOpsInfo().Labels,
+				})
+		}
+		
 		if err != nil {
 			return nil, util.PxErrorMessage(err, "Failed to get volumes")
 		}
