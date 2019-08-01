@@ -43,6 +43,7 @@ func init() {
 	getVolumesCmd.Flags().String("volumegroup", "", "Volume group id")
 	getVolumesCmd.Flags().Bool("deep", false, "Collect more information, this may delay the request")
 	getVolumesCmd.Flags().Bool("show-k8s-info", false, "Show kubernetes information")
+	getVolumesCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
 
 	// TODO: Place here support for selectors and move the flags from the rootCmd
 }

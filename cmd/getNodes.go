@@ -39,6 +39,7 @@ var getNodesCmd = &cobra.Command{
 
 func init() {
 	getCmd.AddCommand(getNodesCmd)
+	getNodesCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
 }
 
 func getNodesExec(cmd *cobra.Command, args []string) error {
