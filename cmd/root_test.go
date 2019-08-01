@@ -17,53 +17,11 @@ limitations under the License.
 package cmd
 
 import (
-	"bytes"
-	"os"
-	"strings"
 	"testing"
 
 	"github.com/portworx/px/pkg/util"
 	"github.com/stretchr/testify/assert"
 )
-
-// From https://gist.github.com/imosquera/6716490#sthash.O4z2aQQp.LUHz2Cbb.dpuf
-type Restorer func()
-
-func (r Restorer) Restore() {
-	r()
-}
-
-// Returns a buffer for stdout, stderr, and a function.
-// The function should be used as a defer to restore the state
-// See status_test.go for an example
-func pxTestSetupCli(args string) (*bytes.Buffer, *bytes.Buffer, Restorer) {
-	// Save
-	oldargs := os.Args
-	oldStdout := util.Stdout
-	oldStderr := util.Stderr
-	oldcfgFile := cfgFile
-
-	// Create new buffers
-	stdout := new(bytes.Buffer)
-	stderr := new(bytes.Buffer)
-
-	// Set buffers
-	util.Stdout = stdout
-	util.Stderr = stderr
-	os.Args = strings.Split(args, " ")
-	cfgFile = os.Getenv("PXTESTCONFIG")
-
-	return stdout, stderr, func() {
-		cfgFile = oldcfgFile
-		os.Args = oldargs
-		util.Stdout = oldStdout
-		util.Stderr = oldStderr
-	}
-}
-
-func runPx() error {
-	return rootCmd.Execute()
-}
 
 func TestMultipleClustersContextsFromCli(t *testing.T) {
 	// This test depends on the ./hack/config.yml to have
@@ -71,25 +29,17 @@ func TestMultipleClustersContextsFromCli(t *testing.T) {
 
 	// Create a volume on the source that is now in the target.
 	// We will use this to differentiate them.
-	vol := "mysourcevolume"
-	so, _, r := pxTestSetupCli("px create volume " + vol + " --size=10")
-	err := runPx()
-	r()
-	assert.NoError(t, err)
+	vol := genVolName("mysourcevolume")
+	testCreateVolume(t, vol, 1)
 
 	// Get the volume info on the source
-	so, _, r = pxTestSetupCli("px get volumes")
-	err = runPx()
-	r()
-	assert.NoError(t, err)
-	lines := strings.Split(so.String(), "\n")
-	assert.True(t, util.ListContainsSubString(lines, vol))
+	assert.True(t, testHasVolume(vol))
 
 	// Fail to get that information on the target
-	so, _, r = pxTestSetupCli("px --context=target get volumes")
-	err = runPx()
-	r()
+	lines, _, err := executeCli("px --context=target get volumes")
 	assert.NoError(t, err)
-	lines = strings.Split(so.String(), "\n")
 	assert.False(t, util.ListContainsSubString(lines, vol))
+
+	// Delete volume
+	testDeleteVolume(t, vol)
 }

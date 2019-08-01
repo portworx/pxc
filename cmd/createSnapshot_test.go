@@ -16,39 +16,30 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/portworx/px/pkg/util"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPxCreateSnapshot(t *testing.T) {
-	r := getRandom()
-	volName := fmt.Sprintf("%v-%v", "testVol", r)
-	snapName := fmt.Sprintf("%v-%v", "snapVol", r)
+	volName := genVolName("testVol")
+	snapName := genVolName("snapVol")
 
 	// Create Volume
-	volId := testCreateVolume(t, volName, 1)
-
-	// Verify that the volume got created
-	exists := testGetVolume(t, volId, volName)
-	assert.Equal(t, exists, true, "Volume create failed")
+	testCreateVolume(t, volName, 1)
+	assert.True(t, testHasVolume(volName))
 
 	// Create Snapshot
-	snapId := testCreateSnapshot(t, volId, snapName)
-
-	//Verify that the snapshot got created
-	exists = testGetVolume(t, snapId, snapName)
+	testCreateSnapshot(t, volName, snapName)
+	assert.True(t, testHasVolume(snapName))
 
 	// Delete volume
-	testDeleteVolume(t, volId)
-	vols, _ := testGetAllVolumes(t)
-	assert.Equal(t, util.ListContains(vols, volId), false, "Volume delete failed")
-	assert.Equal(t, util.ListContains(vols, snapId), true, "Volume delete unexpected")
+	testDeleteVolume(t, volName)
+	assert.False(t, testHasVolume(volName))
+	assert.True(t, testHasVolume(snapName))
 
 	// Delete snapshot
-	testDeleteVolume(t, snapId)
-	vols, _ = testGetAllVolumes(t)
-	assert.Equal(t, util.ListContains(vols, snapId), false, "Volume delete failed")
+	testDeleteVolume(t, snapName)
+	assert.False(t, testHasVolume(volName))
+	assert.False(t, testHasVolume(snapName))
 }

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 MOCKSDKTAG=0.42.14
+CONTAINER=quay.io/lpabon/mock-sdk-server
 
 fail()
 {
@@ -12,7 +13,7 @@ fail()
 # $2 - port
 startdocker()
 {
-	docker run --rm --name ${1} -d -p ${2}:9100 openstorage/mock-sdk-server:${MOCKSDKTAG} > /dev/null 2>&1
+	docker run --rm --name ${1} -d -p ${2}:9100 ${CONTAINER} > /dev/null 2>&1
 	if [ $? -ne 0 ] ; then
 		fail "Failed to start docker"
 	fi
