@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"math/big"
 	"strings"
 	"text/tabwriter"
@@ -37,8 +38,14 @@ var _ = RegisterCommandVar(func() {
 	getPvcCmd = &cobra.Command{
 		Use:     "pvc",
 		Aliases: []string{"pvcs"},
-		Short:   "Show Portworx volume information for Kuberntes PVCs",
-		RunE:    getPvcExec,
+		Short:   "Show Portworx volume information for Kubernetes PVCs",
+		Example: `$ px get pvc
+				  This gets information for all pvcs that are Portworx volumes
+				  $ px get pvc abc
+				    This gets information for pvc abc
+					$ px get pvc abc xyz
+					  This gets information for pvcs abc and xyz`,
+		RunE: getPvcExec,
 	}
 })
 
@@ -66,7 +73,7 @@ func getPvcExec(cmd *cobra.Command, args []string) error {
 	defer cvOps.Close()
 
 	// Create the parser object
-	pgf := NewPvcGetFormatter(cvOps)
+	pgf := NewPvcGetFormatter(cvOps, args)
 
 	// Print the details and return errors if any
 	return util.PrintFormatted(pgf)
@@ -74,19 +81,51 @@ func getPvcExec(cmd *cobra.Command, args []string) error {
 
 type pvcGetFormatter struct {
 	cliVolumeOps
+	pvcNames []string
 }
 
-func NewPvcGetFormatter(cvOps *cliVolumeOps) *pvcGetFormatter {
+func NewPvcGetFormatter(cvOps *cliVolumeOps, pvcNames []string) *pvcGetFormatter {
 	return &pvcGetFormatter{
 		cliVolumeOps: *cvOps,
+		pvcNames:     pvcNames,
 	}
+}
+
+func filterPxPvcs(
+	pxpvcs []*kubernetes.PxPvc,
+	pvcNames []string,
+) ([]*kubernetes.PxPvc, error) {
+	if len(pvcNames) == 0 {
+		return pxpvcs, nil
+	}
+	filtered := make([]*kubernetes.PxPvc, 0, len(pvcNames))
+	foundNames := make([]string, 0, len(pvcNames))
+	for _, pxp := range pxpvcs {
+		if util.ListContains(pvcNames, pxp.Name) {
+			filtered = append(filtered, pxp)
+			foundNames = append(foundNames, pxp.Name)
+		}
+	}
+	if len(pvcNames) != len(filtered) {
+		for _, pxn := range pvcNames {
+			if util.ListContains(foundNames, pxn) == false {
+				return filtered, fmt.Errorf("Pvc %s not found", pxn)
+			}
+		}
+	}
+	return filtered, nil
 }
 
 func (p *pvcGetFormatter) getPvcs() ([]*v1.PersistentVolumeClaim, error) {
-	pxpvcs, err := p.pxVolumeOps.GetPxPvcs()
+	allPxPvcs, err := p.pxVolumeOps.GetPxPvcs()
 	if err != nil {
 		return make([]*v1.PersistentVolumeClaim, 0), err
 	}
+	pxpvcs, err := filterPxPvcs(allPxPvcs, p.pvcNames)
+	if err != nil {
+		return make([]*v1.PersistentVolumeClaim, 0), err
+	}
+
 	pvcs := make([]*v1.PersistentVolumeClaim, len(pxpvcs))
 	for i, _ := range pvcs {
 		pvcs[i] = pxpvcs[i].Pvc
@@ -128,7 +167,11 @@ func (p *pvcGetFormatter) toTabbed() (string, error) {
 	writer := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
 	t := tabby.NewCustom(writer)
 
-	pvcs, err := p.pxVolumeOps.GetPxPvcs()
+	allPvcs, err := p.pxVolumeOps.GetPxPvcs()
+	if err != nil {
+		return "", err
+	}
+	pvcs, err := filterPxPvcs(allPvcs, p.pvcNames)
 	if err != nil {
 		return "", err
 	}
