@@ -64,6 +64,10 @@
   name = "google.golang.org/grpc"
   version = "1.21.1"
 
+[[override]]
+  name = "github.com/russross/blackfriday"
+  version = "v1.5.2"
+
 [prune]
   go-tests = true
   unused-packages = true
