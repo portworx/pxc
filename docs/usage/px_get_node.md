@@ -15,6 +15,7 @@ px get node [flags]
 ```
   -h, --help            help for node
   -o, --output string   Output in yaml|json|wide
+      --show-labels     Show labels in the last column of the output
 ```
 
 ### Options inherited from parent commands
@@ -23,7 +24,6 @@ px get node [flags]
       --config string     config file (default is $HOME/.px/config.yml)
       --context string    Force context name for the command
   -l, --selector string   Comma separated label selector of the form 'key=value,key=value'
-      --show-labels       Show labels in the last column of the output
 ```
 
 ### SEE ALSO

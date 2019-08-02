@@ -47,6 +47,7 @@ var _ = RegisterCommandInit(func() {
 	getVolumesCmd.Flags().Bool("deep", false, "Collect more information, this may delay the request")
 	getVolumesCmd.Flags().Bool("show-k8s-info", false, "Show kubernetes information")
 	getVolumesCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
+	getVolumesCmd.Flags().Bool("show-labels", false, "Show labels in the last column of the output")
 
 	// TODO: Place here support for selectors and move the flags from the rootCmd
 })

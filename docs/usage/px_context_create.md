@@ -36,7 +36,6 @@ $ px context create mycluster --endpoint=123.456.1.10:9020
       --config string     config file (default is $HOME/.px/config.yml)
       --context string    Force context name for the command
   -l, --selector string   Comma separated label selector of the form 'key=value,key=value'
-      --show-labels       Show labels in the last column of the output
 ```
 
 ### SEE ALSO
