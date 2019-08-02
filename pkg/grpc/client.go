@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/portworx/px/pkg/util"
-	"github.com/sirupsen/logrus"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"google.golang.org/grpc"
@@ -59,8 +58,7 @@ func Connect(address string, dialOptions []grpc.DialOption) (*grpc.ClientConn, e
 	}); err != nil {
 		// Clean up the connection
 		if err := conn.Close(); err != nil {
-			// TODO: Remove logrus usage
-			logrus.Warnf("Failed to close connection to %v: %v", address, err)
+			return nil, fmt.Errorf("Connection timed out and failed to close connction: %v", err)
 		}
 		return nil, fmt.Errorf("Connection timed out")
 	}
