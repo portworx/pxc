@@ -86,7 +86,9 @@ func contextCreateExec(cmd *cobra.Command, args []string) error {
 
 	// Optional
 	if s, _ := cmd.Flags().GetString("kubeconfig"); len(s) != 0 {
-		// TODO: Should check if the file exists
+		if !util.IsFileExists(s) {
+			return fmt.Errorf("kubeconfig file: %s does not exists", s)
+		}
 		c.Kubeconfig = s
 	}
 	if s, _ := cmd.Flags().GetString("token"); len(s) != 0 {
@@ -97,7 +99,9 @@ func contextCreateExec(cmd *cobra.Command, args []string) error {
 		c.Secure = true
 	}
 	if s, _ := cmd.Flags().GetString("cafile"); len(s) != 0 {
-		// TODO: Should check if the file exists
+		if !util.IsFileExists(s) {
+			return fmt.Errorf("CA file: %s does not exists", s)
+		}
 		data, err := ioutil.ReadFile(s)
 		if err != nil {
 			return fmt.Errorf("Unable to read CA file %s", s)

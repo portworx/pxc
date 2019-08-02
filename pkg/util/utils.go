@@ -17,7 +17,9 @@ package util
 
 import (
 	"fmt"
+	"os"
 	"strings"
+	"time"
 )
 
 // ListContains returns true when string s is found in the list
@@ -59,6 +61,11 @@ func StringMapToCommaString(labels map[string]string) string {
 	return strings.Join(s, ",")
 }
 
+// Generate random string with the given prefix, by appending random numbers.
+func GetRandomName(prefix string) string {
+	return fmt.Sprintf("%s-%v", prefix, time.Now().Unix())
+}
+
 // CommaStringToStringMap returns a string map composed of the k=v comma
 // separated values in the string
 func CommaStringToStringMap(s string) (map[string]string, error) {
@@ -78,4 +85,12 @@ func CommaStringToStringMap(s string) (map[string]string, error) {
 	}
 
 	return kvMap, nil
+}
+
+// IsFileExists returns true if the file exists else false
+func IsFileExists(fileName string) bool {
+	if _, err := os.Stat(fileName); err != nil && os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
