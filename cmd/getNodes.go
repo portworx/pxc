@@ -43,6 +43,7 @@ var _ = RegisterCommandVar(func() {
 var _ = RegisterCommandInit(func() {
 	getCmd.AddCommand(getNodesCmd)
 	getNodesCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
+	getNodesCmd.Flags().Bool("show-labels", false, "Show labels in the last column of the output")
 })
 
 func getNodesExec(cmd *cobra.Command, args []string) error {

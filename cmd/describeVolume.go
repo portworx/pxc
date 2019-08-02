@@ -28,10 +28,11 @@ import (
 	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
+	v1 "k8s.io/api/core/v1"
 )
 
 const (
-	timeLayout = "Jan 2 15:04:05 UTC 2006"
+	timeLayout = "Jan 3 15:04:05 UTC 2006"
 )
 
 var describeVolumeCmd *cobra.Command
@@ -113,7 +114,12 @@ func (p *volumeDescribeFormatter) toTabbed() (string, error) {
 	}
 
 	for i, n := range vols {
-		err := p.addVolumeDetails(n, t)
+		v := n.GetVolume()
+		usedPods, err := p.pxVolumeOps.PodsUsingVolume(v)
+		if err != nil {
+			return "", err
+		}
+		err = p.addVolumeDetails(v, t, usedPods)
 		if err != nil {
 			return "", err
 		}
@@ -129,11 +135,10 @@ func (p *volumeDescribeFormatter) toTabbed() (string, error) {
 }
 
 func (p *volumeDescribeFormatter) addVolumeDetails(
-	resp *api.SdkVolumeInspectResponse,
+	v *api.Volume,
 	t *tabby.Tabby,
+	usedPods []v1.Pod,
 ) error {
-
-	v := resp.GetVolume()
 	err := p.addVolumeBasicInfo(v, t)
 	if err != nil {
 		return err
@@ -146,7 +151,7 @@ func (p *volumeDescribeFormatter) addVolumeDetails(
 	if err != nil {
 		return err
 	}
-	err = p.addVolumeK8sInfo(v, t)
+	err = p.addVolumeK8sInfo(v, t, usedPods)
 	if err != nil {
 		return err
 	}
@@ -168,6 +173,17 @@ func (p *volumeDescribeFormatter) addVolumeBasicInfo(
 	// Print basic info
 	t.AddLine("Volume:", v.GetId())
 	t.AddLine("Name:", v.GetLocator().GetName())
+	if p.showK8s == true {
+		labels := v.GetLocator().GetVolumeLabels()
+		pvc := labels["pvc"]
+		ns := labels["namespace"]
+		if pvc != "" {
+			t.AddLine("Pvc Name:", pvc)
+		}
+		if ns != "" {
+			t.AddLine("Namespace:", ns)
+		}
+	}
 	if v.GetGroup() != nil && len(v.GetGroup().GetId()) != 0 {
 		t.AddLine("Group:", v.GetGroup().GetId())
 	}
@@ -262,11 +278,8 @@ func (p *volumeDescribeFormatter) addVolumeReplicationInfo(
 func (p *volumeDescribeFormatter) addVolumeK8sInfo(
 	v *api.Volume,
 	t *tabby.Tabby,
+	usedPods []v1.Pod,
 ) error {
-	usedPods, err := p.pxVolumeOps.PodsUsingVolume(v)
-	if err != nil {
-		return err
-	}
 	if len(usedPods) > 0 {
 		t.AddLine("Pods:")
 		for _, consumer := range usedPods {
