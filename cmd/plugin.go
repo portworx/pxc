@@ -15,6 +15,8 @@ limitations under the License.
 */
 package cmd
 
+/*
+ * Plugins will be done in a future time
 import (
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
@@ -49,3 +51,4 @@ func pluginsExec(cmd *cobra.Command, args []string) {
 	}
 	t.Print()
 }
+*/

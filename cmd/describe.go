@@ -19,15 +19,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// describeCmd represents the describe command
-var describeCmd = &cobra.Command{
-	Use:   "describe",
-	Short: "Show detailed information of Portworx resources",
-	Run: func(cmd *cobra.Command, args []string) {
-		util.Printf("Please see px describe --help for more information")
-	},
-}
+var describeCmd *cobra.Command
 
-func init() {
+var _ = RegisterCommandVar(func() {
+	describeCmd = &cobra.Command{
+		Use:   "describe",
+		Short: "Show detailed information of Portworx resources",
+		Run: func(cmd *cobra.Command, args []string) {
+			util.Printf("Please see px describe --help for more information")
+		},
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	rootCmd.AddCommand(describeCmd)
-}
+})

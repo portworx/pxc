@@ -20,15 +20,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// getCmd represents the get command
-var getCmd = &cobra.Command{
-	Use:   "get",
-	Short: "Get information from Portworx",
-	Run: func(cmd *cobra.Command, args []string) {
-		util.Printf("Please see px get --help for more information")
-	},
-}
+var getCmd *cobra.Command
 
-func init() {
+var _ = RegisterCommandVar(func() {
+	getCmd = &cobra.Command{
+		Use:   "get",
+		Short: "Get information from Portworx",
+		Run: func(cmd *cobra.Command, args []string) {
+			util.Printf("Please see px get --help for more information")
+		},
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	rootCmd.AddCommand(getCmd)
-}
+})

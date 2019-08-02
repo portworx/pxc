@@ -28,31 +28,35 @@ type createSnapshotOpts struct {
 }
 
 var (
+	csOpts            *createSnapshotOpts
+	createSnapshotCmd *cobra.Command
+)
+
+var _ = RegisterCommandVar(func() {
 	csOpts = &createSnapshotOpts{
 		req: &api.SdkVolumeSnapshotCreateRequest{},
 	}
-)
 
-// createSnapshotCmd represents the createSnapshot command
-var createSnapshotCmd = &cobra.Command{
-	Use:   "volumesnapshot [VOLUME] [NAME]",
-	Short: "Create a volume snapshot",
-	Long:  `Create a snapshot for the specified volume`,
-	Example: `$ px create volumesnapshot mysnap --labels color=blue,fabric=wool --volume myvol
+	createSnapshotCmd = &cobra.Command{
+		Use:   "volumesnapshot [VOLUME] [NAME]",
+		Short: "Create a volume snapshot",
+		Long:  `Create a snapshot for the specified volume`,
+		Example: `$ px create volumesnapshot mysnap --labels color=blue,fabric=wool --volume myvol
 This creates a snapshot named mysnap for the specified volume myvol.`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 2 {
-			return fmt.Errorf("Must supply the volume to snap and a new name for the snapshot")
-		}
-		return nil
-	},
-	RunE: createSnapshotExec,
-}
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 2 {
+				return fmt.Errorf("Must supply the volume to snap and a new name for the snapshot")
+			}
+			return nil
+		},
+		RunE: createSnapshotExec,
+	}
+})
 
-func init() {
+var _ = RegisterCommandVar(func() {
 	createCmd.AddCommand(createSnapshotCmd)
 	createSnapshotCmd.Flags().StringVar(&csOpts.labelsAsString, "labels", "", "Comma separated list of labels as key-value pairs: 'k1=v1,k2=v2'")
-}
+})
 
 func createSnapshotExec(cmd *cobra.Command, args []string) error {
 	ctx, conn, err := PxConnectDefault()

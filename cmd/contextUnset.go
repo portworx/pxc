@@ -20,19 +20,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// contextUnsetCmd represents the unset current context command
-var contextUnsetCmd = &cobra.Command{
-	Use:   "unset",
-	Short: "Unset the current context configuration",
-	Long:  ``,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return contextUnsetExec(cmd, args)
-	},
-}
+var contextUnsetCmd *cobra.Command
 
-func init() {
+var _ = RegisterCommandVar(func() {
+	contextUnsetCmd = &cobra.Command{
+		Use:   "unset",
+		Short: "Unset the current context configuration",
+		Long:  ``,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return contextUnsetExec(cmd, args)
+		},
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	contextCmd.AddCommand(contextUnsetCmd)
-}
+})
 
 func contextUnsetExec(cmd *cobra.Command, args []string) error {
 	contextManager, err := contextconfig.NewContextManager(GetConfigFile())

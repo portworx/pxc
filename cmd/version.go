@@ -27,18 +27,21 @@ var (
 	PxVersion = "(DEV)"
 )
 
-// versionCmd represents the version command
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Show px version information",
-	Run: func(cmd *cobra.Command, args []string) {
-		versionExec(cmd, args)
-	},
-}
+var versionCmd *cobra.Command
 
-func init() {
+var _ = RegisterCommandVar(func() {
+	versionCmd = &cobra.Command{
+		Use:   "version",
+		Short: "Show px version information",
+		Run: func(cmd *cobra.Command, args []string) {
+			versionExec(cmd, args)
+		},
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	rootCmd.AddCommand(versionCmd)
-}
+})
 
 func versionExec(cmd *cobra.Command, args []string) {
 	// Print client version

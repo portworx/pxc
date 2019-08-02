@@ -22,25 +22,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// createCloneCmd represents the createClone command
-var createCloneCmd = &cobra.Command{
-	Use:   "volumeclone [VOLUME] [NAME]",
-	Short: "Creates a new volume from a volume or snapshot",
-	Long:  `Create a clone for the specified volume`,
-	Example: `$ px create volumeclone oldvolume newvolume
-This creates a new volume called 'newvolume' from an existing volume called 'oldvolume'`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 2 {
-			return fmt.Errorf("Must supply the volume to clone and a new name for the clone")
-		}
-		return nil
-	},
-	RunE: createCloneExec,
-}
+var createCloneCmd *cobra.Command
 
-func init() {
+var _ = RegisterCommandVar(func() {
+	createCloneCmd = &cobra.Command{
+		Use:   "volumeclone [VOLUME] [NAME]",
+		Short: "Creates a new volume from a volume or snapshot",
+		Long:  `Create a clone for the specified volume`,
+		Example: `$ px create volumeclone oldvolume newvolume
+This creates a new volume called 'newvolume' from an existing volume called 'oldvolume'`,
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 2 {
+				return fmt.Errorf("Must supply the volume to clone and a new name for the clone")
+			}
+			return nil
+		},
+		RunE: createCloneExec,
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	createCmd.AddCommand(createCloneCmd)
-}
+})
 
 func createCloneExec(cmd *cobra.Command, args []string) error {
 	ctx, conn, err := PxConnectDefault()

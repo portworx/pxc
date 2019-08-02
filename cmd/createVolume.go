@@ -31,31 +31,35 @@ type createVolumeOpts struct {
 }
 
 var (
+	cvOpts          *createVolumeOpts
+	createVolumeCmd *cobra.Command
+)
+
+var _ = RegisterCommandVar(func() {
+	// createVolumeCmd represents the createVolume command
 	cvOpts = &createVolumeOpts{
 		req: &api.SdkVolumeCreateRequest{
 			Spec: &api.VolumeSpec{},
 		},
 	}
-)
+	createVolumeCmd = &cobra.Command{
+		Use:   "volume [NAME]",
+		Short: "Create a volume in Portworx",
 
-// createVolumeCmd represents the createVolume command
-var createVolumeCmd = &cobra.Command{
-	Use:   "volume [NAME]",
-	Short: "Create a volume in Portworx",
-
-	// TODO:
-	Example: `$ px create volume myvolume --size=3
+		// TODO:
+		Example: `$ px create volume myvolume --size=3
 This creates a volume called 'myvolume' of 3Gi.`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			return fmt.Errorf("Must supply a name for volume")
-		}
-		return nil
-	},
-	RunE: createVolumeExec,
-}
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 {
+				return fmt.Errorf("Must supply a name for volume")
+			}
+			return nil
+		},
+		RunE: createVolumeExec,
+	}
+})
 
-func init() {
+var _ = RegisterCommandInit(func() {
 	createCmd.AddCommand(createVolumeCmd)
 
 	createVolumeCmd.Flags().IntVar(&cvOpts.sizeInGi, "size", 0, "Size in GiB")
@@ -67,7 +71,7 @@ func init() {
 	// TODO bring the flags from rootCmd
 
 	// TODO add more flags here
-}
+})
 
 func createVolumeExec(cmd *cobra.Command, args []string) error {
 	ctx, conn, err := PxConnectDefault()

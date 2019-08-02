@@ -33,7 +33,7 @@ stopdocker()
 startdocker pxutsource 9920
 startdocker pxuttarget 9921
 
-export PXTESTCONFIG=$PWD/hack/config.yml
+export PXCONFIG=$PWD/hack/config.yml
 
 result=0
 if [ $# -eq 0 ] ; then

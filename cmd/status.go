@@ -24,17 +24,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// statusCmd represents the status command
-var statusCmd = &cobra.Command{
-	Use: "status",
-	// TODO
-	Short: "TODO: this will move to px describe cluster",
-	RunE:  statusExec,
-}
+var statusCmd *cobra.Command
 
-func init() {
+var _ = RegisterCommandVar(func() {
+	statusCmd = &cobra.Command{
+		Use: "status",
+		// TODO
+		Short: "TODO: this will move to px describe cluster",
+		RunE:  statusExec,
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	rootCmd.AddCommand(statusCmd)
-}
+})
 
 func statusExec(cmd *cobra.Command, args []string) error {
 	ctx, conn, err := PxConnectDefault()

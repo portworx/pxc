@@ -30,20 +30,24 @@ type cloudMigrationCreateOpts struct {
 }
 
 var (
+	ccmOpts                 cloudMigrationCreateOpts
+	createCloudmigrationCmd *cobra.Command
+)
+
+var _ = RegisterCommandVar(func() {
 	ccmOpts = cloudMigrationCreateOpts{
 		req: &api.SdkCloudMigrateStartRequest{},
 	}
-)
 
-// createCloudmigrationCmd represents the createCloudMigration command
-var createCloudmigrationCmd = &cobra.Command{
-	Use:   "cloudmigration",
-	Short: "Start a cloud migration",
-	Long:  `TODO Add long description`,
-	RunE:  createCloudmigrationExec,
-}
+	createCloudmigrationCmd = &cobra.Command{
+		Use:   "cloudmigration",
+		Short: "Start a cloud migration",
+		Long:  `TODO Add long description`,
+		RunE:  createCloudmigrationExec,
+	}
+})
 
-func init() {
+var _ = RegisterCommandInit(func() {
 	createCmd.AddCommand(createCloudmigrationCmd)
 
 	createCloudmigrationCmd.Flags().BoolVarP(&ccmOpts.all, "all", "a", false, "Migrate all volumes")
@@ -52,7 +56,7 @@ func init() {
 	createCloudmigrationCmd.Flags().StringVarP(&ccmOpts.req.ClusterId, "cluster-id", "c", "", "ID of the cluster in which volumes are to be migrated")
 	createCloudmigrationCmd.Flags().StringVarP(&ccmOpts.req.TaskId, "task-id", "t", "", "Unique name assocaiated with this migration for idempotency (optional).")
 	createCloudmigrationCmd.Flags().SortFlags = false
-}
+})
 
 func createCloudmigrationExec(cmd *cobra.Command, args []string) error {
 	ctx, conn, err := PxConnectDefault()

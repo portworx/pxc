@@ -20,15 +20,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// createCmd represents the create command
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create an object in Portworx",
-	Run: func(cmd *cobra.Command, args []string) {
-		util.Printf("Please see px create --help for more information")
-	},
-}
+var createCmd *cobra.Command
 
-func init() {
+var _ = RegisterCommandVar(func() {
+	createCmd = &cobra.Command{
+		Use:   "create",
+		Short: "Create an object in Portworx",
+		Run: func(cmd *cobra.Command, args []string) {
+			util.Printf("Please see px create --help for more information")
+		},
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	rootCmd.AddCommand(createCmd)
-}
+})

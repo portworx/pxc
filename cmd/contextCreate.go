@@ -25,25 +25,29 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// contextCreateCmd represents the contextCreate command
-var contextCreateCmd = &cobra.Command{
-	Use:     "create [NAME]",
-	Short:   "Create a context",
-	Example: "$ px context create mycluster --endpoint=123.456.1.10:9020",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			return fmt.Errorf("Must supply a name for context")
-		}
-		return nil
-	},
-	Long: `A context is the information needed to connect to
+var contextCreateCmd *cobra.Command
+
+var _ = RegisterCommandVar(func() {
+	// contextCreateCmd represents the contextCreate command
+	contextCreateCmd = &cobra.Command{
+		Use:     "create [NAME]",
+		Short:   "Create a context",
+		Example: "$ px context create mycluster --endpoint=123.456.1.10:9020",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 {
+				return fmt.Errorf("Must supply a name for context")
+			}
+			return nil
+		},
+		Long: `A context is the information needed to connect to
 Portworx and any other system. This information will be saved
 to a file called config.yml in a directory called .px under
 your home directory.`,
-	RunE: contextCreateExec,
-}
+		RunE: contextCreateExec,
+	}
+})
 
-func init() {
+var _ = RegisterCommandInit(func() {
 	contextCmd.AddCommand(contextCreateCmd)
 
 	contextCreateCmd.Flags().String("token", "", "Token for use in this context")
@@ -51,7 +55,7 @@ func init() {
 	contextCreateCmd.Flags().Bool("secure", false, "Use secure connection")
 	contextCreateCmd.Flags().String("cafile", "", "Path to client CA certificate if needed")
 	contextCreateCmd.Flags().String("kubeconfig", "", "Path to Kubeconfig file if any")
-}
+})
 
 func contextCreateExec(cmd *cobra.Command, args []string) error {
 

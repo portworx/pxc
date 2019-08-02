@@ -34,28 +34,32 @@ const (
 	timeLayout = "Jan 2 15:04:05 UTC 2006"
 )
 
-// describeVolumeCmd represents the describeVolume command
-var describeVolumeCmd = &cobra.Command{
-	Use:     "volume",
-	Aliases: []string{"volumes"},
-	Short:   "Describe a Portworx volume",
-	Long:    "Show detailed information of Portworx volumes",
-	Example: `$ px describe volume
+var describeVolumeCmd *cobra.Command
+
+var _ = RegisterCommandVar(func() {
+	// describeVolumeCmd represents the describeVolume command
+	describeVolumeCmd = &cobra.Command{
+		Use:     "volume",
+		Aliases: []string{"volumes"},
+		Short:   "Describe a Portworx volume",
+		Long:    "Show detailed information of Portworx volumes",
+		Example: `$ px describe volume
   This describes all volumes
 $ px describe volume abc
   This describes volume abc
 $ px describe volume abc xyz
   This describes volumes abc and xyz`,
-	RunE: describeVolumesExec,
-}
+		RunE: describeVolumesExec,
+	}
+})
 
-func init() {
+var _ = RegisterCommandInit(func() {
 	describeCmd.AddCommand(describeVolumeCmd)
 	describeVolumeCmd.Flags().String("owner", "", "Owner of volume")
 	describeVolumeCmd.Flags().String("volumegroup", "", "Volume group id")
 	describeVolumeCmd.Flags().Bool("deep", false, "Collect more information, this may delay the request")
 	describeVolumeCmd.Flags().Bool("show-k8s-info", false, "Show kubernetes information")
-}
+})
 
 func describeVolumesExec(cmd *cobra.Command, args []string) error {
 	// Parse out all of the common cli volume flags
