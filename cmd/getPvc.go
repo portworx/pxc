@@ -54,6 +54,7 @@ var _ = RegisterCommandInit(func() {
 	getPvcCmd.Flags().StringP("namespace", "n", "", "Kubernetes namespace")
 	getPvcCmd.Flags().Bool("all-namespaces", false, "Kubernetes namespace")
 	getPvcCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
+	getPvcCmd.Flags().Bool("show-labels", false, "Show labels in the last column of the output")
 })
 
 func getPvcExec(cmd *cobra.Command, args []string) error {

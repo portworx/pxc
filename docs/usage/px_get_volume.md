@@ -18,6 +18,7 @@ px get volume [flags]
   -o, --output string        Output in yaml|json|wide
       --owner string         Owner of volume
       --show-k8s-info        Show kubernetes information
+      --show-labels          Show labels in the last column of the output
       --volumegroup string   Volume group id
 ```
 
@@ -27,7 +28,6 @@ px get volume [flags]
       --config string     config file (default is $HOME/.px/config.yml)
       --context string    Force context name for the command
   -l, --selector string   Comma separated label selector of the form 'key=value,key=value'
-      --show-labels       Show labels in the last column of the output
 ```
 
 ### SEE ALSO

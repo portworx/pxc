@@ -28,7 +28,6 @@ $ px delete volume myvolume
       --config string     config file (default is $HOME/.px/config.yml)
       --context string    Force context name for the command
   -l, --selector string   Comma separated label selector of the form 'key=value,key=value'
-      --show-labels       Show labels in the last column of the output
 ```
 
 ### SEE ALSO
