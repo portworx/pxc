@@ -21,19 +21,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// contextGetCmd represents the contextGet command
-var contextListCmd = &cobra.Command{
-	Use:     "list",
-	Aliases: []string{"contexts", "ctx"},
-	Short:   "List all context configurations",
-	Long: `List all context configurations
-px get context`,
-	RunE: contextListExec,
-}
+var contextListCmd *cobra.Command
 
-func init() {
+var _ = RegisterCommandVar(func() {
+	contextListCmd = &cobra.Command{
+		Use:     "list",
+		Aliases: []string{"contexts", "ctx"},
+		Short:   "List all context configurations",
+		Long: `List all context configurations
+px get context`,
+		RunE: contextListExec,
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	contextCmd.AddCommand(contextListCmd)
-}
+})
 
 func contextListExec(cmd *cobra.Command, args []string) error {
 	contextManager, err := contextconfig.NewContextManager(GetConfigFile())

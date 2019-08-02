@@ -18,5 +18,5 @@ package main
 import "github.com/portworx/px/cmd"
 
 func main() {
-	cmd.Execute()
+	cmd.Main()
 }

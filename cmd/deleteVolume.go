@@ -22,23 +22,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// deleteVolumeCmd represents the deleteVolume command
-var deleteVolumeCmd = &cobra.Command{
-	Use:     "volume [NAME]",
-	Short:   "Delete a volume in Portworx",
-	Example: "$ px delete volume myvolume",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			return fmt.Errorf("Must supply a volume name")
-		}
-		return nil
-	},
-	RunE: deleteVolumeExec,
-}
+var deleteVolumeCmd *cobra.Command
 
-func init() {
+var _ = RegisterCommandVar(func() {
+	// deleteVolumeCmd represents the deleteVolume command
+	deleteVolumeCmd = &cobra.Command{
+		Use:     "volume [NAME]",
+		Short:   "Delete a volume in Portworx",
+		Example: "$ px delete volume myvolume",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 {
+				return fmt.Errorf("Must supply a volume name")
+			}
+			return nil
+		},
+		RunE: deleteVolumeExec,
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	deleteCmd.AddCommand(deleteVolumeCmd)
-}
+})
 
 func deleteVolumeExec(cmd *cobra.Command, args []string) error {
 	ctx, conn, err := PxConnectDefault()

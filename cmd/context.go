@@ -21,14 +21,18 @@ import (
 )
 
 // contextCmd represents the context command
-var contextCmd = &cobra.Command{
-	Use:   "context",
-	Short: "Manage connections to Portworx and other systems",
-	Run: func(cmd *cobra.Command, args []string) {
-		util.Printf("Please see px context --help for more commands")
-	},
-}
+var contextCmd *cobra.Command
 
-func init() {
+var _ = RegisterCommandVar(func() {
+	contextCmd = &cobra.Command{
+		Use:   "context",
+		Short: "Manage connections to Portworx and other systems",
+		Run: func(cmd *cobra.Command, args []string) {
+			util.Printf("Please see px context --help for more commands")
+		},
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	rootCmd.AddCommand(contextCmd)
-}
+})

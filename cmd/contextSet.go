@@ -23,25 +23,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// setCurrentContextCmd represents the setCurrentContext command
-var contextSetCmd = &cobra.Command{
-	Use:     "set [NAME]",
-	Aliases: []string{"use"},
-	Example: "$ px context set mynewcontext",
-	Short:   "Set the current context configuration",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			return fmt.Errorf("Must supply a name for context")
-		}
-		return nil
-	},
-	Long: ``,
-	RunE: contextSetExec,
-}
+var contextSetCmd *cobra.Command
 
-func init() {
+var _ = RegisterCommandVar(func() {
+	contextSetCmd = &cobra.Command{
+		Use:     "set [NAME]",
+		Aliases: []string{"use"},
+		Example: "$ px context set mynewcontext",
+		Short:   "Set the current context configuration",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 {
+				return fmt.Errorf("Must supply a name for context")
+			}
+			return nil
+		},
+		Long: ``,
+		RunE: contextSetExec,
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	contextCmd.AddCommand(contextSetCmd)
-}
+})
 
 func contextSetExec(cmd *cobra.Command, args []string) error {
 	name := args[0]

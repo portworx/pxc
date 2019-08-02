@@ -29,15 +29,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// getVolumesCmd represents the getVolumes command
-var getVolumesCmd = &cobra.Command{
-	Use:     "volume",
-	Aliases: []string{"volumes"},
-	Short:   "Get information about Portworx volumes",
-	RunE:    getVolumesExec,
-}
+var getVolumesCmd *cobra.Command
 
-func init() {
+var _ = RegisterCommandVar(func() {
+	getVolumesCmd = &cobra.Command{
+		Use:     "volume",
+		Aliases: []string{"volumes"},
+		Short:   "Get information about Portworx volumes",
+		RunE:    getVolumesExec,
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	getCmd.AddCommand(getVolumesCmd)
 	getVolumesCmd.Flags().String("owner", "", "Owner of volume")
 	getVolumesCmd.Flags().String("volumegroup", "", "Volume group id")
@@ -46,7 +49,7 @@ func init() {
 	getVolumesCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
 
 	// TODO: Place here support for selectors and move the flags from the rootCmd
-}
+})
 
 func getVolumesExec(cmd *cobra.Command, args []string) error {
 	// Parse out all of the common cli volume flags

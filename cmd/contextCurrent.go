@@ -21,17 +21,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// contextCurrentCmd represents the contextCurrent command
-var contextCurrentCmd = &cobra.Command{
-	Use:     "current",
-	Aliases: []string{"show", "current-context"},
-	Short:   "Show current context name",
-	RunE:    contextCurrentExec,
-}
+var contextCurrentCmd *cobra.Command
 
-func init() {
+// contextCurrentCmd represents the contextCurrent command
+var _ = RegisterCommandVar(func() {
+	contextCurrentCmd = &cobra.Command{
+		Use:     "current",
+		Aliases: []string{"show", "current-context"},
+		Short:   "Show current context name",
+		RunE:    contextCurrentExec,
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	contextCmd.AddCommand(contextCurrentCmd)
-}
+})
 
 func contextCurrentExec(cmd *cobra.Command, args []string) error {
 	contextManager, err := contextconfig.NewContextManager(GetConfigFile())

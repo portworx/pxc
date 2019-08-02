@@ -31,20 +31,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// getPvcCmd represents the getPvc command
-var getPvcCmd = &cobra.Command{
-	Use:     "pvc",
-	Aliases: []string{"pvcs"},
-	Short:   "Show Portworx volume information for Kuberntes PVCs",
-	RunE:    getPvcExec,
-}
+var getPvcCmd *cobra.Command
 
-func init() {
+var _ = RegisterCommandVar(func() {
+	getPvcCmd = &cobra.Command{
+		Use:     "pvc",
+		Aliases: []string{"pvcs"},
+		Short:   "Show Portworx volume information for Kuberntes PVCs",
+		RunE:    getPvcExec,
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	getCmd.AddCommand(getPvcCmd)
 	getPvcCmd.Flags().StringP("namespace", "n", "", "Kubernetes namespace")
 	getPvcCmd.Flags().Bool("all-namespaces", false, "Kubernetes namespace")
 	getPvcCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
-}
+})
 
 func getPvcExec(cmd *cobra.Command, args []string) error {
 	// Parse out all of the common cli volume flags

@@ -35,25 +35,29 @@ type createClusterpairOpts struct {
 }
 
 var (
+	ccpOpts              createClusterpairOpts
+	createClusterpairCmd *cobra.Command
+)
+
+var _ = RegisterCommandVar(func() {
 	ccpOpts = createClusterpairOpts{
 		req: &api.ClusterPairCreateRequest{},
 	}
-)
 
-// createClusterpairCmd represents the createClusterpair command
-var createClusterpairCmd = &cobra.Command{
-	Use:     "clusterpair",
-	Aliases: []string{"clusterpairs"},
-	Short:   "Pair this cluster with another Portworx cluster",
-	Example: "$ px create clusterpair TODO ADD EXAMPLEs",
-	Long: `TODO
+	createClusterpairCmd = &cobra.Command{
+		Use:     "clusterpair",
+		Aliases: []string{"clusterpairs"},
+		Short:   "Pair this cluster with another Portworx cluster",
+		Example: "$ px create clusterpair TODO ADD EXAMPLEs",
+		Long: `TODO
 
 ADD EXAMPLES
 	`,
-	RunE: createClusterpairExec,
-}
+		RunE: createClusterpairExec,
+	}
+})
 
-func init() {
+var _ = RegisterCommandVar(func() {
 	createCmd.AddCommand(createClusterpairCmd)
 
 	createClusterpairCmd.Flags().StringVarP(&ccpOpts.source, "source", "s", "", "Context for the source cluster (required)")
@@ -63,7 +67,7 @@ func init() {
 	createClusterpairCmd.Flags().StringVarP(&ccpOpts.mode, "mode", "m", "", "Pairing mode to use (optional)")
 	createClusterpairCmd.Flags().BoolVarP(&ccpOpts.req.SetDefault, "set-default", "", false, "Set this as the default cluster pair (optional)")
 	createClusterpairCmd.Flags().SortFlags = false
-}
+})
 
 func createClusterpairExec(cmd *cobra.Command, args []string) error {
 	contextManager, err := contextconfig.NewContextManager(GetConfigFile())

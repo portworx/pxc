@@ -16,67 +16,23 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
-	"os"
-	"path"
-
-	"github.com/portworx/px/pkg/kubernetes"
-	"github.com/portworx/px/pkg/plugin"
-	"github.com/portworx/px/pkg/portworx"
-	"github.com/portworx/px/pkg/util"
-
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-	kclikube "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-)
-
-const (
-	pxDefaultDir        = ".px"
-	pxDefaultConfigName = "config.yml"
-
-	Ki = 1024
-	Mi = 1024 * Ki
-	Gi = 1024 * Mi
-	Ti = 1024 * Gi
-)
-
-var (
-	cfgDir      string
-	cfgFile     string
-	cfgContext  string
-	optEndpoint string
-	pm          *plugin.PluginManager
-
-	// The $HOME/.px/plugins dir will be added at runtime
-	pxPluginDefaultDirs = []string{
-		"/var/lib/px/plugins",
-		"/etc/pwx/plugins",
-		"/opt/pwx/plugins",
-		"/var/lib/porx/plugins",
-	}
 )
 
 // rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:           "px",
-	Short:         "Portworx command line tool",
-	SilenceUsage:  true,
-	SilenceErrors: true,
-}
+var rootCmd *cobra.Command
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		util.Eprintf("%v\n", err)
-		os.Exit(1)
+var _ = RegisterCommandVar(func() {
+	// rootCmd represents the base command when called without any subcommands
+	rootCmd = &cobra.Command{
+		Use:           "px",
+		Short:         "Portworx command line tool",
+		SilenceUsage:  true,
+		SilenceErrors: true,
 	}
-}
+})
 
-func init() {
-	cobra.OnInitialize(initConfig)
+var _ = RegisterCommandInit(func() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+")")
 	rootCmd.PersistentFlags().StringVar(&cfgContext, "context", "", "Force context name for the command")
@@ -89,6 +45,7 @@ func init() {
 	rootCmd.Flags().SortFlags = false
 
 	// Load plugins
+	/* TODO: Redo Plugin model
 	home, _ := homedir.Dir()
 	pxPluginDefaultDirs = append(pxPluginDefaultDirs,
 		path.Join(home, pxDefaultDir, "plugins"))
@@ -97,36 +54,5 @@ func init() {
 		RootCmd:    rootCmd,
 	})
 	pm.Load()
-}
-
-// initConfig reads in config file
-func initConfig() {
-	// If the cfgFile has not been setup in the arguments, then
-	// read it from the HOME directory
-	if len(cfgFile) == 0 {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			util.Eprintf("Error: %v\n", err)
-			os.Exit(1)
-		}
-		cfgFile = path.Join(home, pxDefaultDir, pxDefaultConfigName)
-	}
-}
-
-func GetConfigFile() string {
-	return cfgFile
-}
-
-func PxConnectDefault() (context.Context, *grpc.ClientConn, error) {
-	// Global information will be set here, like forced context
-	if len(cfgContext) == 0 {
-		return portworx.PxConnectCurrent(cfgFile)
-	} else {
-		return portworx.PxConnectNamed(cfgFile, cfgContext)
-	}
-}
-
-func KubeConnectDefault() (clientcmd.ClientConfig, *kclikube.Clientset, error) {
-	return kubernetes.KubeConnect(cfgFile, cfgContext)
-}
+	*/
+})

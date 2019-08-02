@@ -29,18 +29,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// getNodesCmd represents the getNodes command
-var getNodesCmd = &cobra.Command{
-	Use:     "node",
-	Aliases: []string{"nodes"},
-	Short:   "Get Portworx node information",
-	RunE:    getNodesExec,
-}
+var getNodesCmd *cobra.Command
 
-func init() {
+var _ = RegisterCommandVar(func() {
+	getNodesCmd = &cobra.Command{
+		Use:     "node",
+		Aliases: []string{"nodes"},
+		Short:   "Get Portworx node information",
+		RunE:    getNodesExec,
+	}
+})
+
+var _ = RegisterCommandInit(func() {
 	getCmd.AddCommand(getNodesCmd)
 	getNodesCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
-}
+})
 
 func getNodesExec(cmd *cobra.Command, args []string) error {
 	// Parse out all of the common cli volume flags

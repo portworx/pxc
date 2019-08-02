@@ -40,7 +40,6 @@ func pxTestSetupCli(args string) (*bytes.Buffer, *bytes.Buffer, tests.Restorer) 
 	oldargs := os.Args
 	oldStdout := util.Stdout
 	oldStderr := util.Stderr
-	oldcfgFile := cfgFile
 
 	// Create new buffers
 	stdout := new(bytes.Buffer)
@@ -50,10 +49,8 @@ func pxTestSetupCli(args string) (*bytes.Buffer, *bytes.Buffer, tests.Restorer) 
 	util.Stdout = stdout
 	util.Stderr = stderr
 	os.Args = strings.Split(args, " ")
-	cfgFile = os.Getenv("PXTESTCONFIG")
 
 	return stdout, stderr, func() {
-		cfgFile = oldcfgFile
 		os.Args = oldargs
 		util.Stdout = oldStdout
 		util.Stderr = oldStderr
@@ -62,7 +59,7 @@ func pxTestSetupCli(args string) (*bytes.Buffer, *bytes.Buffer, tests.Restorer) 
 
 // runPx runs a command saved in os.Args and returns the error if any
 func runPx() error {
-	return rootCmd.Execute()
+	return Main()
 }
 
 // genVolName generates a unique name for a volume appended to a prefix
