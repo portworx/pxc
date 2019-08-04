@@ -16,10 +16,21 @@ limitations under the License.
 package util
 
 import (
+	"errors"
 	"fmt"
+	"github.com/asaskevich/govalidator"
+	"net"
 	"os"
 	"strings"
 	"time"
+)
+
+var (
+	ErrInvalidEndpoint = errors.New("Invalid Endpoint")
+)
+
+const (
+	DefaultPort = "9020"
 )
 
 // ListContains returns true when string s is found in the list
@@ -102,4 +113,50 @@ func IsFileExists(fileName string) bool {
 		return false
 	}
 	return true
+}
+
+// ValidateEndpoint will valid whether given endpoint is a valid.
+// Following validation will be done on the endpoint:
+// 1. Check whether the host part (IP or hostname) is valid
+// 2. Check whether port number is present in the endpoint, If not add Default_port.
+func ValidateEndpoint(endpoint string) (string, error) {
+	if !govalidator.IsIP(endpoint) {
+		host, port, _ := net.SplitHostPort(endpoint)
+		if len(port) != 0 && len(host) != 0 {
+			// Endpoint has both host and port. Is it valid?
+			// For example:
+			// Valid: "192.168.1.1:9020" or "localhost:9020"
+			// InValid: "192.168.1.500:9020" or "local*host:9020"
+			if govalidator.IsIP(host) || govalidator.IsHost(host) {
+				return endpoint, nil
+			} else {
+				return "", ErrInvalidEndpoint
+			}
+		} else if len(port) == 0 && len(host) != 0 {
+			// Missing port after ":", add the DefaultPort value
+			// For example: "localhost:" or "192.168.110.0:"
+			if govalidator.IsIP(host) || govalidator.IsHost(host) {
+				updatedEndpoint := net.JoinHostPort(host, DefaultPort)
+				return updatedEndpoint, nil
+			} else {
+				return "", ErrInvalidEndpoint
+			}
+		} else if len(port) == 0 && len(host) == 0 {
+			// Missing port as : was missing in the endpoint(in the case of hostname)
+			// If it is a valid hostname, add DefautPort.
+			if govalidator.IsHost(endpoint) {
+				updatedEndpoint := net.JoinHostPort(endpoint, DefaultPort)
+				return updatedEndpoint, nil
+			} else {
+				return "", ErrInvalidEndpoint
+			}
+
+		} else {
+			return "", ErrInvalidEndpoint
+		}
+	}
+	// Missing port in the case of proper IP address, add the DefaultPort value
+	// For example: "192.168.1.1"
+	updatedEndpoint := net.JoinHostPort(endpoint, DefaultPort)
+	return updatedEndpoint, nil
 }
