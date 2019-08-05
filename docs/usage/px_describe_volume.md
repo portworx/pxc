@@ -13,12 +13,12 @@ px describe volume [flags]
 ### Examples
 
 ```
-$ px describe volume
-  This describes all volumes
-$ px describe volume abc
-  This describes volume abc
-$ px describe volume abc xyz
-  This describes volumes abc and xyz
+1. Describe all the volumes:
+	$ px describe volume
+2. Describe specific volume called abc:
+	$ px describe volume abc
+3. Describe list of volumes (abc, xyz)
+	$ px describe volume abc xyz
 ```
 
 ### Options

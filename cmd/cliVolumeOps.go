@@ -33,6 +33,7 @@ type cliVolumeInputs struct {
 	// if namespace is "", use all-namespaces
 	// else use specified namespace
 	namespace *string
+	labels    map[string]string
 }
 
 type cliVolumeOps struct {
@@ -40,12 +41,16 @@ type cliVolumeOps struct {
 	pxVolumeOps portworx.PxVolumeOps
 }
 
-// Look for all of the common flags and create a new cliVolumeInputs object
+// GetCliVolumeInputs looks for all of the common flags and create a new cliVolumeInputs object
 func GetCliVolumeInputs(cmd *cobra.Command, args []string) *cliVolumeInputs {
 	showK8s, _ := cmd.Flags().GetBool("show-k8s-info")
 	output, _ := cmd.Flags().GetString("output")
 	showLabels, _ := cmd.Flags().GetBool("show-labels")
 	namespace := string("")
+	labels, _ := cmd.Flags().GetString("selector")
+	//convert string to map
+	mlabels, _ := util.CommaStringToStringMap(labels)
+	// If valid label is present, we need to pass it.
 	return &cliVolumeInputs{
 		BaseFormatOutput: util.BaseFormatOutput{
 			FormatType: output,
@@ -54,6 +59,7 @@ func GetCliVolumeInputs(cmd *cobra.Command, args []string) *cliVolumeInputs {
 		showLabels:  showLabels,
 		volumeNames: args,
 		namespace:   &namespace, // In most places use all namespaces
+		labels:      mlabels,
 	}
 }
 
@@ -124,6 +130,7 @@ func (p *cliVolumeOps) Connect() error {
 		},
 		Namespace: *p.namespace,
 		VolNames:  p.volumeNames,
+		Labels:    p.labels,
 	}
 
 	p.pxVolumeOps, err = portworx.NewPxVolumeOps(volOpsInfo)

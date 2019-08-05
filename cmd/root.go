@@ -38,7 +38,7 @@ var _ = RegisterCommandInit(func() {
 	rootCmd.PersistentFlags().StringVar(&cfgContext, "context", "", "Force context name for the command")
 
 	// TODO: move these flags out of persistent
-	rootCmd.PersistentFlags().StringP("selector", "l", "", "Comma separated label selector of the form 'key=value,key=value'")
+	rootCmd.PersistentFlags().Bool("show-labels", false, "Show labels in the last column of the output")
 
 	// Global cobra configurations
 	rootCmd.Flags().SortFlags = false

@@ -13,12 +13,12 @@ px describe pvc [flags]
 ### Examples
 
 ```
-$ px describe pvc
-  This describes all pvcs that are Portworx volumes
-$ px describe pvc abc
-  This describes pvc abc
-$ px describe pvc abc xyz
-  This describes pvcs abc and xyz
+1. Describe all pvcs that are Portworx volumes:
+	$ px describe pvc
+2. Describe specific pvc called pvc:
+	$ px describe pvc abc
+3. Describe list of pvcs (abc, xyz):
+	$ px describe pvc abc xyz
 ```
 
 ### Options
