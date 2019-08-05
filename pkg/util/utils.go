@@ -32,6 +32,15 @@ func ListContainsSubString(list []string, s string) bool {
 	return false
 }
 
+func StringContains(s string, list []string) bool {
+	for _, value := range list {
+		if strings.Contains(s, value) {
+			return true
+		}
+	}
+	return false
+}
+
 // ListContains returns true when string s is found in the list
 func ListContains(list []string, s string) bool {
 	for _, value := range list {

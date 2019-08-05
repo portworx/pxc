@@ -69,6 +69,49 @@ func TestListContainsSubString(t *testing.T) {
 	}
 }
 
+func TestStringContains(t *testing.T) {
+	tests := []struct {
+		list  []string
+		s     string
+		found bool
+	}{
+		{
+			list:  []string{"Hello", "World"},
+			s:     "Hello this is a substring",
+			found: true,
+		},
+		{
+			list:  []string{"Hello", "World"},
+			s:     "The word is not there",
+			found: false,
+		},
+		{
+			list:  []string{"Hello", "World"},
+			s:     "hello world",
+			found: false,
+		},
+		{
+			list:  []string{"Hello", "World"},
+			s:     "Hello is in the string as wel as World",
+			found: true,
+		},
+		{
+			list:  []string{},
+			s:     "Hello",
+			found: false,
+		},
+		{
+			list:  []string{},
+			s:     "",
+			found: false,
+		},
+	}
+
+	for _, test := range tests {
+		assert.True(t, test.found == StringContains(test.s, test.list))
+	}
+}
+
 /*
  To test postivive case of utils.ListContains function.
  Test if given element is present in the list.
