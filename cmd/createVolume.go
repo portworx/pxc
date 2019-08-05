@@ -47,8 +47,16 @@ var _ = RegisterCommandVar(func() {
 		Short: "Create a volume in Portworx",
 
 		// TODO:
-		Example: `$ px create volume myvolume --size=3
-This creates a volume called 'myvolume' of 3Gi.`,
+		Example: `1. Create volume called "myvolume" with size as 3GiB:
+	$ px create volume myvolume --size=3
+2. Create volume called "myvolume" with size as 3GiB and replica set to 3:
+	$ px create volume myvolume --size=3 --replicas=3
+3. Create shared volume called "myvolume" with size as 3GiB:
+	$ px create volume myvolume --size=3 --shared
+4. Create shared volume called "myvolume" with size as 2GiB and replicas set to 3:
+	$ px create volume myvolume --size=3 --shared --replicas=3
+5. Create volume called "myvolume" with label as "access=slow" and size as 3 GiB:
+	$ px create volume myvolume --size=3 --labels 'access=slow'`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("Must supply a name for volume")
