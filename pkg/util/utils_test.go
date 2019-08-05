@@ -69,7 +69,7 @@ func TestListContainsSubString(t *testing.T) {
 	}
 }
 
-func TestStringContains(t *testing.T) {
+func TestStringContainsAnyFromList(t *testing.T) {
 	tests := []struct {
 		list  []string
 		s     string
@@ -108,7 +108,7 @@ func TestStringContains(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		assert.True(t, test.found == StringContains(test.s, test.list))
+		assert.True(t, test.found == StringContainsAnyFromList(test.s, test.list))
 	}
 }
 

@@ -329,7 +329,7 @@ func (lf *logFormatter) doWrite(rw rest.ResponseWrapper, out io.Writer) error {
 
 func (lf *logFormatter) writeLine(bytes []byte, out io.Writer, applyFilter bool) error {
 	if applyFilter == true {
-		if !util.StringContains(string(bytes), lf.lo.filters) {
+		if !util.StringContainsAnyFromList(string(bytes), lf.lo.filters) {
 			return nil
 		}
 	}

@@ -32,7 +32,7 @@ func ListContainsSubString(list []string, s string) bool {
 	return false
 }
 
-func StringContains(s string, list []string) bool {
+func StringContainsAnyFromList(s string, list []string) bool {
 	for _, value := range list {
 		if strings.Contains(s, value) {
 			return true
