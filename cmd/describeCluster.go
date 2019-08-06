@@ -1,45 +1,45 @@
-/*
-Copyright © 2019 Portworx
+// Copyright © 2019 Portworx
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
 	"fmt"
-
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/px/pkg/util"
-
 	"github.com/spf13/cobra"
 )
 
-var statusCmd *cobra.Command
+var describeClusterCmd *cobra.Command
 
 var _ = RegisterCommandVar(func() {
-	statusCmd = &cobra.Command{
-		Use: "status",
-		// TODO
-		Short: "TODO: this will move to px describe cluster",
-		RunE:  statusExec,
+	// describeClusterCmd represents the describeCluster command
+	describeClusterCmd = &cobra.Command{
+		Use:     "cluster",
+		Short:   "Describe a Portworx cluster",
+		Long:    "Show detailed information of Portworx cluster",
+		Example: `$ px describe cluster`,
+
+		RunE: describeClusterExec,
 	}
 })
 
 var _ = RegisterCommandInit(func() {
-	rootCmd.AddCommand(statusCmd)
+	describeCmd.AddCommand(describeClusterCmd)
 })
 
-func statusExec(cmd *cobra.Command, args []string) error {
+func describeClusterExec(cmd *cobra.Command, args []string) error {
 	ctx, conn, err := PxConnectDefault()
 	if err != nil {
 		return err
@@ -54,10 +54,10 @@ func statusExec(cmd *cobra.Command, args []string) error {
 	}
 	var versionDetails string
 	for k, v := range version.GetVersion().GetDetails() {
-		versionDetails += fmt.Sprintf("  %s: %s\n", k, v)
+		versionDetails += fmt.Sprintf(" %s: %s\n", k, v)
 	}
 
-	// Print the cluster information
+	// Print cluster information
 	cluster := api.NewOpenStorageClusterClient(conn)
 	clusterInfo, err := cluster.InspectCurrent(ctx, &api.SdkClusterInspectCurrentRequest{})
 	if err != nil {
@@ -104,7 +104,6 @@ func statusExec(cmd *cobra.Command, args []string) error {
 		}
 		usedStr := fmt.Sprintf("%d Gi", used/Gi)
 		capacityStr := fmt.Sprintf("%d Gi", capacity/Gi)
-
 		t.AddLine(n.GetHostname(), n.GetMgmtIp(), n.GetSchedulerNodeName(), usedStr, capacityStr, n.GetStatus())
 	}
 	t.Print()
