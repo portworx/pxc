@@ -16,11 +16,10 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
 	"fmt"
-
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/px/pkg/util"
-
 	"github.com/spf13/cobra"
 )
 
@@ -29,6 +28,8 @@ type createVolumeOpts struct {
 	labelsAsString     string
 	sizeInGi           int
 	filesystemAsString string
+	replicaSet         []string
+	IoProfile          string
 }
 
 var (
@@ -76,11 +77,13 @@ var _ = RegisterCommandInit(func() {
 	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Shared, "shared", false, "Shared volume")
 	createVolumeCmd.Flags().StringVar(&cvOpts.labelsAsString, "labels", "", "Comma separated list of labels as key-value pairs: 'k1=v1,k2=v2'")
 	createVolumeCmd.Flags().StringVar(&cvOpts.filesystemAsString, "fs", "ext4", "Filesystem type for the volume [none, ext4]")
+	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Sticky, "sticky", false, "Sitcky volume")
+	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Journal, "journal", false, "Journal data for this volume")
+	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Encrypted, "encryption", false, "encrypt this volume")
+	createVolumeCmd.Flags().Uint32Var(&cvOpts.req.Spec.AggregationLevel, "aggregation-level", 0, "aggregation level (Valid Values: [1, 2, 3] (default 1)")
+	createVolumeCmd.Flags().StringSliceVar(&cvOpts.replicaSet, "nodes", []string{}, "Replicat set nodes for this volume")
+	createVolumeCmd.Flags().StringVar(&cvOpts.IoProfile, "ioprofile", "", "IO Profile (Valid Values: [sequential cms db db_remote sync_shared]) (default sequential)")
 	createVolumeCmd.Flags().SortFlags = false
-
-	// TODO bring the flags from rootCmd
-
-	// TODO add more flags here
 })
 
 func createVolumeExec(cmd *cobra.Command, args []string) error {
@@ -118,6 +121,30 @@ func createVolumeExec(cmd *cobra.Command, args []string) error {
 	// Update default EXT4, if it fs is 'none' and shared volume
 	if cvOpts.req.Spec.Format == api.FSType_FS_TYPE_NONE && cvOpts.req.Spec.Shared {
 		cvOpts.req.Spec.Format = api.FSType_FS_TYPE_EXT4
+	}
+
+	// setting replica set nodes if provided
+	if len(cvOpts.replicaSet) != 0 {
+		cvOpts.req.Spec.ReplicaSet = &api.ReplicaSet{
+			Nodes: cvOpts.replicaSet,
+		}
+	}
+
+	// setting IO profile if provided.
+	if len(cvOpts.IoProfile) > 0 {
+		switch cvOpts.IoProfile {
+		case "db":
+			cvOpts.req.Spec.IoProfile = api.IoProfile_IO_PROFILE_DB
+		case "cms":
+			cvOpts.req.Spec.IoProfile = api.IoProfile_IO_PROFILE_CMS
+		case "db_remote":
+			cvOpts.req.Spec.IoProfile = api.IoProfile_IO_PROFILE_DB_REMOTE
+		case "sync_shared":
+			cvOpts.req.Spec.IoProfile = api.IoProfile_IO_PROFILE_SYNC_SHARED
+		default:
+			flagError := errors.New("Invalid IO profile")
+			return flagError
+		}
 	}
 
 	// Send request
