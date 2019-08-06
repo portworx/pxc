@@ -30,9 +30,6 @@ import (
 	"google.golang.org/grpc"
 
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kclikube "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type PxConnectionData struct {
@@ -40,11 +37,6 @@ type PxConnectionData struct {
 	Ctx context.Context
 	// Connection
 	Conn *grpc.ClientConn
-}
-
-type KubeConnectionData struct {
-	ClientConfig clientcmd.ClientConfig
-	ClientSet    *kclikube.Clientset
 }
 
 type PxVolumeOpsInfo struct {
@@ -80,6 +72,8 @@ type ReplicationInfo struct {
 type PxVolumeOps interface {
 	// GetPxVolumeOpsInfo returns the PxVolumeOpsInfo
 	GetPxVolumeOpsInfo() *PxVolumeOpsInfo
+	// GetCOps returns the COps inerface
+	GetCOps() COps
 	// GetVolumes returns the array of volume objects
 	// filtered by the list of volume names specified
 	GetVolumes() ([]*api.SdkVolumeInspectResponse, error)
@@ -129,6 +123,10 @@ func (p *pxVolumeOps) GetPxVolumeOpsInfo() *PxVolumeOpsInfo {
 	return p.pxVolumeOpsInfo
 }
 
+func (p *pxVolumeOps) GetCOps() COps {
+	return NewCOps(&p.pxVolumeOpsInfo.KubeConnectionData)
+}
+
 func (p *pxVolumeOps) GetVolumes() ([]*api.SdkVolumeInspectResponse, error) {
 	if p.Vols != nil {
 		return p.Vols, nil
@@ -173,15 +171,14 @@ func (p *pxVolumeOps) getPods() ([]v1.Pod, error) {
 		return p.Pods, nil
 	}
 
-	if p.pxVolumeOpsInfo.ClientSet == nil {
-		return make([]v1.Pod, 0), nil
-	}
-	podClient := p.pxVolumeOpsInfo.ClientSet.CoreV1().Pods(p.pxVolumeOpsInfo.Namespace)
-	podList, err := podClient.List(metav1.ListOptions{})
+	co := p.GetCOps()
+
+	pods, err := co.GetPodsByLabels(p.pxVolumeOpsInfo.Namespace,
+		util.StringMapToCommaString(p.pxVolumeOpsInfo.Labels))
 	if err != nil {
 		return nil, err
 	}
-	p.Pods = podList.Items
+	p.Pods = pods
 	return p.Pods, nil
 }
 
@@ -459,16 +456,15 @@ func (p *pxVolumeOps) getPvcs() ([]v1.PersistentVolumeClaim, error) {
 		return p.Pvcs, nil
 	}
 
-	p.pxVolumeOpsInfo.ClientSet.CoreV1().Pods(p.pxVolumeOpsInfo.Namespace)
-	pvcClient := p.pxVolumeOpsInfo.ClientSet.CoreV1().PersistentVolumeClaims(
-		p.pxVolumeOpsInfo.Namespace)
+	co := p.GetCOps()
 
-	pvcList, err := pvcClient.List(metav1.ListOptions{})
+	pvcs, err := co.GetPvcsByLabels(p.pxVolumeOpsInfo.Namespace,
+		util.StringMapToCommaString(p.pxVolumeOpsInfo.Labels))
 	if err != nil {
 		return nil, err
 	}
 
-	p.Pvcs = pvcList.Items
+	p.Pvcs = pvcs
 	return p.Pvcs, nil
 }
 
