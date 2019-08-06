@@ -80,7 +80,6 @@ func (p *cliVolumeInputs) GetNamespace(cmd *cobra.Command) {
 
 	// No default namespace was specified so use default namespace
 	p.namespace = nil
-
 }
 
 // Create a new cliVolumeOps object

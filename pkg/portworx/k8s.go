@@ -79,6 +79,12 @@ func (p *KubeConnectionData) GetPvcsByLabels(
 	return pvcList.Items, nil
 }
 
+type logPayload struct {
+	rw           rest.ResponseWrapper
+	podName      string
+	podNamespace string
+}
+
 func (p *KubeConnectionData) GetLogs(
 	lo *COpsLogOptions,
 	out io.Writer,
@@ -88,39 +94,45 @@ func (p *KubeConnectionData) GetLogs(
 		return nil
 	}
 
-	rws := make([]rest.ResponseWrapper, 0, len(lo.Pods))
+	lps := make([]*logPayload, 0, len(lo.Pods))
 	for _, pod := range lo.Pods {
-		ret := p.ClientSet.CoreV1().Pods(lo.PortworxNamespace).GetLogs(pod.Name,
+		ret := p.ClientSet.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name,
 			&lo.PodLogOptions)
-		rws = append(rws, ret)
+
+		lp := &logPayload{
+			rw:           ret,
+			podName:      pod.Name,
+			podNamespace: pod.Namespace,
+		}
+		lps = append(lps, lp)
 	}
 
-	if lo.PodLogOptions.Follow && len(rws) > 1 {
-		if len(rws) > lo.MaxFollowConcurency {
+	if lo.PodLogOptions.Follow && len(lps) > 1 {
+		if len(lps) > lo.MaxFollowConcurency {
 			return fmt.Errorf(
 				"you are attempting to follow %d log streams, but maximum allowed concurency is %d, use --max-log-requests to increase the limit",
-				len(rws), lo.MaxFollowConcurency,
+				len(lps), lo.MaxFollowConcurency,
 			)
 		}
 
-		return writeLogsParallel(rws, lo, out)
+		return writeLogsParallel(lps, lo, out)
 	}
-	return writeLogs(rws, lo, out)
+	return writeLogs(lps, lo, out)
 }
 
 func writeLogsParallel(
-	rws []rest.ResponseWrapper,
+	lps []*logPayload,
 	lo *COpsLogOptions,
 	out io.Writer,
 ) error {
 	reader, writer := io.Pipe()
 
 	wg := &sync.WaitGroup{}
-	wg.Add(len(rws))
+	wg.Add(len(lps))
 
-	for _, rw := range rws {
-		go func(rw rest.ResponseWrapper) {
-			if err := doWrite(rw, lo, writer); err != nil {
+	for _, lp := range lps {
+		go func(lp *logPayload) {
+			if err := doWrite(lp, lo, writer); err != nil {
 				if !lo.IgnoreLogErrors {
 					writer.CloseWithError(err)
 					return
@@ -128,7 +140,7 @@ func writeLogsParallel(
 				fmt.Fprintf(writer, "error: %v\n", err)
 			}
 			wg.Done()
-		}(rw)
+		}(lp)
 	}
 
 	go func() {
@@ -141,12 +153,12 @@ func writeLogsParallel(
 }
 
 func writeLogs(
-	rws []rest.ResponseWrapper,
+	lps []*logPayload,
 	lo *COpsLogOptions,
 	out io.Writer,
 ) error {
-	for _, rw := range rws {
-		if err := doWrite(rw, lo, out); err != nil {
+	for _, lp := range lps {
+		if err := doWrite(lp, lo, out); err != nil {
 			return err
 		}
 	}
@@ -154,11 +166,12 @@ func writeLogs(
 }
 
 func doWrite(
-	rw rest.ResponseWrapper,
+	lp *logPayload,
 	lo *COpsLogOptions,
 	out io.Writer,
 ) error {
-	rc, err := rw.Stream()
+	prefix := []byte(fmt.Sprintf("%s: %s: ", lp.podName, lp.podNamespace))
+	rc, err := lp.rw.Stream()
 	if err != nil {
 		return err
 	}
@@ -167,7 +180,7 @@ func doWrite(
 	r := bufio.NewReader(rc)
 	for {
 		bytes, err := r.ReadBytes('\n')
-		if e := writeLine(bytes, lo, out); e != nil {
+		if e := writeLine(prefix, bytes, lo, out); e != nil {
 			return e
 		}
 
@@ -181,6 +194,7 @@ func doWrite(
 }
 
 func writeLine(
+	prefix []byte,
 	bytes []byte,
 	lo *COpsLogOptions,
 	out io.Writer,
@@ -188,6 +202,12 @@ func writeLine(
 	if lo.ApplyFilters == true {
 		if !util.StringContainsAnyFromList(string(bytes), lo.Filters) {
 			return nil
+		}
+	}
+	if len(bytes) > 0 {
+		_, err := out.Write(prefix)
+		if err != nil {
+			return err
 		}
 	}
 	_, err := out.Write(bytes)

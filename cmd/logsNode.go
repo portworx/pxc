@@ -53,7 +53,8 @@ var _ = RegisterCommandVar(func() {
 var _ = RegisterCommandInit(func() {
 	logsCmd.AddCommand(logsNodeCmd)
 	addCommonLogOptions(logsNodeCmd)
-	logsNodeCmd.Flags().Bool("all-nodes", false, "If specified logs from all nodes will be displayed")
+	logsNodeCmd.Flags().Bool("all-nodes", false, "If specified, logs from all nodes will be displayed")
+	logsNodeCmd.Flags().String("filter", "", "comma seperated list of strings to search for. Log line will be printed if any one of the strings match")
 })
 
 func getNodeLogOptions(

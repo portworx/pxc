@@ -79,6 +79,8 @@ type PxVolumeOps interface {
 	GetVolumes() ([]*api.SdkVolumeInspectResponse, error)
 	// PodsUsingVolume returns the list of pods uing the given volume
 	PodsUsingVolume(v *api.Volume) ([]v1.Pod, error)
+	// GetAttachedOn returns the node where the specified volume is attached
+	GetAttachedOn(v *api.Volume) (*api.StorageNode, error)
 	// GetAttachedState returns the attached state of the specified volume
 	GetAttachedState(v *api.Volume) (string, error)
 	// GetReplicationInfo returns the details of the replicas of the specified volume
@@ -91,6 +93,9 @@ type PxVolumeOps interface {
 	EnumerateNodes() ([]string, error)
 	// GetNode returns details of given node
 	GetNode(id string) (*api.StorageNode, error)
+	// GetAllNodesForVolume will return all nodes that currently has anything to do with the volume
+	// nodeNames are filled up and returned
+	GetAllNodesForVolume(v *api.Volume, nodeNames map[string]bool) error
 }
 
 type pxVolumeOps struct {
@@ -238,7 +243,7 @@ func (p *pxVolumeOps) GetNode(nodeId string) (*api.StorageNode, error) {
 	return n, nil
 }
 
-func (p *pxVolumeOps) getAttachedOn(v *api.Volume) (*api.StorageNode, error) {
+func (p *pxVolumeOps) GetAttachedOn(v *api.Volume) (*api.StorageNode, error) {
 	if len(v.GetAttachedOn()) != 0 {
 		node, err := p.GetNode(v.GetAttachedOn())
 		if err != nil {
@@ -250,7 +255,7 @@ func (p *pxVolumeOps) getAttachedOn(v *api.Volume) (*api.StorageNode, error) {
 }
 
 func (p *pxVolumeOps) GetAttachedState(v *api.Volume) (string, error) {
-	n, err := p.getAttachedOn(v)
+	n, err := p.GetAttachedOn(v)
 	if err != nil {
 		return "", err
 	}
@@ -498,4 +503,51 @@ func (p *pxVolumeOps) GetPxPvcs() ([]*kubernetes.PxPvc, error) {
 		}
 	}
 	return p.pxPvcs, nil
+}
+
+func addToNodeIds(nodeIds map[string]bool, nodes []string) {
+	for _, n := range nodes {
+		nodeIds[n] = true
+	}
+}
+
+func getMidsArray(irs map[string]string, key string, nodeIds map[string]bool) {
+	if v, ok := irs[key]; ok {
+		if len(v) > 0 {
+			nn := strings.Split(v, ",")
+			addToNodeIds(nodeIds, nn)
+		}
+	}
+}
+
+// This basically looks at the current runtime state of the volume and picks out all of the nodes referenced
+func (p *pxVolumeOps) GetAllNodesForVolume(v *api.Volume, nodeNames map[string]bool) error {
+	nodeIds := make(map[string]bool)
+	runtimeStates := v.GetRuntimeState()
+	for i, rset := range v.GetReplicaSets() {
+		if i < len(runtimeStates) && runtimeStates[i].GetRuntimeState() != nil {
+			irs := runtimeStates[i].GetRuntimeState()
+			getMidsArray(irs, PXReplSetCreateMid, nodeIds)
+			getMidsArray(irs, PXReplRemoveMids, nodeIds)
+			getMidsArray(irs, PXReplCurrSetMid, nodeIds)
+			getMidsArray(irs, PXReplReAddNodeMid, nodeIds)
+			if len(v.GetAttachedOn()) > 0 {
+				nodeIds[v.GetAttachedOn()] = true
+			}
+			if newNodeMid, ok := irs[PXReplNewNodeMid]; ok {
+				if len(newNodeMid) > 0 {
+					nodeIds[newNodeMid] = true
+				}
+			}
+		}
+		addToNodeIds(nodeIds, rset.Nodes)
+	}
+	for k, _ := range nodeIds {
+		n, err := p.GetNode(k)
+		if err != nil {
+			return err
+		}
+		nodeNames[n.GetHostname()] = true
+	}
+	return nil
 }

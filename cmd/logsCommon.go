@@ -37,7 +37,6 @@ func addCommonLogOptions(lc *cobra.Command) {
 	lc.Flags().String("since-time", "", "Only return logs after a specific date (RFC3339). Defaults to all logs. Only one of since-time / since may be used.")
 	lc.Flags().Duration("since", 0, "Only return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used.")
 	lc.Flags().StringP("px-namespace", "n", "kube-system", "Kubernetes namespace in which Portworx is installed")
-	lc.Flags().String("filter", "", "comma seperated list of strings to search for. Log line will be printed if any one of the strings match")
 }
 
 func parseRFC3339(s string) (metav1.Time, error) {
@@ -63,6 +62,7 @@ func getCommonLogOptions(cmd *cobra.Command) (*portworx.COpsLogOptions, error) {
 	f, _ := cmd.Flags().GetString("filter")
 	if len(f) > 0 {
 		lo.Filters = strings.Split(f, ",")
+		lo.ApplyFilters = true
 	}
 
 	lo.PodLogOptions.Follow, _ = cmd.Flags().GetBool("follow")
@@ -140,6 +140,5 @@ func getRequiredPortworxPods(
 		}
 		return selPods, nil
 	}
-	fmt.Println(len(allPods))
 	return allPods, nil
 }
