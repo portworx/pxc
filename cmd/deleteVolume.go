@@ -61,7 +61,7 @@ func deleteVolumeExec(cmd *cobra.Command, args []string) error {
 		return util.PxErrorMessage(err, "Failed to delete volume")
 	}
 
-	msg := fmt.Sprintf("Volume %s deleted", name)
+	msg := fmt.Sprintf("Volume %s deleted\n", name)
 
 	formattedOut := &util.DefaultFormatOutput{
 		Cmd:  "delete volume",
