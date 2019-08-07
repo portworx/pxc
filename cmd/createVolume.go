@@ -25,9 +25,10 @@ import (
 )
 
 type createVolumeOpts struct {
-	req            *api.SdkVolumeCreateRequest
-	labelsAsString string
-	sizeInGi       int
+	req                *api.SdkVolumeCreateRequest
+	labelsAsString     string
+	sizeInGi           int
+	filesystemAsString string
 }
 
 var (
@@ -71,9 +72,10 @@ var _ = RegisterCommandInit(func() {
 	createCmd.AddCommand(createVolumeCmd)
 
 	createVolumeCmd.Flags().IntVar(&cvOpts.sizeInGi, "size", 0, "Size in GiB")
-	createVolumeCmd.Flags().Int64Var(&cvOpts.req.Spec.HaLevel, "replicas", 0, "Number of replicas also called HA level [1-3]")
+	createVolumeCmd.Flags().Int64Var(&cvOpts.req.Spec.HaLevel, "replicas", 1, "Number of replicas also called HA level [1-3]")
 	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Shared, "shared", false, "Shared volume")
 	createVolumeCmd.Flags().StringVar(&cvOpts.labelsAsString, "labels", "", "Comma separated list of labels as key-value pairs: 'k1=v1,k2=v2'")
+	createVolumeCmd.Flags().StringVar(&cvOpts.filesystemAsString, "fs", "ext4", "Filesystem type for the volume [none, ext4]")
 	createVolumeCmd.Flags().SortFlags = false
 
 	// TODO bring the flags from rootCmd
@@ -103,9 +105,19 @@ func createVolumeExec(cmd *cobra.Command, args []string) error {
 	// Convert size to bytes in uint64
 	cvOpts.req.Spec.Size = uint64(cvOpts.sizeInGi) * uint64(Gi)
 
-	// Set a default value
-	if cvOpts.req.Spec.HaLevel == 0 {
-		cvOpts.req.Spec.HaLevel = 1
+	// Add fs to request
+	switch {
+	case cvOpts.filesystemAsString == "ext4":
+		cvOpts.req.Spec.Format = api.FSType_FS_TYPE_EXT4
+	case cvOpts.filesystemAsString == "none":
+		cvOpts.req.Spec.Format = api.FSType_FS_TYPE_NONE
+	default:
+		return fmt.Errorf("Error: --fs valid values are [none, ext4]\n")
+	}
+
+	// Update default EXT4, if it fs is 'none' and shared volume
+	if cvOpts.req.Spec.Format == api.FSType_FS_TYPE_NONE && cvOpts.req.Spec.Shared {
+		cvOpts.req.Spec.Format = api.FSType_FS_TYPE_EXT4
 	}
 
 	// Send request
@@ -116,7 +128,7 @@ func createVolumeExec(cmd *cobra.Command, args []string) error {
 	}
 
 	// Show user information
-	msg := fmt.Sprintf("Volume %s created with id %s",
+	msg := fmt.Sprintf("Volume %s created with id %s\n",
 		cvOpts.req.GetName(),
 		resp.GetVolumeId())
 
