@@ -19,11 +19,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/portworx/px/pkg/portworx"
+	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+	"github.com/portworx/px/pkg/kubernetes"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	PORTWORX_CONTAINER_NAME = "portworx"
 )
 
 func addCommonLogOptions(lc *cobra.Command) {
@@ -33,10 +37,11 @@ func addCommonLogOptions(lc *cobra.Command) {
 	lc.Flags().Bool("ignore-errors", false, "If watching / following Portworx logs, allow for any errors that occur to be non-fatal")
 	lc.Flags().Int("max-log-requests", 5, "Specify maximum number of concurrent logs to follow. Defaults to 5.")
 	lc.Flags().Int64("limit-bytes", 0, "Maximum bytes of logs to return. Defaults to no limit.")
-	lc.Flags().Int64("tail", portworx.NO_TAIL_LINES, "Lines of recent log file to display. Defaults to -1, showing all log lines")
+	lc.Flags().Int64("tail", kubernetes.NO_TAIL_LINES, "Lines of recent log file to work on. Defaults to -1, showing all log lines. All filters will be applied on top of these lines")
 	lc.Flags().String("since-time", "", "Only return logs after a specific date (RFC3339). Defaults to all logs. Only one of since-time / since may be used.")
 	lc.Flags().Duration("since", 0, "Only return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used.")
 	lc.Flags().StringP("px-namespace", "n", "kube-system", "Kubernetes namespace in which Portworx is installed")
+	lc.Flags().String("filter", "", "Comma seperated list of strings to search for. Log line will be printed if any one of the strings match. Note that if --tail is specified the filter is applied on only those many lines.")
 }
 
 func parseRFC3339(s string) (metav1.Time, error) {
@@ -50,8 +55,8 @@ func parseRFC3339(s string) (metav1.Time, error) {
 	return metav1.Time{Time: t}, nil
 }
 
-func getCommonLogOptions(cmd *cobra.Command) (*portworx.COpsLogOptions, error) {
-	lo := &portworx.COpsLogOptions{}
+func getCommonLogOptions(cmd *cobra.Command) (*kubernetes.COpsLogOptions, error) {
+	lo := &kubernetes.COpsLogOptions{}
 
 	lo.PortworxNamespace, _ = cmd.Flags().GetString("px-namespace")
 	lo.IgnoreLogErrors, _ = cmd.Flags().GetBool("ignore-errors")
@@ -78,14 +83,14 @@ func getCommonLogOptions(cmd *cobra.Command) (*portworx.COpsLogOptions, error) {
 	}
 
 	tail, _ := cmd.Flags().GetInt64("tail")
-	if tail != portworx.NO_TAIL_LINES {
+	if tail != kubernetes.NO_TAIL_LINES {
 		if tail < 0 {
 			return nil, fmt.Errorf("TailLines must be greater than or equal to 0")
 		}
 		lo.PodLogOptions.TailLines = &tail
 	}
 	if lo.PodLogOptions.Follow == true && lo.PodLogOptions.TailLines == nil {
-		x := portworx.DEFAULT_TAIL_LINES
+		x := kubernetes.DEFAULT_TAIL_LINES
 		lo.PodLogOptions.TailLines = &x
 	}
 
@@ -114,23 +119,34 @@ func getCommonLogOptions(cmd *cobra.Command) (*portworx.COpsLogOptions, error) {
 	return lo, nil
 }
 
+// From the given lost of nodeName, figures out the Portworx pods on those nodes
 func getRequiredPortworxPods(
 	cvOps *cliVolumeOps,
 	nodeNames []string,
 	portworxNamespace string,
-) ([]v1.Pod, error) {
+) ([]kubernetes.ContainerInfo, error) {
 	co := cvOps.pxVolumeOps.GetCOps()
 	allPods, err := co.GetPodsByLabels(portworxNamespace, "name=portworx")
 	if err != nil {
 		return nil, err
 	}
+
+	allCinfo := make([]kubernetes.ContainerInfo, 0, len(allPods))
+	for _, p := range allPods {
+		cinfo := kubernetes.ContainerInfo{
+			Pod:       p,
+			Container: PORTWORX_CONTAINER_NAME,
+		}
+		allCinfo = append(allCinfo, cinfo)
+	}
+
 	if len(nodeNames) > 0 {
-		selPods := make([]v1.Pod, 0, len(allPods))
-		selPodNames := make([]string, 0, len(allPods))
-		for _, p := range allPods {
-			if util.ListContains(nodeNames, p.Spec.NodeName) == true {
-				selPods = append(selPods, p)
-				selPodNames = append(selPodNames, p.Spec.NodeName)
+		selCInfo := make([]kubernetes.ContainerInfo, 0, len(allCinfo))
+		selPodNames := make([]string, 0, len(allCinfo))
+		for _, p := range allCinfo {
+			if util.ListContains(nodeNames, p.Pod.Spec.NodeName) == true {
+				selCInfo = append(selCInfo, p)
+				selPodNames = append(selPodNames, p.Pod.Spec.NodeName)
 			}
 		}
 		for _, n := range nodeNames {
@@ -138,7 +154,79 @@ func getRequiredPortworxPods(
 				return nil, fmt.Errorf("Node %s not found", n)
 			}
 		}
-		return selPods, nil
+		return selCInfo, nil
 	}
-	return allPods, nil
+	return allCinfo, nil
+}
+
+// This method looks at each of the volumes and figures out
+// a) Which nodes the volume has relevance to such as where its replicas
+//    are and where the node is attached
+// b) Converts the node names to appropriate portworx pods
+// c) Figures out which pods are using this volume and which of the
+//    containers inside those pods use the volume
+// Figures out all the unique namespace, pod and container combinations and returns those
+func fillContainerInfo(
+	vols []*api.SdkVolumeInspectResponse,
+	cvOps *cliVolumeOps,
+	lo *kubernetes.COpsLogOptions,
+	allLogs bool,
+) error {
+	// Get All relevant pods.
+	nodeNamesMap := make(map[string]bool)
+	ciInfoList := make(map[string]kubernetes.ContainerInfo)
+	for _, resp := range vols {
+		// Get all of the nodes associated with the volume
+		// Get all of the pods using the volume
+		v := resp.GetVolume()
+		err := cvOps.pxVolumeOps.GetAllNodesForVolume(v, nodeNamesMap)
+		if err != nil {
+			return err
+		}
+
+		cinfo, err := cvOps.pxVolumeOps.GetContainerInfoForVolume(v)
+
+		if allLogs != true {
+			lo.Filters = append(lo.Filters, v.GetLocator().GetName())
+			lo.Filters = append(lo.Filters, v.GetId())
+			labels := v.GetLocator().GetVolumeLabels()
+			if pvcName, ok := labels["pvc"]; ok {
+				lo.Filters = append(lo.Filters, pvcName)
+			}
+			lo.ApplyFilters = true
+		}
+
+		for _, ci := range cinfo {
+			key := fmt.Sprintf("%s-%s-%s", ci.Pod.Namespace, ci.Pod.Name, ci.Container)
+			ciInfoList[key] = ci
+		}
+	}
+
+	nodeNames := make([]string, 0)
+	for k, _ := range nodeNamesMap {
+		nodeNames = append(nodeNames, k)
+	}
+
+	// Convert Portworx node names to pods
+	cinfo, err := getRequiredPortworxPods(cvOps, nodeNames, lo.PortworxNamespace)
+	if err != nil {
+		return err
+	}
+
+	// Remove duplicates between the list of pods that are attaching the volume and the portworx pods if any
+	for _, ci := range cinfo {
+		key := fmt.Sprintf("%s-%s-%s", ci.Pod.Namespace, ci.Pod.Name, ci.Container)
+		ciInfoList[key] = ci
+	}
+
+	// Covert the pod map to an array of pods
+	lo.CInfo = make([]kubernetes.ContainerInfo, 0)
+	for _, ci := range ciInfoList {
+		lo.CInfo = append(lo.CInfo, ci)
+		if ci.MountPath != "" {
+			lo.Filters = append(lo.Filters, ci.MountPath)
+		}
+	}
+
+	return nil
 }

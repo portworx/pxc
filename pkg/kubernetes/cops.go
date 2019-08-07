@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package portworx
+package kubernetes
 
 import (
 	"io"
@@ -26,6 +26,12 @@ const (
 	NO_TAIL_LINES      = int64(-1)
 )
 
+type ContainerInfo struct {
+	Pod       v1.Pod
+	Container string
+	MountPath string
+}
+
 type COpsLogOptions struct {
 	PodLogOptions       v1.PodLogOptions
 	IgnoreLogErrors     bool
@@ -33,7 +39,7 @@ type COpsLogOptions struct {
 	Filters             []string
 	ApplyFilters        bool
 	PortworxNamespace   string
-	Pods                []v1.Pod
+	CInfo               []ContainerInfo
 }
 
 type COps interface {

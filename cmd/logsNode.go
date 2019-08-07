@@ -17,7 +17,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/portworx/px/pkg/portworx"
+	"github.com/portworx/px/pkg/kubernetes"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -28,7 +28,8 @@ var _ = RegisterCommandVar(func() {
 	logsNodeCmd = &cobra.Command{
 		Use:   "node",
 		Short: "Print Portworx logs for specified nodes",
-		Example: `$ px logs node --all-nodes
+		Example: `
+        $ px logs node --all-nodes
         Return Portworx logs from all nodes
 
         $ px logs node abc
@@ -38,7 +39,7 @@ var _ = RegisterCommandVar(func() {
         Begin streaming the Portworx logs from  node abc
 
         $ px logs node --tail=20 abc
-        Display only the most recent 20 lines of Portworx logs in  node abc
+        Apply filters to only the most recent 20 log lines and display the matched lines
 
         $ px logs node abc --filter "error,warning"
         Display all log lines that has either error or warning on node abc
@@ -54,14 +55,13 @@ var _ = RegisterCommandInit(func() {
 	logsCmd.AddCommand(logsNodeCmd)
 	addCommonLogOptions(logsNodeCmd)
 	logsNodeCmd.Flags().Bool("all-nodes", false, "If specified, logs from all nodes will be displayed")
-	logsNodeCmd.Flags().String("filter", "", "comma seperated list of strings to search for. Log line will be printed if any one of the strings match")
 })
 
 func getNodeLogOptions(
 	cmd *cobra.Command,
 	args []string,
 	cvOps *cliVolumeOps,
-) (*portworx.COpsLogOptions, error) {
+) (*kubernetes.COpsLogOptions, error) {
 	allNodes, _ := cmd.Flags().GetBool("all-nodes")
 	if (allNodes == false && len(args) == 0) ||
 		(allNodes == true && len(args) > 0) {
@@ -76,7 +76,7 @@ func getNodeLogOptions(
 	if err != nil {
 		return nil, err
 	}
-	lo.Pods = p
+	lo.CInfo = p
 	return lo, nil
 }
 

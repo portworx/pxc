@@ -55,6 +55,12 @@ var (
 		"pvc-6fc1fe2d-25f4-40b0-a616-04c019572154": "mysql-pvc-1",
 		"pvc-34d0f15c-65b9-4229-8b3e-b7bb912e382f": "wp-pv-claim",
 	}
+
+	expectedNodes = []string{
+		"ip-70-0-87-233.brbnca.spcsdns.net",
+		"ip-70-0-87-200.brbnca.spcsdns.net",
+		"ip-70-0-87-203.brbnca.spcsdns.net",
+	}
 )
 
 func testGetPxVolumeOps(t *testing.T) PxVolumeOps {
@@ -93,9 +99,28 @@ func TestPxVolumeOps(t *testing.T) {
 	volOps := testGetPxVolumeOps(t)
 	svols, err := volOps.GetVolumes()
 	assert.Equal(t, err, nil, "Could not get volumes")
+	nodeNames := make(map[string]bool)
 	for _, sv := range svols {
 		v := sv.GetVolume()
 		testPxVolumeOps(t, volOps, v)
+		err := volOps.GetAllNodesForVolume(v, nodeNames)
+		assert.NoError(t, err)
+		cinfo, err := volOps.GetContainerInfoForVolume(v)
+		for _, ci := range cinfo {
+			volName := podToVolume[ci.Pod.Name]
+			assert.Equal(t, volName, v.GetLocator().GetName())
+			assert.Equal(t, ci.Pod.Namespace, "wp1")
+			if ci.Container == "mysql" {
+				assert.Equal(t, ci.Pod.Name, "wordpress-mysql-684ddbbb55-zjs7b")
+			} else {
+				assert.Equal(t, ci.Container, "wordpress")
+			}
+		}
+	}
+	assert.Equal(t, len(expectedNodes), len(nodeNames))
+	for _, n := range expectedNodes {
+		_, ok := nodeNames[n]
+		assert.Equal(t, ok, true)
 	}
 
 	pxPvcs, err := volOps.GetPxPvcs()

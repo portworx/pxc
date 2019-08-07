@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package portworx
+package kubernetes
 
 import (
 	"bufio"
@@ -89,20 +89,23 @@ func (p *KubeConnectionData) GetLogs(
 	lo *COpsLogOptions,
 	out io.Writer,
 ) error {
-	if len(lo.Pods) == 0 {
+	if len(lo.CInfo) == 0 {
 		util.Printf("No resources found\n")
 		return nil
 	}
 
-	lps := make([]*logPayload, 0, len(lo.Pods))
-	for _, pod := range lo.Pods {
-		ret := p.ClientSet.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name,
-			&lo.PodLogOptions)
+	lps := make([]*logPayload, 0, len(lo.CInfo))
+	for _, ci := range lo.CInfo {
+		// We don't need a deep copy since we are only modifying the container name
+		optionsCopy := lo.PodLogOptions
+		optionsCopy.Container = ci.Container
+		ret := p.ClientSet.CoreV1().Pods(ci.Pod.Namespace).GetLogs(ci.Pod.Name,
+			&optionsCopy)
 
 		lp := &logPayload{
 			rw:           ret,
-			podName:      pod.Name,
-			podNamespace: pod.Namespace,
+			podName:      ci.Pod.Name,
+			podNamespace: ci.Pod.Namespace,
 		}
 		lps = append(lps, lp)
 	}

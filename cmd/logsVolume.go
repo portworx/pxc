@@ -17,10 +17,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/portworx/px/pkg/portworx"
+	"github.com/portworx/px/pkg/kubernetes"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
-	v1 "k8s.io/api/core/v1"
 )
 
 var logsVolumeCmd *cobra.Command
@@ -29,14 +28,18 @@ var _ = RegisterCommandVar(func() {
 	logsVolumeCmd = &cobra.Command{
 		Use:   "volume",
 		Short: "Print Portworx logs related to specified volume(s)",
-		Example: `$ px logs volume abc
+		Example: `
+        $ px logs volume abc
         Return Portworx logs related to volume abc
 
         $ px logs volume -f  abc
         Begin streaming the Portworx logs related to volume abc
 
         $ px logs volume --tail=20 abc
-        Display only the most recent 20 lines of Portworx logs related to volume abc from each node
+        Apply the volume filters  and the filters specified in --filters to the most recent 20 log lines of each relevant pod  and display only lines that match
+
+        $ px logs node abc --filter "error,warning"
+        Display all log lines that is related to volume abc or has either error or warning in the log lines
 
         $ px logs volume --since=1h volume
         Show all Portworx logs related to volume abc written in the last hour`,
@@ -56,7 +59,7 @@ func getVolumeLogOptions(
 	cmd *cobra.Command,
 	args []string,
 	cvOps *cliVolumeOps,
-) (*portworx.COpsLogOptions, error) {
+) (*kubernetes.COpsLogOptions, error) {
 	err := validateCliInput(cmd, args)
 	if err != nil {
 		return nil, err
@@ -77,64 +80,15 @@ func getVolumeLogOptions(
 		return nil, nil
 	}
 
-	// Get All relevant pods.
 	allLogs, _ := cmd.Flags().GetBool("all-logs")
-	nodeNamesMap := make(map[string]bool)
-	podList := make(map[string]v1.Pod)
-	for _, resp := range vols {
-		// Get all of the nodes associated with the volume
-		// Get all of the pods using the volume
-		v := resp.GetVolume()
-		if allLogs != true {
-			lo.Filters = append(lo.Filters, v.GetLocator().GetName())
-			lo.Filters = append(lo.Filters, v.GetId())
-			lo.ApplyFilters = true
-		}
-
-		err := cvOps.pxVolumeOps.GetAllNodesForVolume(v, nodeNamesMap)
-		if err != nil {
-			return nil, err
-		}
-
-		pods, err := cvOps.pxVolumeOps.PodsUsingVolume(v)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, p := range pods {
-			key := fmt.Sprintf("%s-%s", p.Namespace, p.Name)
-			podList[key] = p
-		}
-
-	}
-
-	nodeNames := make([]string, 0)
-	for k, _ := range nodeNamesMap {
-		nodeNames = append(nodeNames, k)
-	}
-
-	// Convert node names to pods
-	pods, err := getRequiredPortworxPods(cvOps, nodeNames, lo.PortworxNamespace)
+	err = fillContainerInfo(vols, cvOps, lo, allLogs)
 	if err != nil {
 		return nil, err
 	}
-
-	// Remove duplicates between the list of pods that are attaching the volume and the portworx pods if any
-	for _, p := range pods {
-		key := fmt.Sprintf("%s-%s", p.Namespace, p.Name)
-		podList[key] = p
-	}
-
-	// Covert the pod map to an array of pods
-	lo.Pods = make([]v1.Pod, 0)
-	for _, p := range podList {
-		lo.Pods = append(lo.Pods, p)
-	}
-	return lo, nil
+	return lo, err
 }
 
 func logsVolumesExec(cmd *cobra.Command, args []string) error {
-	validateCliInput(cmd, args)
 	cvi := GetCliVolumeInputs(cmd, args)
 	cvi.showK8s = true
 	if len(cvi.labels) == 0 && len(args) == 0 {
@@ -156,7 +110,7 @@ func logsVolumesExec(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if lo == nil || len(lo.Pods) == 0 {
+	if lo == nil || len(lo.CInfo) == 0 {
 		return nil
 	}
 	return cvOps.pxVolumeOps.GetCOps().GetLogs(lo, util.Stdout)
