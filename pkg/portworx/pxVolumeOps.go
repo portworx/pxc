@@ -30,9 +30,6 @@ import (
 	"google.golang.org/grpc"
 
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kclikube "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type PxConnectionData struct {
@@ -42,16 +39,11 @@ type PxConnectionData struct {
 	Conn *grpc.ClientConn
 }
 
-type KubeConnectionData struct {
-	ClientConfig clientcmd.ClientConfig
-	ClientSet    *kclikube.Clientset
-}
-
 type PxVolumeOpsInfo struct {
 	// Px connection data
 	PxConnectionData
 	// K8S connection data
-	KubeConnectionData
+	kubernetes.KubeConnectionData
 	// k8s namespace. Using "" means all namespaces
 	Namespace string
 	// volumeNames. Using
@@ -80,11 +72,15 @@ type ReplicationInfo struct {
 type PxVolumeOps interface {
 	// GetPxVolumeOpsInfo returns the PxVolumeOpsInfo
 	GetPxVolumeOpsInfo() *PxVolumeOpsInfo
+	// GetCOps returns the COps inerface
+	GetCOps() kubernetes.COps
 	// GetVolumes returns the array of volume objects
 	// filtered by the list of volume names specified
 	GetVolumes() ([]*api.SdkVolumeInspectResponse, error)
 	// PodsUsingVolume returns the list of pods uing the given volume
 	PodsUsingVolume(v *api.Volume) ([]v1.Pod, error)
+	// GetAttachedOn returns the node where the specified volume is attached
+	GetAttachedOn(v *api.Volume) (*api.StorageNode, error)
 	// GetAttachedState returns the attached state of the specified volume
 	GetAttachedState(v *api.Volume) (string, error)
 	// GetReplicationInfo returns the details of the replicas of the specified volume
@@ -97,6 +93,11 @@ type PxVolumeOps interface {
 	EnumerateNodes() ([]string, error)
 	// GetNode returns details of given node
 	GetNode(id string) (*api.StorageNode, error)
+	// GetAllNodesForVolume will return all nodes that currently has anything to do with the volume
+	// nodeNames are filled up and returned
+	GetAllNodesForVolume(v *api.Volume, nodeNames map[string]bool) error
+	// GetContainerInfoForVolume will return the container info for pods using the volume
+	GetContainerInfoForVolume(v *api.Volume) ([]kubernetes.ContainerInfo, error)
 }
 
 type pxVolumeOps struct {
@@ -127,6 +128,10 @@ func NewPxVolumeOps(pxVolOpsInfo *PxVolumeOpsInfo) (PxVolumeOps, error) {
 // GetPxVolumeOpsInfo returns the connection data for px
 func (p *pxVolumeOps) GetPxVolumeOpsInfo() *PxVolumeOpsInfo {
 	return p.pxVolumeOpsInfo
+}
+
+func (p *pxVolumeOps) GetCOps() kubernetes.COps {
+	return kubernetes.NewCOps(&p.pxVolumeOpsInfo.KubeConnectionData)
 }
 
 func (p *pxVolumeOps) GetVolumes() ([]*api.SdkVolumeInspectResponse, error) {
@@ -173,15 +178,14 @@ func (p *pxVolumeOps) getPods() ([]v1.Pod, error) {
 		return p.Pods, nil
 	}
 
-	if p.pxVolumeOpsInfo.ClientSet == nil {
-		return make([]v1.Pod, 0), nil
-	}
-	podClient := p.pxVolumeOpsInfo.ClientSet.CoreV1().Pods(p.pxVolumeOpsInfo.Namespace)
-	podList, err := podClient.List(metav1.ListOptions{})
+	co := p.GetCOps()
+
+	pods, err := co.GetPodsByLabels(p.pxVolumeOpsInfo.Namespace,
+		util.StringMapToCommaString(p.pxVolumeOpsInfo.Labels))
 	if err != nil {
 		return nil, err
 	}
-	p.Pods = podList.Items
+	p.Pods = pods
 	return p.Pods, nil
 }
 
@@ -193,6 +197,9 @@ func (p *pxVolumeOps) PodsUsingVolume(v *api.Volume) ([]v1.Pod, error) {
 	usedPods := make([]v1.Pod, 0)
 	namespace := v.Locator.VolumeLabels["namespace"]
 	pvc := v.Locator.VolumeLabels["pvc"]
+	if namespace == "" && pvc == "" {
+		return usedPods, nil
+	}
 	for _, pod := range pods {
 		if pod.Namespace == namespace {
 			for _, volumeInfo := range pod.Spec.Volumes {
@@ -241,7 +248,7 @@ func (p *pxVolumeOps) GetNode(nodeId string) (*api.StorageNode, error) {
 	return n, nil
 }
 
-func (p *pxVolumeOps) getAttachedOn(v *api.Volume) (*api.StorageNode, error) {
+func (p *pxVolumeOps) GetAttachedOn(v *api.Volume) (*api.StorageNode, error) {
 	if len(v.GetAttachedOn()) != 0 {
 		node, err := p.GetNode(v.GetAttachedOn())
 		if err != nil {
@@ -253,7 +260,7 @@ func (p *pxVolumeOps) getAttachedOn(v *api.Volume) (*api.StorageNode, error) {
 }
 
 func (p *pxVolumeOps) GetAttachedState(v *api.Volume) (string, error) {
-	n, err := p.getAttachedOn(v)
+	n, err := p.GetAttachedOn(v)
 	if err != nil {
 		return "", err
 	}
@@ -459,16 +466,15 @@ func (p *pxVolumeOps) getPvcs() ([]v1.PersistentVolumeClaim, error) {
 		return p.Pvcs, nil
 	}
 
-	p.pxVolumeOpsInfo.ClientSet.CoreV1().Pods(p.pxVolumeOpsInfo.Namespace)
-	pvcClient := p.pxVolumeOpsInfo.ClientSet.CoreV1().PersistentVolumeClaims(
-		p.pxVolumeOpsInfo.Namespace)
+	co := p.GetCOps()
 
-	pvcList, err := pvcClient.List(metav1.ListOptions{})
+	pvcs, err := co.GetPvcsByLabels(p.pxVolumeOpsInfo.Namespace,
+		util.StringMapToCommaString(p.pxVolumeOpsInfo.Labels))
 	if err != nil {
 		return nil, err
 	}
 
-	p.Pvcs = pvcList.Items
+	p.Pvcs = pvcs
 	return p.Pvcs, nil
 }
 
@@ -502,4 +508,109 @@ func (p *pxVolumeOps) GetPxPvcs() ([]*kubernetes.PxPvc, error) {
 		}
 	}
 	return p.pxPvcs, nil
+}
+
+func addToNodeIds(nodeIds map[string]bool, nodes []string) {
+	for _, n := range nodes {
+		nodeIds[n] = true
+	}
+}
+
+func getMidsArray(irs map[string]string, key string, nodeIds map[string]bool) {
+	if v, ok := irs[key]; ok {
+		if len(v) > 0 {
+			nn := strings.Split(v, ",")
+			addToNodeIds(nodeIds, nn)
+		}
+	}
+}
+
+// This basically looks at the current runtime state of the volume and picks out all of the nodes referenced
+func (p *pxVolumeOps) GetAllNodesForVolume(v *api.Volume, nodeNames map[string]bool) error {
+	nodeIds := make(map[string]bool)
+	runtimeStates := v.GetRuntimeState()
+	for i, rset := range v.GetReplicaSets() {
+		if i < len(runtimeStates) && runtimeStates[i].GetRuntimeState() != nil {
+			irs := runtimeStates[i].GetRuntimeState()
+			getMidsArray(irs, PXReplSetCreateMid, nodeIds)
+			getMidsArray(irs, PXReplRemoveMids, nodeIds)
+			getMidsArray(irs, PXReplCurrSetMid, nodeIds)
+			getMidsArray(irs, PXReplReAddNodeMid, nodeIds)
+			if len(v.GetAttachedOn()) > 0 {
+				nodeIds[v.GetAttachedOn()] = true
+			}
+			if newNodeMid, ok := irs[PXReplNewNodeMid]; ok {
+				if len(newNodeMid) > 0 {
+					nodeIds[newNodeMid] = true
+				}
+			}
+		}
+		addToNodeIds(nodeIds, rset.Nodes)
+	}
+	for k, _ := range nodeIds {
+		n, err := p.GetNode(k)
+		if err != nil {
+			return err
+		}
+		nodeNames[n.GetHostname()] = true
+	}
+	return nil
+}
+
+func (p *pxVolumeOps) GetContainerInfoForVolume(v *api.Volume) ([]kubernetes.ContainerInfo, error) {
+	cinfo := make([]kubernetes.ContainerInfo, 0)
+	pods, err := p.PodsUsingVolume(v)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(pods) == 0 {
+		return cinfo, nil
+	}
+
+	labels := v.GetLocator().GetVolumeLabels()
+	pvcName := labels["pvc"]
+	// Should not happen since if the pvc label is not there we should not get any pods for it.
+	if pvcName == "" {
+		return nil, fmt.Errorf("Got a volume with no pvc lable")
+	}
+	// Namespace is already checked in PodsUsingVolume
+	for _, p := range pods {
+		volName := ""
+		// Figure out the name of the volume referrenced in the pod
+		for _, volumeInfo := range p.Spec.Volumes {
+			if volumeInfo.PersistentVolumeClaim != nil {
+				if volumeInfo.PersistentVolumeClaim.ClaimName == pvcName {
+					volName = volumeInfo.Name
+					break
+				}
+			}
+		}
+		for _, c := range p.Spec.Containers {
+			// If the pvcs used as a VolumeMount in this container add the container
+			// We use the name of the volume to figure this out
+			for _, volMounts := range c.VolumeMounts {
+				if volMounts.Name == volName {
+					ci := kubernetes.ContainerInfo{
+						Pod:       p,
+						Container: c.Name,
+						MountPath: volMounts.MountPath,
+					}
+					cinfo = append(cinfo, ci)
+				}
+			}
+			// If the pvcs used as a VolumeDevice in this container add the container
+			// We use the pvc name as used in the pod to figure this out
+			for _, volDevices := range c.VolumeDevices {
+				if volDevices.Name == pvcName {
+					ci := kubernetes.ContainerInfo{
+						Pod:       p,
+						Container: c.Name,
+					}
+					cinfo = append(cinfo, ci)
+				}
+			}
+		}
+	}
+	return cinfo, nil
 }

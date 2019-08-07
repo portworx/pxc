@@ -76,7 +76,7 @@ func ToJson(obj interface{}) (string, error) {
 
 // PrintJson prints the object to json to Stdout
 func PrintJson(obj interface{}) {
-	str, err := ToYaml(obj)
+	str, err := ToJson(obj)
 	if err != nil {
 		Eprintf("Unable to create json output")
 		return

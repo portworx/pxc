@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"github.com/portworx/px/pkg/kubernetes"
 	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
@@ -80,7 +81,6 @@ func (p *cliVolumeInputs) GetNamespace(cmd *cobra.Command) {
 
 	// No default namespace was specified so use default namespace
 	p.namespace = nil
-
 }
 
 // Create a new cliVolumeOps object
@@ -124,7 +124,7 @@ func (p *cliVolumeOps) Connect() error {
 			Ctx:  ctx,
 			Conn: conn,
 		},
-		KubeConnectionData: portworx.KubeConnectionData{
+		KubeConnectionData: kubernetes.KubeConnectionData{
 			ClientConfig: cc,
 			ClientSet:    cs,
 		},
