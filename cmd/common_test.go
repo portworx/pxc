@@ -196,3 +196,53 @@ func testCreateClone(t *testing.T, volId string, cloneName string) {
 
 	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Clone of %s created with id", volId)))
 }
+
+// Helper function to create volume with "sticky" flag set
+func testCreateStickyVolume(t *testing.T, volName string, size uint64) {
+	cli := fmt.Sprintf("px create volume %s --size %d --sticky",
+		volName, size)
+	lines, _, err := executeCli(cli)
+	assert.NoError(t, err)
+
+	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Volume %s created with id", volName)))
+}
+
+// Helper function to create volume with "encryption" flag set
+func testCreateEncrypVolume(t *testing.T, volName string, size uint64) {
+	cli := fmt.Sprintf("px create volume %s --size %d --encryption",
+		volName, size)
+	lines, _, err := executeCli(cli)
+	assert.NoError(t, err)
+
+	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Volume %s created with id", volName)))
+}
+
+// Helper function to create volume with "journal" flag set
+func testCreateJournalVolume(t *testing.T, volName string, size uint64) {
+	cli := fmt.Sprintf("px create volume %s --size %d --journal",
+		volName, size)
+	lines, _, err := executeCli(cli)
+	assert.NoError(t, err)
+
+	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Volume %s created with id", volName)))
+}
+
+// Helper function to create volume with "aggregation level" flag set
+func testCreateAggrVolume(t *testing.T, volName string, size uint64, aggrLevel uint32) {
+	cli := fmt.Sprintf("px create volume %s --size %d --aggregation-level %d",
+		volName, size, aggrLevel)
+	lines, _, err := executeCli(cli)
+	assert.NoError(t, err)
+
+	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Volume %s created with id", volName)))
+}
+
+// Helper function to create volume with "io profile" flag set
+func testCreateIoProfVolume(t *testing.T, volName string, size uint64, IoProfile string) {
+	cli := fmt.Sprintf("px create volume %s --size %d --ioprofile %s",
+		volName, size, IoProfile)
+	lines, _, err := executeCli(cli)
+	assert.NoError(t, err)
+
+	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Volume %s created with id", volName)))
+}
