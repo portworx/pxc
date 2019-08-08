@@ -33,6 +33,7 @@ const (
 func addCommonLogOptions(lc *cobra.Command) {
 	lc.Flags().BoolP("follow", "f", false, "Specify if the logs should be streamed.")
 	lc.Flags().Bool("timestamps", false, "Include timestamps on each line in the log output")
+	lc.Flags().Bool("show-pod-info", false, "Include pod info on each line in the log output")
 	lc.Flags().BoolP("previous", "p", false, "If true, print the logs for the previous instance of the container in a pod if it exists.")
 	lc.Flags().Bool("ignore-errors", false, "If watching / following Portworx logs, allow for any errors that occur to be non-fatal")
 	lc.Flags().Int("max-log-requests", 5, "Specify maximum number of concurrent logs to follow. Defaults to 5.")
@@ -60,6 +61,7 @@ func getCommonLogOptions(cmd *cobra.Command) (*kubernetes.COpsLogOptions, error)
 
 	lo.PortworxNamespace, _ = cmd.Flags().GetString("px-namespace")
 	lo.IgnoreLogErrors, _ = cmd.Flags().GetBool("ignore-errors")
+	lo.ShowPodInfo, _ = cmd.Flags().GetBool("show-pod-info")
 	lo.MaxFollowConcurency, _ = cmd.Flags().GetInt("max-log-requests")
 	if lo.MaxFollowConcurency <= 0 {
 		return nil, fmt.Errorf("--max-log-requests should be greater than 0")

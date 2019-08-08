@@ -78,8 +78,13 @@ func contextCreateExec(cmd *cobra.Command, args []string) error {
 
 	// Update endpoint
 	if s, _ := cmd.Flags().GetString("endpoint"); len(s) != 0 {
-		// TODO: If no port is provided, assume 9020
-		c.Endpoint = s
+		// If no port is provided, assume 9020
+		endpoint, err := util.ValidateEndpoint(s)
+		if err != nil {
+			return fmt.Errorf("Invalid endpoint for the context")
+		}
+
+		c.Endpoint = endpoint
 	} else {
 		return fmt.Errorf("Must supply an endpoint for the context")
 	}

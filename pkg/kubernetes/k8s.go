@@ -29,6 +29,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+var (
+	NODE_KEY = []byte("node=")
+)
+
 type KubeConnectionData struct {
 	ClientConfig clientcmd.ClientConfig
 	ClientSet    *kclikube.Clientset
@@ -173,7 +177,10 @@ func doWrite(
 	lo *COpsLogOptions,
 	out io.Writer,
 ) error {
-	prefix := []byte(fmt.Sprintf("%s: %s: ", lp.podName, lp.podNamespace))
+	prefix := make([]byte, 0)
+	if lo.ShowPodInfo == true {
+		prefix = []byte(fmt.Sprintf("pod=%s namespace=%s ", lp.podName, lp.podNamespace))
+	}
 	rc, err := lp.rw.Stream()
 	if err != nil {
 		return err
@@ -208,9 +215,18 @@ func writeLine(
 		}
 	}
 	if len(bytes) > 0 {
-		_, err := out.Write(prefix)
-		if err != nil {
-			return err
+		if len(prefix) > 0 {
+			_, err := out.Write(prefix)
+			if err != nil {
+				return err
+			}
+		}
+		if bytes[0] == '@' {
+			_, err := out.Write(NODE_KEY)
+			if err != nil {
+				return err
+			}
+			bytes = bytes[1:]
 		}
 	}
 	_, err := out.Write(bytes)
