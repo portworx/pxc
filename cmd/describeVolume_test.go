@@ -98,7 +98,8 @@ func verifyVolumeDescription(
 	}
 	index := 0
 	k, v := getKeyValue(d[index])
-	verifyKeyValue(t, k, v, "Volume", volName)
+	vInfo := testVolumeInfo(t, v)
+	verifyKeyValue(t, k, v, "Volume", vInfo.GetId())
 	index++
 	k, v = getKeyValue(d[index])
 	verifyKeyValue(t, k, v, "Name", volName)
@@ -107,7 +108,7 @@ func verifyVolumeDescription(
 	verifyKeyValue(t, k, v, "Size", "1.0 GiB")
 	index++
 	k, v = getKeyValue(d[index])
-	verifyKeyValue(t, k, v, "Format", "XFS")
+	verifyKeyValue(t, k, v, "Format", "EXT4")
 	index++
 	k, v = getKeyValue(d[index])
 	verifyKeyValue(t, k, v, "HA", "1")
@@ -189,7 +190,15 @@ func testDescribeListedVolumes(t *testing.T, td *testData) {
 	desc, err := testDescribeVolumes(t, v)
 	assert.NoError(t, err)
 	for _, d := range desc {
-		switch d {
+		dd := strings.Split(d, "\n")
+		if len(dd) == 1 {
+			continue
+		}
+		if dd[0] == "" {
+			dd = dd[1:]
+		}
+		_, x := getKeyValue(dd[1])
+		switch x {
 		case td.volName:
 			verifyVolumeDescription(t, td.volName, "", d)
 		case td.snapName:
@@ -212,7 +221,7 @@ func testDescribeAllVolumes(t *testing.T, td *testData) {
 		if dd[0] == "" {
 			dd = dd[1:]
 		}
-		_, v := getKeyValue(dd[0])
+		_, v := getKeyValue(dd[1])
 		switch v {
 		case td.volName:
 			verifyVolumeDescription(t, td.volName, "", d)
