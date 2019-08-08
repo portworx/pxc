@@ -173,7 +173,10 @@ func doWrite(
 	lo *COpsLogOptions,
 	out io.Writer,
 ) error {
-	prefix := []byte(fmt.Sprintf("%s: %s: ", lp.podName, lp.podNamespace))
+	prefix := make([]byte, 0)
+	if lo.ShowPodInfo == true {
+		prefix = []byte(fmt.Sprintf("%s: %s: ", lp.podName, lp.podNamespace))
+	}
 	rc, err := lp.rw.Stream()
 	if err != nil {
 		return err
@@ -207,7 +210,7 @@ func writeLine(
 			return nil
 		}
 	}
-	if len(bytes) > 0 {
+	if len(bytes) > 0 && len(prefix) > 0 {
 		_, err := out.Write(prefix)
 		if err != nil {
 			return err

@@ -36,6 +36,7 @@ type COpsLogOptions struct {
 	PodLogOptions       v1.PodLogOptions
 	IgnoreLogErrors     bool
 	MaxFollowConcurency int
+	ShowPodInfo         bool
 	Filters             []string
 	ApplyFilters        bool
 	PortworxNamespace   string
