@@ -253,9 +253,7 @@ var isFileExistsTests = []struct {
 	},
 }
 
-/*
-Test function to test various possible case of IsFileExists util function
-*/
+// Test function to test various possible case of IsFileExists util function
 func TestIsFileExists(t *testing.T) {
 	var filename = ""
 
@@ -274,6 +272,112 @@ func TestIsFileExists(t *testing.T) {
 			// Remove the file
 			err := os.Remove(filename)
 			assert.Equal(t, err, nil)
+		}
+	}
+}
+
+var validateEndpointTests = []struct {
+	inputEndpoint  string
+	outputEndpoint string
+	err            error
+}{
+	{
+		// Case1:
+		inputEndpoint:  "192.168.1.1:9020",
+		outputEndpoint: "192.168.1.1:9020",
+		err:            nil,
+	},
+	{
+		// Case2:
+		inputEndpoint:  "localhost:9020",
+		outputEndpoint: "localhost:9020",
+		err:            nil,
+	},
+	{
+		// Case3:
+		inputEndpoint:  "192.168.1.1",
+		outputEndpoint: "192.168.1.1:9020",
+		err:            nil,
+	},
+	{
+		// Case4:
+		inputEndpoint:  "localhost",
+		outputEndpoint: "localhost:9020",
+		err:            nil,
+	},
+
+	{
+		// Case5:
+		inputEndpoint:  "192.168.1.1:9020:",
+		outputEndpoint: "",
+		err:            ErrInvalidEndpoint,
+	},
+	{
+		// Case6:
+		inputEndpoint:  "localhost:9020:",
+		outputEndpoint: "",
+		err:            ErrInvalidEndpoint,
+	},
+	{
+		// Case7:
+		inputEndpoint:  "localhost::9020",
+		outputEndpoint: "",
+		err:            ErrInvalidEndpoint,
+	},
+	{
+		// Case8:
+		inputEndpoint:  "500.500.500.500:9020",
+		outputEndpoint: "500.500.500.500:9020",
+		err:            nil,
+	},
+	{
+		// Case9:
+		inputEndpoint:  "localhost:",
+		outputEndpoint: "localhost:9020",
+		err:            nil,
+	},
+	{
+		// Case10:
+		inputEndpoint:  "192.168.1.1:",
+		outputEndpoint: "192.168.1.1:9020",
+		err:            nil,
+	},
+	{
+		// Case11:
+		inputEndpoint:  "172.168.1.500",
+		outputEndpoint: "172.168.1.500:9020",
+		err:            nil,
+	},
+	{
+		// Case12:
+		inputEndpoint:  "local host:9020",
+		outputEndpoint: "",
+		err:            ErrInvalidEndpoint,
+	},
+	{
+		// Case13:
+		inputEndpoint:  "local*host",
+		outputEndpoint: "",
+		err:            ErrInvalidEndpoint,
+	},
+	{
+		// Case14:
+		inputEndpoint:  "192.168.1.500:9020",
+		outputEndpoint: "192.168.1.500:9020",
+		err:            nil,
+	},
+}
+
+// Test function to test various possible case of ValidateEndpoint util function
+func TestValidateEndpoint(t *testing.T) {
+	for _, test := range validateEndpointTests {
+		outputEndpoint, err := ValidateEndpoint(test.inputEndpoint)
+		assert.Equal(t, test.outputEndpoint, outputEndpoint)
+
+		if test.err == nil {
+			assert.Equal(t, test.err, err)
+		} else {
+			assert.NotEqual(t, nil, err)
 		}
 	}
 }

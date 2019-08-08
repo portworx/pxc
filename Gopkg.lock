@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:320e7ead93de9fd2b0e59b50fd92a4d50c1f8ab455d96bc2eb083267453a9709"
+  name = "github.com/asaskevich/govalidator"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ccb8e960c48f04d6935e72476ae4a51028f9e22f"
+  version = "v9"
+
+[[projects]]
   digest = "1:f7f103fbcdadb44ba57f3fff677aa7f719948ba010cbbee5b69ab6067d3ab66b"
   name = "github.com/cheynewallace/tabby"
   packages = ["."]
@@ -579,6 +587,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/asaskevich/govalidator",
     "github.com/cheynewallace/tabby",
     "github.com/dgrijalva/jwt-go",
     "github.com/dustin/go-humanize",
