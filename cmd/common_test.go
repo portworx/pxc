@@ -246,3 +246,27 @@ func testCreateIoProfVolume(t *testing.T, volName string, size uint64, IoProfile
 
 	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Volume %s created with id", volName)))
 }
+
+func testPatchVolumeHalevel(t *testing.T, volName string, haLevel int) {
+	cli := fmt.Sprintf("px patch volume %s --halevel %d", volName, haLevel)
+	lines, _, _ := executeCli(cli)
+	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
+}
+
+func testPatchVolumeHalevelWithNodes(t *testing.T, volName string, haLevel int64, node string) {
+	cli := fmt.Sprintf("px patch volume %s --halevel %d --node %s", volName, haLevel, node)
+	lines, _, _ := executeCli(cli)
+	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines)
+}
+
+func testPatchVolumeResize(t *testing.T, volName string, size uint64) {
+	cli := fmt.Sprintf("px patch volume %s --size %d", volName, size)
+	lines, _, _ := executeCli(cli)
+	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
+}
+
+func testPatchVolumeShared(t *testing.T, volName string, shared bool) {
+	cli := fmt.Sprintf("px patch volume %s --shared %t", volName, shared)
+	lines, _, _ := executeCli(cli)
+	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
+}
