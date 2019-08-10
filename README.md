@@ -17,15 +17,6 @@ Orchestration systems like Kubernetes. To use this tool you must first create a
 context with the appropriate information. `px` uses the context to connect to
 the appropriate Portworx cluster to execute the requested command.
 
-## Installing as a kubectl plugin
-Install `px` binary anywhere in your PATH and name it `kubectl-px`. You will
-then be able to run it like this:
-
-```
-$ kubectl px get nodes
-$ kubectl px get pvc
-```
-
 ## Creating a context
 You can create a context using the following command:
 
@@ -36,6 +27,11 @@ $ px context create --name=mycluster --endpoint=<ip of cluster>:9020
 See `px context create --help` for more information like setting the Kubeconfig.
 
 > NOTE: The default gRPC SDK port for Portworx is 9020
+
+### Connecting to Portworx running on a Kuberentes Cloud
+If you are running Portworx installed on a Kubernetes Cloud like GKE, EKS, etc,
+you may need to use the workaround in issue #40 to access the Portworx gRPC
+endpoint through the Kubernetes API.
 
 ### What if you don't have a Portworx cluster?
 `px` uses the [OpenStorage SDK](https://libopenstorage.github.io) to communicate
@@ -48,11 +44,20 @@ $ docker run --rm --name sdk -d -p 9100:9100 -p 9110:9110 openstorage/mock-sdk-s
 $ px context create --name=mycluster --endpoint=localhost:9100
 ```
 
-## Status
+## Installing as a kubectl plugin
+Install `px` binary anywhere in your PATH and name it `kubectl-px`. You will
+then be able to run it like this:
+
+```
+$ kubectl px get nodes
+$ kubectl px get pvc
+```
+
+## px sample commands
 Now that `px` has been setup with a context, you can do the following commands:
 
 ```
-$ px status
+$ px describe cluster
 $ px get volume
 $ px get volume -o wide
 $ px get nodes
