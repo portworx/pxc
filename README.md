@@ -28,7 +28,8 @@ $ px context create mycluster --endpoint=<ip of cluster>:9020 --kubeconfig=/path
 
 ### Connecting to Portworx running on a Kuberentes Cloud
 If you are running Portworx installed on a Kubernetes Cloud like GKE, EKS, etc,
-you may need to use the workaround in issue #40 to access the Portworx gRPC
+you may need to use the workaround in issue
+[#40](https://github.com/portworx/px/issues/40) to access the Portworx gRPC
 endpoint through the Kubernetes API.
 
 ### What if you don't have a Portworx cluster?
