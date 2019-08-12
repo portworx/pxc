@@ -21,10 +21,8 @@ the appropriate Portworx cluster to execute the requested command.
 You can create a context using the following command:
 
 ```
-$ px context create --name=mycluster --endpoint=<ip of cluster>:9020
+$ px context create mycluster --endpoint=<ip of cluster>:9020 --kubeconfig=/path/to/kubeconfig
 ```
-
-See `px context create --help` for more information like setting the Kubeconfig.
 
 > NOTE: The default gRPC SDK port for Portworx is 9020
 
