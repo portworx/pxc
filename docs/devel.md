@@ -54,7 +54,13 @@ Local commands act on the local system and may also interact with the server. He
 * `px context`: Manages local context file
 * `px cp <file> <volume:/path.../file>`: A possible `cp` command to move a local file to the volume
 
-# Plugins
-TBD
+# Extending commands
 
+* Create a new directory under `handler/`
+* Add an import to the `handler/handler.go`
+* Add the `get.go`, `create.go`, or any other other handlers in this new
+  directory.
+* Expose a `XXXAddCommand` function to let others attach commands to your new
+  command.
+* Attach your command to another by calling their `XXXAddCommand` function.
 

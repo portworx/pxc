@@ -13,29 +13,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package cmd
+package config
 
-import (
-	"github.com/portworx/px/pkg/util"
-	"github.com/spf13/cobra"
+const (
+	SpecifiedContext = "cfgcontext"
+	File             = "cfgfile"
 )
 
-var getCmd *cobra.Command
+var (
+	config = map[string]string{}
+)
 
-func GetAddCommand(c *cobra.Command) {
-	getCmd.AddCommand(c)
+func Get(k string) string {
+	return config[k]
 }
 
-var _ = RegisterCommandVar(func() {
-	getCmd = &cobra.Command{
-		Use:   "get",
-		Short: "Get information from Portworx",
-		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see px get --help for more information")
-		},
-	}
-})
-
-var _ = RegisterCommandInit(func() {
-	rootCmd.AddCommand(getCmd)
-})
+func Set(k, v string) {
+	config[k] = v
+}

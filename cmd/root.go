@@ -22,6 +22,10 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd *cobra.Command
 
+func RootAddCommand(c *cobra.Command) {
+	rootCmd.AddCommand(c)
+}
+
 var _ = RegisterCommandVar(func() {
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd = &cobra.Command{
@@ -42,16 +46,4 @@ var _ = RegisterCommandInit(func() {
 
 	// Global cobra configurations
 	rootCmd.Flags().SortFlags = false
-
-	// Load plugins
-	/* TODO: Redo Plugin model
-	home, _ := homedir.Dir()
-	pxPluginDefaultDirs = append(pxPluginDefaultDirs,
-		path.Join(home, pxDefaultDir, "plugins"))
-	pm = plugin.NewPluginManager(&plugin.PluginManagerConfig{
-		PluginDirs: pxPluginDefaultDirs,
-		RootCmd:    rootCmd,
-	})
-	pm.Load()
-	*/
 })

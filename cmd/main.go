@@ -21,6 +21,8 @@ import (
 	"path"
 
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/portworx/px/pkg/commander"
+	"github.com/portworx/px/pkg/config"
 	"github.com/portworx/px/pkg/kubernetes"
 	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
@@ -45,18 +47,6 @@ var (
 	cfgFile     string
 	cfgContext  string
 	optEndpoint string
-	// TODO Redo plugin model: pm          *plugin.PluginManager
-
-	// The $HOME/.px/plugins dir will be added at runtime
-	pxPluginDefaultDirs = []string{
-		"/var/lib/px/plugins",
-		"/etc/pwx/plugins",
-		"/opt/pwx/plugins",
-		"/var/lib/porx/plugins",
-	}
-
-	varInitFncs []func()
-	cmdInitFncs []func()
 )
 
 func init() {
@@ -77,11 +67,15 @@ func initConfig() {
 		}
 		cfgFile = path.Join(home, pxDefaultDir, pxDefaultConfigName)
 	}
+
+	// Save configurations
+	config.Set(config.SpecifiedContext, cfgContext)
+	config.Set(config.File, cfgFile)
 }
 
 // GetConfigFile returns the current config file
 func GetConfigFile() string {
-	return cfgFile
+	return config.Get(config.File)
 }
 
 // PxConnectDefault returns a Portworx client to the default or
@@ -89,16 +83,16 @@ func GetConfigFile() string {
 func PxConnectDefault() (context.Context, *grpc.ClientConn, error) {
 	// Global information will be set here, like forced context
 	if len(cfgContext) == 0 {
-		return portworx.PxConnectCurrent(cfgFile)
+		return portworx.PxConnectCurrent(config.Get(config.File))
 	} else {
-		return portworx.PxConnectNamed(cfgFile, cfgContext)
+		return portworx.PxConnectNamed(config.Get(config.File), config.Get(config.SpecifiedContext))
 	}
 }
 
 // KubeConnectDefault returns a Kubernetes client to the default
 // or named context.
 func KubeConnectDefault() (clientcmd.ClientConfig, *kclikube.Clientset, error) {
-	return kubernetes.KubeConnect(cfgFile, cfgContext)
+	return kubernetes.KubeConnect(config.Get(config.File), config.Get(config.SpecifiedContext))
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -114,33 +108,20 @@ func Execute() {
 // for the command variable.
 // Something must be returned to use the `var _ = ` trick.
 func RegisterCommandVar(c func()) bool {
-	varInitFncs = append(varInitFncs, c)
-
-	return true
+	return commander.RegisterCommandVar(c)
 }
 
 // RegisterCommandInit is used to register with px the initialization function
 // for the command flags.
 // Something must be returned to use the `var _ = ` trick.
 func RegisterCommandInit(c func()) bool {
-	cmdInitFncs = append(cmdInitFncs, c)
-	return true
+	return commander.RegisterCommandInit(c)
 }
 
 // Main starts the px cli
 // Stupid simple initialization
 func Main() error {
-	// Setup all variables.
-	// Setting up all the variables first will allow px
-	// to initialize the init functions in any order
-	for _, v := range varInitFncs {
-		v()
-	}
-
-	// Call all plugin inits
-	for _, f := range cmdInitFncs {
-		f()
-	}
+	commander.Setup()
 
 	// Execute px
 	return rootCmd.Execute()

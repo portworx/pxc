@@ -18,11 +18,25 @@ package portworx
 import (
 	"context"
 
+	"github.com/portworx/px/pkg/config"
 	"github.com/portworx/px/pkg/contextconfig"
 	pxgrpc "github.com/portworx/px/pkg/grpc"
 
 	"google.golang.org/grpc"
 )
+
+// PxConnectDefault returns a Portworx client to the default or
+// named context
+func PxConnectDefault() (context.Context, *grpc.ClientConn, error) {
+	// Global information will be set here, like forced context
+	file := config.Get(config.File)
+	context := config.Get(config.SpecifiedContext)
+	if len(context) == 0 {
+		return PxConnectCurrent(file)
+	} else {
+		return PxConnectNamed(file, context)
+	}
+}
 
 // TODO: Add Support to connect to a context name
 
