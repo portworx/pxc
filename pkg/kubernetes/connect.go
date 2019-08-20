@@ -19,12 +19,19 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/portworx/px/pkg/config"
 	"github.com/portworx/px/pkg/contextconfig"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
+
+// KubeConnectDefault returns a Kubernetes client to the default
+// or named context.
+func KubeConnectDefault() (clientcmd.ClientConfig, *kubernetes.Clientset, error) {
+	return KubeConnect(config.Get(config.File), config.Get(config.SpecifiedContext))
+}
 
 // KubeConnect will return a Kubernetes client using the kubeconfig file
 // set in the default context.

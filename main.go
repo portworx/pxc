@@ -15,7 +15,10 @@ limitations under the License.
 */
 package main
 
-import "github.com/portworx/px/cmd"
+import (
+	"github.com/portworx/px/cmd"
+	_ "github.com/portworx/px/handler"
+)
 
 func main() {
 	cmd.Execute()
