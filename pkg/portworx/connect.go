@@ -22,14 +22,21 @@ import (
 	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/contextconfig"
 	pxgrpc "github.com/portworx/pxc/pkg/grpc"
+	"github.com/portworx/pxc/pkg/kubernetes"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/sirupsen/logrus"
 )
 
 // PxConnectDefault returns a Portworx client to the default or
 // named context
 func PxConnectDefault() (context.Context, *grpc.ClientConn, error) {
+	if kubernetes.InKubectlPluginMode() {
+		return PxConnectAsPlugin()
+	}
+
 	// Global information will be set here, like forced context
 	file := config.Get(config.File)
 	context := config.Get(config.SpecifiedContext)
@@ -40,9 +47,31 @@ func PxConnectDefault() (context.Context, *grpc.ClientConn, error) {
 	}
 }
 
+// PxConnectAsPlugin expects that the portforwarder has been setup and uses
+// a local port to communicate with the gRPC port in Portworx through the
+// Kubernetes API.
+func PxConnectAsPlugin() (context.Context, *grpc.ClientConn, error) {
+
+	var (
+		dialOptions []grpc.DialOption
+	)
+
+	// If secure: true set in config.yaml file, use TLS
+	dialOptions = append(dialOptions, grpc.WithInsecure())
+
+	endpoint := config.Get(config.PluginEndpoint)
+	conn, err := pxgrpc.Connect(endpoint, dialOptions)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	logrus.Infof("Connected through API server to %s\n", endpoint)
+	return context.Background(), conn, nil
+}
+
 // TODO: Add Support to connect to a context name
 
-// PxConnect will connect to the default context server using TLS if needed
+// PxConnectCurrent will connect to the default context server using TLS if needed
 // and returns the context setup with any security if any and the grpc client.
 // The context will not have a timeout set, that should be setup by the caller
 // of the gRPC call.
@@ -139,7 +168,7 @@ func PxConnectNamed(cfgFile string, name string) (context.Context, *grpc.ClientC
 	return ctx, conn, nil
 }
 
-// Append the provided valid CA from the user to the existing systemPool or
+// PxAppendCaCertcontext appends the provided valid CA from the user to the existing systemPool or
 // load the default CA certs used for authentication with the sdk server.
 func PxAppendCaCertcontext(pxctx *contextconfig.ClientContext, userCa bool) ([]grpc.DialOption, error) {
 	// Read the provided CA cert from the user
