@@ -15,13 +15,14 @@
 package cmd
 
 import (
+	"github.com/portworx/px/pkg/commander"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
 )
 
 var deleteCmd *cobra.Command
 
-var _ = RegisterCommandVar(func() {
+var _ = commander.RegisterCommandVar(func() {
 	deleteCmd = &cobra.Command{
 		Use:   "delete",
 		Short: "Delete an object in Portworx",
@@ -31,6 +32,10 @@ var _ = RegisterCommandVar(func() {
 	}
 })
 
-var _ = RegisterCommandInit(func() {
-	rootCmd.AddCommand(deleteCmd)
+var _ = commander.RegisterCommandInit(func() {
+	RootAddCommand(deleteCmd)
 })
+
+func DeleteAddCommand(cmd *cobra.Command) {
+	deleteCmd.AddCommand(cmd)
+}

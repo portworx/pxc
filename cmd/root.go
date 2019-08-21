@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"github.com/portworx/px/pkg/commander"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +27,7 @@ func RootAddCommand(c *cobra.Command) {
 	rootCmd.AddCommand(c)
 }
 
-var _ = RegisterCommandVar(func() {
+var _ = commander.RegisterCommandVar(func() {
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd = &cobra.Command{
 		Use:           "px",
@@ -36,7 +37,7 @@ var _ = RegisterCommandVar(func() {
 	}
 })
 
-var _ = RegisterCommandInit(func() {
+var _ = commander.RegisterCommandInit(func() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+")")
 	rootCmd.PersistentFlags().StringVar(&cfgContext, "context", "", "Force context name for the command")

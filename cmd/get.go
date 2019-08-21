@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"github.com/portworx/px/pkg/commander"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -26,7 +27,7 @@ func GetAddCommand(c *cobra.Command) {
 	getCmd.AddCommand(c)
 }
 
-var _ = RegisterCommandVar(func() {
+var _ = commander.RegisterCommandVar(func() {
 	getCmd = &cobra.Command{
 		Use:   "get",
 		Short: "Get information from Portworx",
@@ -36,6 +37,6 @@ var _ = RegisterCommandVar(func() {
 	}
 })
 
-var _ = RegisterCommandInit(func() {
-	rootCmd.AddCommand(getCmd)
+var _ = commander.RegisterCommandInit(func() {
+	RootAddCommand(getCmd)
 })

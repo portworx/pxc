@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+	"github.com/portworx/px/pkg/commander"
 
 	"github.com/spf13/cobra"
 )
@@ -29,7 +30,7 @@ var (
 
 var versionCmd *cobra.Command
 
-var _ = RegisterCommandVar(func() {
+var _ = commander.RegisterCommandVar(func() {
 	versionCmd = &cobra.Command{
 		Use:   "version",
 		Short: "Show px version information",
@@ -39,9 +40,13 @@ var _ = RegisterCommandVar(func() {
 	}
 })
 
-var _ = RegisterCommandInit(func() {
-	rootCmd.AddCommand(versionCmd)
+var _ = commander.RegisterCommandInit(func() {
+	RootAddCommand(versionCmd)
 })
+
+func VersionAddCommand(cmd *cobra.Command) {
+	versionCmd.AddCommand(cmd)
+}
 
 func versionExec(cmd *cobra.Command, args []string) {
 	// Print client version

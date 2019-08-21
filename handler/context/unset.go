@@ -13,32 +13,40 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-package cmd
+package context
 
 import (
+	pxcmd "github.com/portworx/px/cmd"
 	"github.com/portworx/px/pkg/commander"
-	"github.com/portworx/px/pkg/util"
+	"github.com/portworx/px/pkg/contextconfig"
 	"github.com/spf13/cobra"
 )
 
-var patchCmd *cobra.Command
+var contextUnsetCmd *cobra.Command
 
-// patchCmd represents the patch command
 var _ = commander.RegisterCommandVar(func() {
-	patchCmd = &cobra.Command{
-		Use:   "patch",
-		Short: "Update field(s) of a Portworx resource",
-		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see px patch --help for more information")
+	contextUnsetCmd = &cobra.Command{
+		Use:   "unset",
+		Short: "Unset the current context configuration",
+		Long:  ``,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return contextUnsetExec(cmd, args)
 		},
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	RootAddCommand(patchCmd)
+	pxcmd.ContextAddCommand(contextUnsetCmd)
 })
 
-func PatchAddCommand(cmd *cobra.Command) {
-	patchCmd.AddCommand(cmd)
+func contextUnsetExec(cmd *cobra.Command, args []string) error {
+	contextManager, err := contextconfig.NewContextManager(pxcmd.GetConfigFile())
+	if err != nil {
+		return err
+	}
+
+	if err := contextManager.SetCurrent(""); err != nil {
+		return err
+	}
+	return nil
 }
