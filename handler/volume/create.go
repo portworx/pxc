@@ -34,6 +34,8 @@ type createVolumeOpts struct {
 	filesystemAsString string
 	replicaSet         []string
 	IoProfile          string
+	groups             string
+	collaborators      string
 }
 
 var (
@@ -66,7 +68,9 @@ var _ = commander.RegisterCommandVar(func() {
 4. Create shared volume called "myvolume" with size as 2GiB and replicas set to 3:
 	$ px create volume myvolume --size=3 --shared --replicas=3
 5. Create volume called "myvolume" with label as "access=slow" and size as 3 GiB:
-	$ px create volume myvolume --size=3 --labels 'access=slow'`,
+	$ px create volume myvolume --size=3 --labels 'access=slow'
+6. Create volume with volume access option flag:
+	$ px create volume myvolume --size=3 --groups group1:r,group2:w,group3:a --collaborators user1:r,user2:a,user3:w`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("Must supply a name for volume")
@@ -91,6 +95,8 @@ var _ = commander.RegisterCommandInit(func() {
 	createVolumeCmd.Flags().Uint32Var(&cvOpts.req.Spec.AggregationLevel, "aggregation-level", 0, "aggregation level (Valid Values: [1, 2, 3] (default 1)")
 	createVolumeCmd.Flags().StringSliceVar(&cvOpts.replicaSet, "nodes", []string{}, "Replicat set nodes for this volume")
 	createVolumeCmd.Flags().StringVar(&cvOpts.IoProfile, "ioprofile", "", "IO Profile (Valid Values: [sequential cms db db_remote sync_shared]) (default sequential)")
+	createVolumeCmd.Flags().StringVar(&cvOpts.groups, "groups", "", "list of group with volume access details, 'group1:r, group2:w'")
+	createVolumeCmd.Flags().StringVar(&cvOpts.collaborators, "collaborators", "", "list of collaborators with volume access details, 'user1:r, user2:w'")
 	createVolumeCmd.Flags().SortFlags = false
 })
 
@@ -111,6 +117,27 @@ func createVolumeExec(c *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("Failed to parse labels: %v\n", err)
 		}
+	}
+
+	cvOpts.req.Spec.Ownership = &api.Ownership{}
+	cvOpts.req.Spec.Ownership.Acls = &api.Ownership_AccessControl{}
+
+	// Get collaborators
+	if len(cvOpts.collaborators) != 0 {
+		collaborators, err := util.GetAclMapFromString(cvOpts.collaborators)
+		if err != nil {
+			return err
+		}
+		cvOpts.req.Spec.Ownership.Acls.Collaborators = collaborators
+	}
+
+	// Get groups
+	if len(cvOpts.groups) != 0 {
+		groups, err := util.GetAclMapFromString(cvOpts.groups)
+		if err != nil {
+			return err
+		}
+		cvOpts.req.Spec.Ownership.Acls.Groups = groups
 	}
 
 	// Convert size to bytes in uint64

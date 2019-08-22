@@ -98,7 +98,7 @@ func ExecuteCli(cli string) ([]string, []string, error) {
 // Takes a volume name and size. Returns the created volume id.
 // For some reason our test container only recoganizes id and not name for some calls.
 func PxTestCreateVolume(t *testing.T, volName string, size uint64) {
-	cli := fmt.Sprintf("px create volume %s --size %s", volName, strconv.FormatUint(size, 10))
+	cli := fmt.Sprintf("px create volume %s --size %s --groups group1:r --collaborators user1:w", volName, strconv.FormatUint(size, 10))
 	lines, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
 
@@ -224,6 +224,16 @@ func PxTestCreateEncrypVolume(t *testing.T, volName string, size uint64) {
 func PxTestCreateJournalVolume(t *testing.T, volName string, size uint64) {
 	cli := fmt.Sprintf("px create volume %s --size %d --journal",
 		volName, size)
+	lines, _, err := ExecuteCli(cli)
+	assert.NoError(t, err)
+
+	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Volume %s created with id", volName)))
+}
+
+// Helper function to create volume with access (--groups and --collaborators) flag set
+func PxTestCreateVolumeWithAccess(t *testing.T, volName string, size uint64, groups string, collaborators string) {
+	cli := fmt.Sprintf("px create volume %s --size %d --groups %s --collaborators %s",
+		volName, size, groups, collaborators)
 	lines, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
 
