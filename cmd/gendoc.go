@@ -18,6 +18,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/portworx/px/pkg/commander"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
@@ -28,7 +29,7 @@ var (
 	gendocOutputDir string
 )
 
-var _ = RegisterCommandVar(func() {
+var _ = commander.RegisterCommandVar(func() {
 	gendocCmd = &cobra.Command{
 		Use:     "gendoc",
 		Aliases: []string{"gendocs"},
@@ -39,11 +40,15 @@ var _ = RegisterCommandVar(func() {
 	}
 })
 
-var _ = RegisterCommandInit(func() {
-	rootCmd.AddCommand(gendocCmd)
+var _ = commander.RegisterCommandInit(func() {
+	RootAddCommand(gendocCmd)
 
 	gendocCmd.Flags().StringVar(&gendocOutputDir, "output-dir", "pxdocs", "Output directory")
 })
+
+func GenDocAddCommand(cmd *cobra.Command) {
+	gendocCmd.AddCommand(cmd)
+}
 
 func gendocExec(cmd *cobra.Command, args []string) error {
 	util.Printf("Creating docs in %s...\n", gendocOutputDir)

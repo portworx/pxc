@@ -16,20 +16,14 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
 	"os"
 	"path"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/portworx/px/pkg/commander"
 	"github.com/portworx/px/pkg/config"
-	"github.com/portworx/px/pkg/kubernetes"
-	"github.com/portworx/px/pkg/portworx"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-	kclikube "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -78,23 +72,6 @@ func GetConfigFile() string {
 	return config.Get(config.File)
 }
 
-// PxConnectDefault returns a Portworx client to the default or
-// named context
-func PxConnectDefault() (context.Context, *grpc.ClientConn, error) {
-	// Global information will be set here, like forced context
-	if len(cfgContext) == 0 {
-		return portworx.PxConnectCurrent(config.Get(config.File))
-	} else {
-		return portworx.PxConnectNamed(config.Get(config.File), config.Get(config.SpecifiedContext))
-	}
-}
-
-// KubeConnectDefault returns a Kubernetes client to the default
-// or named context.
-func KubeConnectDefault() (clientcmd.ClientConfig, *kclikube.Clientset, error) {
-	return kubernetes.KubeConnect(config.Get(config.File), config.Get(config.SpecifiedContext))
-}
-
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
@@ -102,20 +79,6 @@ func Execute() {
 		util.Eprintf("%v\n", err)
 		os.Exit(1)
 	}
-}
-
-// RegisterCommandVar is used to register with px the initialization function
-// for the command variable.
-// Something must be returned to use the `var _ = ` trick.
-func RegisterCommandVar(c func()) bool {
-	return commander.RegisterCommandVar(c)
-}
-
-// RegisterCommandInit is used to register with px the initialization function
-// for the command flags.
-// Something must be returned to use the `var _ = ` trick.
-func RegisterCommandInit(c func()) bool {
-	return commander.RegisterCommandInit(c)
 }
 
 // Main starts the px cli

@@ -15,13 +15,14 @@
 package cmd
 
 import (
+	"github.com/portworx/px/pkg/commander"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
 )
 
 var logsCmd *cobra.Command
 
-var _ = RegisterCommandVar(func() {
+var _ = commander.RegisterCommandVar(func() {
 	logsCmd = &cobra.Command{
 		Use:   "logs",
 		Short: "Print Portworx logs",
@@ -31,6 +32,10 @@ var _ = RegisterCommandVar(func() {
 	}
 })
 
-var _ = RegisterCommandInit(func() {
-	rootCmd.AddCommand(logsCmd)
+var _ = commander.RegisterCommandInit(func() {
+	RootAddCommand(logsCmd)
 })
+
+func LogsAddCommand(cmd *cobra.Command) {
+	logsCmd.AddCommand(cmd)
+}

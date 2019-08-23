@@ -13,30 +13,27 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package cmd
+package volume_test
 
 import (
-	"github.com/portworx/px/pkg/commander"
-	"github.com/portworx/px/pkg/util"
-	"github.com/spf13/cobra"
+	"testing"
+
+	"github.com/portworx/px/handler/test"
+	"github.com/stretchr/testify/assert"
 )
 
-var createCmd *cobra.Command
+func TestPxDeleteVolume(t *testing.T) {
+	volName := test.GenVolName("testVol")
 
-var _ = commander.RegisterCommandVar(func() {
-	createCmd = &cobra.Command{
-		Use:   "create",
-		Short: "Create an object in Portworx",
-		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see px create --help for more information")
-		},
-	}
-})
+	// Create Volume
+	test.PxTestCreateVolume(t, volName, 1)
+	assert.True(t, test.PxTestHasVolume(volName))
 
-var _ = commander.RegisterCommandInit(func() {
-	RootAddCommand(createCmd)
-})
+	// Delete Volume
+	test.PxTestDeleteVolume(t, volName)
+	assert.False(t, test.PxTestHasVolume(volName))
 
-func CreateAddCommand(c *cobra.Command) {
-	createCmd.AddCommand(c)
+	// Delete it again to ensure we don't get an error
+	test.PxTestDeleteVolume(t, volName)
+	assert.False(t, test.PxTestHasVolume(volName))
 }

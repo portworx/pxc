@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"github.com/portworx/px/pkg/commander"
 	"github.com/portworx/px/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -23,7 +24,7 @@ import (
 // contextCmd represents the context command
 var contextCmd *cobra.Command
 
-var _ = RegisterCommandVar(func() {
+var _ = commander.RegisterCommandVar(func() {
 	contextCmd = &cobra.Command{
 		Use:   "context",
 		Short: "Manage connections to Portworx and other systems",
@@ -33,6 +34,10 @@ var _ = RegisterCommandVar(func() {
 	}
 })
 
-var _ = RegisterCommandInit(func() {
-	rootCmd.AddCommand(contextCmd)
+var _ = commander.RegisterCommandInit(func() {
+	RootAddCommand(contextCmd)
 })
+
+func ContextAddCommand(cmd *cobra.Command) {
+	contextCmd.AddCommand(cmd)
+}
