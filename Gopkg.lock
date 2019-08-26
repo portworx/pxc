@@ -50,6 +50,18 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:f913db46dd2604735e5fe8f08fcf1490509a208697b7d63ac301ff5a84ece948"
+  name = "github.com/gizak/termui"
+  packages = [
+    "v3",
+    "v3/drawille",
+    "v3/widgets",
+  ]
+  pruneopts = "UT"
+  revision = "4cca61d83fa2cc0f485c478ff768b0108f6591d6"
+  version = "v3.1.0"
+
+[[projects]]
   digest = "1:4d02824a56d268f74a6b6fdd944b20b58a77c3d70e81008b3ee0c4f1a6777340"
   name = "github.com/gogo/protobuf"
   packages = [
@@ -146,14 +158,6 @@
   version = "v1.1.6"
 
 [[projects]]
-  digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
-  name = "github.com/konsorten/go-windows-terminal-sequences"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
-  version = "v1.0.2"
-
-[[projects]]
   branch = "release-0.42"
   digest = "1:9c4a87b5f3ff0e5c0e2a6b0328c0fefe15939cf1ebf773f1d4b004c18a6ca284"
   name = "github.com/libopenstorage/openstorage-sdk-clients"
@@ -162,12 +166,28 @@
   revision = "c39a2a5c764a64d6604bcb3785db8dca948adf11"
 
 [[projects]]
+  digest = "1:0356f3312c9bd1cbeda81505b7fd437501d8e778ab66998ef69f00d7f9b3a0d7"
+  name = "github.com/mattn/go-runewidth"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "3ee7d812e62a0804a7d0a324e0249ca2db3476d3"
+  version = "v0.0.4"
+
+[[projects]]
   digest = "1:5d231480e1c64a726869bc4142d270184c419749d34f167646baa21008eb0a79"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
   pruneopts = "UT"
   revision = "af06845cf3004701891bf4fdb884bfe4920b3727"
   version = "v1.1.0"
+
+[[projects]]
+  digest = "1:abf08734a6527df70ed361d7c369fb580e6840d8f7a6012e5f609fdfd93b4e48"
+  name = "github.com/mitchellh/go-wordwrap"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9e67c67572bc5dd02aef930e2b0ae3c02a4b5a5c"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:33422d238f147d247752996a26574ac48dcf472976eda7f5134015f06bf16563"
@@ -186,6 +206,14 @@
   version = "1.0.1"
 
 [[projects]]
+  branch = "master"
+  digest = "1:3748273fbc527cb86628e8060e1a98df3d082f1d750a63056522e01ea87ff4a0"
+  name = "github.com/nsf/termbox-go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "93860e16131719fa9722e7c448dbf8c0e3210a0d"
+
+[[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
@@ -200,14 +228,6 @@
   pruneopts = "UT"
   revision = "05f3235734ad95d0016f6a23902f06461fcf567a"
   version = "v1.5.2"
-
-[[projects]]
-  digest = "1:04457f9f6f3ffc5fea48e71d62f2ca256637dee0a04d710288e27e05c8b41976"
-  name = "github.com/sirupsen/logrus"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "839c75faf7f98a33d445d181f3018b5c3409a45e"
-  version = "v1.4.2"
 
 [[projects]]
   digest = "1:abe9f3f23399646a6263682cacc9e86969f6c7e768f0ef036449926aa24cbbef"
@@ -591,12 +611,13 @@
     "github.com/cheynewallace/tabby",
     "github.com/dgrijalva/jwt-go",
     "github.com/dustin/go-humanize",
+    "github.com/gizak/termui/v3",
+    "github.com/gizak/termui/v3/widgets",
     "github.com/golang/protobuf/ptypes/duration",
     "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/grpc-ecosystem/go-grpc-middleware/util/metautils",
     "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang",
     "github.com/mitchellh/go-homedir",
-    "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
     "github.com/spf13/cobra/doc",
     "github.com/stretchr/testify/assert",
@@ -609,6 +630,7 @@
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/client-go/kubernetes",
+    "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/clientcmd/api",
   ]
