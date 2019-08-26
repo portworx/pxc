@@ -17,12 +17,14 @@ package portworx
 
 import (
 	"context"
+	"crypto/x509"
 
 	"github.com/portworx/px/pkg/config"
 	"github.com/portworx/px/pkg/contextconfig"
 	pxgrpc "github.com/portworx/px/pkg/grpc"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // PxConnectDefault returns a Portworx client to the default or
@@ -53,7 +55,24 @@ func PxConnectCurrent(cfgFile string) (context.Context, *grpc.ClientConn, error)
 	if err != nil {
 		return nil, nil, err
 	}
-	conn, err := pxgrpc.Connect(pxctx.Endpoint, []grpc.DialOption{grpc.WithInsecure()})
+
+	var (
+		dialOptions []grpc.DialOption
+		caerr       error
+	)
+
+	// If user has provided valid CA cert, append to the existing system CA pool
+	if len(pxctx.TlsData.Cacert) != 0 {
+		// cannot set Insecure with TLS
+		dialOptions, caerr = PxAppendCaCertcontext(pxctx)
+		if caerr != nil {
+			return nil, nil, caerr
+		}
+	} else {
+		dialOptions = append(dialOptions, grpc.WithInsecure())
+	}
+
+	conn, err := pxgrpc.Connect(pxctx.Endpoint, dialOptions)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -77,8 +96,23 @@ func PxConnectNamed(cfgFile string, name string) (context.Context, *grpc.ClientC
 	if err != nil {
 		return nil, nil, err
 	}
+	var (
+		dialOptions []grpc.DialOption
+		caerr       error
+	)
 
-	conn, err := pxgrpc.Connect(pxctx.Endpoint, []grpc.DialOption{grpc.WithInsecure()})
+	// If user has provided valid CA cert, append to the existing system CA pool
+	if len(pxctx.TlsData.Cacert) != 0 {
+		// cannot set Insecure with TLS
+		dialOptions, caerr = PxAppendCaCertcontext(pxctx)
+		if caerr != nil {
+			return nil, nil, caerr
+		}
+	} else {
+		dialOptions = append(dialOptions, grpc.WithInsecure())
+	}
+
+	conn, err := pxgrpc.Connect(pxctx.Endpoint, dialOptions)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -89,4 +123,18 @@ func PxConnectNamed(cfgFile string, name string) (context.Context, *grpc.ClientC
 		ctx = pxgrpc.AddMetadataToContext(ctx, "Authorization", "bearer "+pxctx.Token)
 	}
 	return ctx, conn, nil
+}
+
+// Append the provided valid CA from the user to the existing systemPool, used
+// for authentication with the sdk server.
+func PxAppendCaCertcontext(pxctx *contextconfig.ClientContext) ([]grpc.DialOption, error) {
+	// Read the provided CA cert from the user
+	capool, err := x509.SystemCertPool()
+	if !capool.AppendCertsFromPEM([]byte(pxctx.TlsData.Cacert)) {
+		return nil, err
+	}
+
+	dialOptions := []grpc.DialOption{grpc.WithTransportCredentials(
+		credentials.NewClientTLSFromCert(capool, ""))}
+	return dialOptions, nil
 }
