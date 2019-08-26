@@ -46,24 +46,24 @@ func TestPatchVolumeResize(t *testing.T) {
 
 func TestPatchVolumeShared(t *testing.T) {
 	volName := test.GenVolName("testVol")
-	shared := true
+	sharedOn := "on"
 
 	volCreate(t, volName)
 	// Now update shared to true
-	test.PxTestPatchVolumeShared(t, volName, shared)
+	test.PxTestPatchVolumeShared(t, volName, sharedOn)
 	volCleanup(t, volName)
 }
 
 func TestPatchVolumeUnsetShared(t *testing.T) {
 	volName := test.GenVolName("testVol")
-	sharedTrue := true
-	sharedFalse := false
+	sharedOn := "off"
+	sharedOff := "on"
 
 	volCreate(t, volName)
 	// Now update shared to true
-	test.PxTestPatchVolumeShared(t, volName, sharedTrue)
+	test.PxTestPatchVolumeShared(t, volName, sharedOn)
 	//Now unset shared aka to false
-	test.PxTestPatchVolumeShared(t, volName, sharedFalse)
+	test.PxTestPatchVolumeShared(t, volName, sharedOff)
 	volCleanup(t, volName)
 }
 
