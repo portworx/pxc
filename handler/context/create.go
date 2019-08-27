@@ -113,8 +113,10 @@ func contextCreateExec(cmd *cobra.Command, args []string) error {
 		// TODO: Check the token is a JWT token
 		c.Token = s
 	}
-	if s, _ := cmd.Flags().GetString("secure"); len(s) != 0 {
+	if s, _ := cmd.Flags().GetBool("secure"); s {
 		c.Secure = true
+	} else {
+		c.Secure = false
 	}
 	if s, _ := cmd.Flags().GetString("cafile"); len(s) != 0 {
 		if !util.IsFileExists(s) {
@@ -125,6 +127,8 @@ func contextCreateExec(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("Unable to read CA file %s", s)
 		}
 		c.TlsData.Cacert = string(data)
+		// If CA cert is provided, make "secure" default to true
+		c.Secure = true
 	}
 
 	if err = contextManager.Add(c); err != nil {
