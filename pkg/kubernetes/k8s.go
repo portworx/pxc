@@ -21,7 +21,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/portworx/px/pkg/util"
+	"github.com/portworx/pxc/pkg/util"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kclikube "k8s.io/client-go/kubernetes"

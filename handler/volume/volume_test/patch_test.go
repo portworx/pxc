@@ -18,7 +18,7 @@ package volume_test
 import (
 	"testing"
 
-	"github.com/portworx/px/handler/test"
+	"github.com/portworx/pxc/handler/test"
 	"github.com/stretchr/testify/assert"
 )
 

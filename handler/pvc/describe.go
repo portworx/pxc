@@ -19,11 +19,11 @@ import (
 	"text/tabwriter"
 
 	"github.com/cheynewallace/tabby"
-	"github.com/portworx/px/cmd"
-	"github.com/portworx/px/handler/volume"
-	"github.com/portworx/px/pkg/cliops"
-	"github.com/portworx/px/pkg/commander"
-	"github.com/portworx/px/pkg/util"
+	"github.com/portworx/pxc/cmd"
+	"github.com/portworx/pxc/handler/volume"
+	"github.com/portworx/pxc/pkg/cliops"
+	"github.com/portworx/pxc/pkg/commander"
+	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
 

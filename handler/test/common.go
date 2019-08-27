@@ -25,11 +25,11 @@ import (
 	"testing"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/px/cmd"
+	"github.com/portworx/pxc/cmd"
 
-	_ "github.com/portworx/px/handler"
-	"github.com/portworx/px/pkg/tests"
-	"github.com/portworx/px/pkg/util"
+	_ "github.com/portworx/pxc/handler"
+	"github.com/portworx/pxc/pkg/tests"
+	"github.com/portworx/pxc/pkg/util"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -24,8 +24,8 @@ import (
 
 	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/px/pkg/cliops"
-	"github.com/portworx/px/pkg/tui"
+	"github.com/portworx/pxc/pkg/cliops"
+	"github.com/portworx/pxc/pkg/tui"
 )
 
 type VolumeStats interface {

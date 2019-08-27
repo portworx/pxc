@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/px/pkg/util"
+	"github.com/portworx/pxc/pkg/util"
 	"github.com/stretchr/testify/assert"
 )
 

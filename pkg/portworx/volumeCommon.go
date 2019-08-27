@@ -18,7 +18,7 @@ import (
 	"strings"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/px/pkg/openstorage/sched"
+	"github.com/portworx/pxc/pkg/openstorage/sched"
 )
 
 const (

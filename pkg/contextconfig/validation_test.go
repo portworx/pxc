@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/portworx/px/pkg/contextconfig"
+	"github.com/portworx/pxc/pkg/contextconfig"
 )
 
 func TestAddClaimsInfo(t *testing.T) {

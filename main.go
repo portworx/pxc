@@ -16,8 +16,8 @@ limitations under the License.
 package main
 
 import (
-	"github.com/portworx/px/cmd"
-	_ "github.com/portworx/px/handler"
+	"github.com/portworx/pxc/cmd"
+	_ "github.com/portworx/pxc/handler"
 )
 
 func main() {

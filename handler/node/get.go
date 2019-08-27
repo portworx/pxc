@@ -24,10 +24,10 @@ import (
 	"github.com/cheynewallace/tabby"
 	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/px/cmd"
-	"github.com/portworx/px/pkg/cliops"
-	"github.com/portworx/px/pkg/commander"
-	"github.com/portworx/px/pkg/util"
+	"github.com/portworx/pxc/cmd"
+	"github.com/portworx/pxc/pkg/cliops"
+	"github.com/portworx/pxc/pkg/commander"
+	"github.com/portworx/pxc/pkg/util"
 
 	"github.com/spf13/cobra"
 )

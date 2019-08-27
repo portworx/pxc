@@ -20,11 +20,11 @@ import (
 	"strings"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/px/cmd"
-	"github.com/portworx/px/pkg/commander"
-	"github.com/portworx/px/pkg/contextconfig"
-	"github.com/portworx/px/pkg/portworx"
-	"github.com/portworx/px/pkg/util"
+	"github.com/portworx/pxc/cmd"
+	"github.com/portworx/pxc/pkg/commander"
+	"github.com/portworx/pxc/pkg/contextconfig"
+	"github.com/portworx/pxc/pkg/portworx"
+	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
 

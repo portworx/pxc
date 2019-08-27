@@ -23,7 +23,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/portworx/px/pkg/util"
+	"github.com/portworx/pxc/pkg/util"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"google.golang.org/grpc"
