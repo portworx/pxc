@@ -162,7 +162,41 @@ func (p *VolumeDescribeFormatter) AddVolumeDetails(
 	if err != nil {
 		return err
 	}
+	p.addVolumeAccessInfo(v, t)
 	return nil
+}
+
+func (p *VolumeDescribeFormatter) addVolumeAccessInfo(
+	v *api.Volume,
+	t *tabby.Tabby,
+) {
+	spec := v.GetSpec()
+
+	// Get Owner
+	owner := spec.GetOwnership().GetOwner()
+	// Get Groups
+	groups := spec.GetOwnership().GetAcls().GetGroups()
+	// Get Collaborators
+	collaborators := spec.GetOwnership().GetAcls().GetCollaborators()
+
+	t.AddLine("Ownership:")
+	if len(owner) != 0 {
+		t.AddLine("  Owner:", owner)
+	}
+
+	if len(groups) != 0 {
+		t.AddLine("  Groups:")
+		for key, value := range groups {
+			t.AddLine(fmt.Sprintf("    %s:", key), value)
+		}
+	}
+
+	if len(collaborators) != 0 {
+		t.AddLine("  Collaborators:")
+		for key, value := range collaborators {
+			t.AddLine(fmt.Sprintf("    %s:", key), value)
+		}
+	}
 }
 
 func (p *VolumeDescribeFormatter) addVolumeBasicInfo(

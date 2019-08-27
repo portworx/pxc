@@ -91,3 +91,16 @@ func TestCreateIoProfVolume(t *testing.T) {
 		assert.False(t, test.PxTestHasVolume(volName))
 	}
 }
+
+// Testing creation of volume with access (--groups and --collaborators) flag set.
+func TestCreateVolumeWithAccess(t *testing.T) {
+	volName := test.GenVolName("accessVol")
+
+	// Create volume with access (--groups and --collaborators) flag set
+	test.PxTestCreateVolumeWithAccess(t, volName, 1, "group1:r,group2:a", "user1:r,user2:w")
+	assert.True(t, test.PxTestHasVolume(volName))
+
+	// Delete Volume
+	test.PxTestDeleteVolume(t, volName)
+	assert.False(t, test.PxTestHasVolume(volName))
+}

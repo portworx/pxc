@@ -165,6 +165,21 @@ func verifyVolumeDescription(
 	index++
 	k, v = getKeyValue(d[index])
 	verifyKeyValue(t, k, v, "Replication Status", "Detached")
+	index++
+	k, v = getKeyValue(d[index])
+	verifyKeyValue(t, k, v, "Ownership", "")
+	index++
+	k, v = getKeyValue(d[index])
+	verifyKeyValue(t, k, v, "Groups", "")
+	index++
+	k, v = getKeyValue(d[index])
+	verifyKeyValue(t, k, v, "group1", "Read")
+	index++
+	k, v = getKeyValue(d[index])
+	verifyKeyValue(t, k, v, "Collaborators", "")
+	index++
+	k, v = getKeyValue(d[index])
+	verifyKeyValue(t, k, v, "user1", "Write")
 }
 
 // Takes a list of volumes and returns a array of string, one volume description per string

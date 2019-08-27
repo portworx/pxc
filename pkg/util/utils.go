@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/asaskevich/govalidator"
+	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"net"
 	"os"
 	"strings"
@@ -159,4 +160,42 @@ func ValidateEndpoint(endpoint string) (string, error) {
 	// For example: "192.168.1.1"
 	updatedEndpoint := net.JoinHostPort(endpoint, DefaultPort)
 	return updatedEndpoint, nil
+}
+
+// GetAclMapFromString takes a comma separated string of acl names and their
+// types, and returns a map of the names to their access types
+func GetAclMapFromString(s string) (map[string]api.Ownership_AccessType, error) {
+	acls := make(map[string]api.Ownership_AccessType)
+	for _, group := range strings.Split(s, ",") {
+		name, access, err := GetAclFromString(group)
+		if err != nil {
+			return acls, err
+		}
+		acls[name] = access
+	}
+	return acls, nil
+}
+
+// GetAclFromString takes values like group1:r or group2:w and
+// breaks them returning the group name and the access type.
+func GetAclFromString(s string) (string, api.Ownership_AccessType, error) {
+	parts := strings.Split(s, ":")
+
+	access := api.Ownership_Read
+	if len(parts) > 1 {
+		// only validate if the user has provided an access type.
+		// if they do not provide an access type, default to read
+		switch parts[1] {
+		case "w":
+			access = api.Ownership_Write
+		case "r":
+			access = api.Ownership_Read
+		case "a":
+			access = api.Ownership_Admin
+		default:
+			return "", access,
+				fmt.Errorf("Invalid access type: %s. Must be r (read), w (write), or a (admin).", parts[1])
+		}
+	}
+	return parts[0], access, nil
 }
