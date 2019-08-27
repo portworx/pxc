@@ -278,8 +278,8 @@ func PxTestPatchVolumeResize(t *testing.T, volName string, size uint64) {
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
 
-func PxTestPatchVolumeShared(t *testing.T, volName string, shared bool) {
-	cli := fmt.Sprintf("px patch volume %s --shared %t", volName, shared)
+func PxTestPatchVolumeShared(t *testing.T, volName string, shared string) {
+	cli := fmt.Sprintf("px patch volume %s --shared %s", volName, shared)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }

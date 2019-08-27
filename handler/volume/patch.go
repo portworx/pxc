@@ -31,8 +31,8 @@ type volumeUpdateOpts struct {
 	halevel    int64
 	replicaSet []string
 	size       uint64
-	shared     bool
-	sticky     bool
+	shared     string
+	sticky     string
 }
 
 var (
@@ -77,8 +77,8 @@ var _ = commander.RegisterCommandInit(func() {
 	patchVolumeCmd.Flags().Int64Var(&updateReq.halevel, "halevel", 0, "New replication factor (Valid Range: [1, 3]) (default 1)")
 	patchVolumeCmd.Flags().StringSliceVarP(&updateReq.replicaSet, "nodes", "n", []string{}, "Desired set of nodes for the volume data")
 	patchVolumeCmd.Flags().Uint64VarP(&updateReq.size, "size", "s", 0, "New size for the volume (GiB) (default 1)")
-	patchVolumeCmd.Flags().BoolVarP(&updateReq.shared, "shared", "r", false, "Shared is true if this volume can be remotely accessed [default false].")
-	patchVolumeCmd.Flags().BoolVarP(&updateReq.shared, "sticky", "t", false, "set sticky setting [default false].")
+	patchVolumeCmd.Flags().StringVarP(&updateReq.shared, "shared", "r", "", "set shared setting (Valid Values: [on off]) (default \"off\")")
+	patchVolumeCmd.Flags().StringVarP(&updateReq.sticky, "sticky", "t", "", "set sticky setting (Valid Values: [on off]) (default \"off\")")
 	patchVolumeCmd.Flags().SortFlags = false
 })
 
@@ -122,17 +122,29 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 	}
 
 	// For setting volume as shared or not
-	if updateReq.shared {
+	switch updateReq.shared {
+	case "on":
 		updateReq.req.Spec.SharedOpt = &api.VolumeSpecUpdate_Shared{
-			Shared: updateReq.shared,
+			Shared: true,
+		}
+		updateReqSet = true
+	case "off":
+		updateReq.req.Spec.SharedOpt = &api.VolumeSpecUpdate_Shared{
+			Shared: false,
 		}
 		updateReqSet = true
 	}
 
 	// for setting volume to be sticky
-	if updateReq.sticky {
+	switch updateReq.sticky {
+	case "on":
 		updateReq.req.Spec.StickyOpt = &api.VolumeSpecUpdate_Sticky{
-			Sticky: updateReq.sticky,
+			Sticky: true,
+		}
+		updateReqSet = true
+	case "off":
+		updateReq.req.Spec.StickyOpt = &api.VolumeSpecUpdate_Sticky{
+			Sticky: false,
 		}
 		updateReqSet = true
 	}
