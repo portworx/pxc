@@ -27,4 +27,5 @@ import (
 	_ "github.com/portworx/px/handler/volume"
 	_ "github.com/portworx/px/handler/volumeclone"
 	_ "github.com/portworx/px/handler/volumesnapshot"
+	_ "github.com/portworx/px/handler/volumestats"
 )

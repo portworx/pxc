@@ -86,7 +86,7 @@ type PxVolumeOps interface {
 	// GetReplicationInfo returns the details of the replicas of the specified volume
 	GetReplicationInfo(v *api.Volume) (*ReplicationInfo, error)
 	// GetStats returns the stats for the specified volume
-	GetStats(v *api.Volume) (*api.Stats, error)
+	GetStats(v *api.Volume, notCumulative bool) (*api.Stats, error)
 	// GetPxPvcs returns the list of PxPvcs
 	GetPxPvcs() ([]*kubernetes.PxPvc, error)
 	// EnumerateNodes returns list of nodes  ids
@@ -267,11 +267,14 @@ func (p *pxVolumeOps) GetAttachedState(v *api.Volume) (string, error) {
 	return getState(v, n), nil
 }
 
-func (p *pxVolumeOps) GetStats(v *api.Volume) (*api.Stats, error) {
+func (p *pxVolumeOps) GetStats(v *api.Volume, notCumulative bool) (*api.Stats, error) {
 	volumes := api.NewOpenStorageVolumeClient(p.pxVolumeOpsInfo.Conn)
 	volStats, err := volumes.Stats(
 		p.pxVolumeOpsInfo.Ctx,
-		&api.SdkVolumeStatsRequest{VolumeId: v.GetId()})
+		&api.SdkVolumeStatsRequest{
+			VolumeId:      v.GetId(),
+			NotCumulative: notCumulative,
+		})
 	if err != nil {
 		return &api.Stats{}, err
 	}

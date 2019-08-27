@@ -275,7 +275,7 @@ func (p *VolumeDescribeFormatter) addVolumeStatsInfo(
 	v *api.Volume,
 	t *tabby.Tabby,
 ) error {
-	stats, err := p.PxVolumeOps.GetStats(v)
+	stats, err := p.PxVolumeOps.GetStats(v, false)
 	if err != nil {
 		return err
 	}
