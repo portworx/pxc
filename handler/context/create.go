@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	pxcmd "github.com/portworx/px/cmd"
-	"github.com/portworx/px/pkg/commander"
-	"github.com/portworx/px/pkg/contextconfig"
-	"github.com/portworx/px/pkg/util"
+	pxcmd "github.com/portworx/pxc/cmd"
+	"github.com/portworx/pxc/pkg/commander"
+	"github.com/portworx/pxc/pkg/contextconfig"
+	"github.com/portworx/pxc/pkg/util"
 
 	"github.com/spf13/cobra"
 )

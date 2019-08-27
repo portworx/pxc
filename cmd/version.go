@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/px/pkg/commander"
+	"github.com/portworx/pxc/pkg/commander"
 
 	"github.com/spf13/cobra"
 )

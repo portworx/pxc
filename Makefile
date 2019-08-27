@@ -1,4 +1,4 @@
-CLINAME := px
+CLINAME := pxc
 SHA := $(shell git rev-parse --short HEAD)
 BRANCH := $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
 VER := $(shell git describe --tags)
@@ -16,7 +16,7 @@ else
   VERSION = $(VER)-$(BRANCH)
 endif
 endif
-LDFLAGS :=-ldflags "-X github.com/portworx/px/cmd.PxVersion=$(VERSION)"
+LDFLAGS :=-ldflags "-X github.com/portworx/pxc/cmd.PxVersion=$(VERSION)"
 
 ifneq (windows,$(GOOS))
 PKG_NAME = $(CLINAME)
@@ -26,7 +26,7 @@ endif
 
 PACKAGE := $(CLINAME)-$(VERSION).$(GOOS).$(ARCH).zip
 
-all: px
+all: pxc
 
 install:
 	go install
@@ -34,7 +34,7 @@ install:
 lint:
 	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
 
-px:
+pxc:
 	go build $(LDFLAGS)
 
 release: darwin_amd64_dist \
@@ -66,5 +66,5 @@ clean:
 	rm -rf dist
 
 .PHONY: dist all clean darwin_amd64_dist windows_amd64_dist linux_amd64_dist \
-	install release px test
+	install release pxc test
 

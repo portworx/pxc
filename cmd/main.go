@@ -20,9 +20,9 @@ import (
 	"path"
 
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/portworx/px/pkg/commander"
-	"github.com/portworx/px/pkg/config"
-	"github.com/portworx/px/pkg/util"
+	"github.com/portworx/pxc/pkg/commander"
+	"github.com/portworx/pxc/pkg/config"
+	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
 

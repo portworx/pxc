@@ -16,9 +16,9 @@ limitations under the License.
 package example
 
 import (
-	"github.com/portworx/px/cmd"
-	"github.com/portworx/px/pkg/commander"
-	"github.com/portworx/px/pkg/util"
+	"github.com/portworx/pxc/cmd"
+	"github.com/portworx/pxc/pkg/commander"
+	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
 

@@ -20,8 +20,8 @@ import (
 	"time"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/px/pkg/kubernetes"
-	"github.com/portworx/px/pkg/util"
+	"github.com/portworx/pxc/pkg/kubernetes"
+	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

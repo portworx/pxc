@@ -16,16 +16,16 @@ limitations under the License.
 package handler
 
 import (
-	//_ "github.com/portworx/px/handler/example"
-	_ "github.com/portworx/px/handler/cloudmigration"
-	_ "github.com/portworx/px/handler/cluster"
-	_ "github.com/portworx/px/handler/clusterpair"
-	_ "github.com/portworx/px/handler/context"
-	_ "github.com/portworx/px/handler/logs"
-	_ "github.com/portworx/px/handler/node"
-	_ "github.com/portworx/px/handler/pvc"
-	_ "github.com/portworx/px/handler/volume"
-	_ "github.com/portworx/px/handler/volumeclone"
-	_ "github.com/portworx/px/handler/volumesnapshot"
-	_ "github.com/portworx/px/handler/volumestats"
+	//_ "github.com/portworx/pxc/handler/example"
+	_ "github.com/portworx/pxc/handler/cloudmigration"
+	_ "github.com/portworx/pxc/handler/cluster"
+	_ "github.com/portworx/pxc/handler/clusterpair"
+	_ "github.com/portworx/pxc/handler/context"
+	_ "github.com/portworx/pxc/handler/logs"
+	_ "github.com/portworx/pxc/handler/node"
+	_ "github.com/portworx/pxc/handler/pvc"
+	_ "github.com/portworx/pxc/handler/volume"
+	_ "github.com/portworx/pxc/handler/volumeclone"
+	_ "github.com/portworx/pxc/handler/volumesnapshot"
+	_ "github.com/portworx/pxc/handler/volumestats"
 )

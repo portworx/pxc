@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/portworx/px/pkg/config"
-	"github.com/portworx/px/pkg/contextconfig"
+	"github.com/portworx/pxc/pkg/config"
+	"github.com/portworx/pxc/pkg/contextconfig"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"

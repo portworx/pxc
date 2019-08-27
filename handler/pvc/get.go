@@ -24,12 +24,12 @@ import (
 
 	"github.com/cheynewallace/tabby"
 	humanize "github.com/dustin/go-humanize"
-	"github.com/portworx/px/cmd"
-	"github.com/portworx/px/pkg/cliops"
-	"github.com/portworx/px/pkg/commander"
-	"github.com/portworx/px/pkg/kubernetes"
-	"github.com/portworx/px/pkg/portworx"
-	"github.com/portworx/px/pkg/util"
+	"github.com/portworx/pxc/cmd"
+	"github.com/portworx/pxc/pkg/cliops"
+	"github.com/portworx/pxc/pkg/commander"
+	"github.com/portworx/pxc/pkg/kubernetes"
+	"github.com/portworx/pxc/pkg/portworx"
+	"github.com/portworx/pxc/pkg/util"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/spf13/cobra"

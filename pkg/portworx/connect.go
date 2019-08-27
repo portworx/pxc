@@ -19,9 +19,9 @@ import (
 	"context"
 	"crypto/x509"
 
-	"github.com/portworx/px/pkg/config"
-	"github.com/portworx/px/pkg/contextconfig"
-	pxgrpc "github.com/portworx/px/pkg/grpc"
+	"github.com/portworx/pxc/pkg/config"
+	"github.com/portworx/pxc/pkg/contextconfig"
+	pxgrpc "github.com/portworx/pxc/pkg/grpc"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

@@ -24,8 +24,8 @@ import (
 
 	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/px/pkg/kubernetes"
-	"github.com/portworx/px/pkg/util"
+	"github.com/portworx/pxc/pkg/kubernetes"
+	"github.com/portworx/pxc/pkg/util"
 
 	"google.golang.org/grpc"
 
