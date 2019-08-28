@@ -67,6 +67,58 @@ func TestPatchVolumeUnsetShared(t *testing.T) {
 	volCleanup(t, volName)
 }
 
+func TestPatchVolumeAddCollaborators(t *testing.T) {
+	volName := test.GenVolName("testVol")
+	volCreate(t, volName)
+	collaborators := "user2:r,user3:w"
+	//Update the collaborators list to the volume access list.
+	test.PxTestPatchVolumeAddCollaborators(t, volName, collaborators)
+	volCleanup(t, volName)
+}
+
+func TestPatchVolumeRemoveCollaborators(t *testing.T) {
+	volName := test.GenVolName("testVol")
+	volCreate(t, volName)
+	collaborators := "user1:w"
+	//Remove the collaborators list from the volume access list.
+	test.PxTestPatchVolumeRemoveCollaborators(t, volName, collaborators)
+	volCleanup(t, volName)
+}
+
+func TestPatchVolumeRemoveAllCollaborators(t *testing.T) {
+	volName := test.GenVolName("testVol")
+	volCreate(t, volName)
+	//Remove all the collaborators from the volume access list.
+	test.PxTestPatchVolumeRemoveAllCollaborators(t, volName)
+	volCleanup(t, volName)
+}
+
+func TestPatchVolumeAddGroups(t *testing.T) {
+	volName := test.GenVolName("testVol")
+	volCreate(t, volName)
+	groups := "group2:r,group3:a"
+	//Update the group list to the volume access list.
+	test.PxTestPatchVolumeAddGroups(t, volName, groups)
+	volCleanup(t, volName)
+}
+
+func TestPatchVolumeRemoveGroups(t *testing.T) {
+	volName := test.GenVolName("testVol")
+	volCreate(t, volName)
+	groups := "group1:r"
+	//Remove the group list from the volume access list.
+	test.PxTestPatchVolumeRemoveGroups(t, volName, groups)
+	volCleanup(t, volName)
+}
+
+func TestPatchVolumeRemoveAllGroups(t *testing.T) {
+	volName := test.GenVolName("testVol")
+	volCreate(t, volName)
+	//Remove All the groups from the volume access list.
+	test.PxTestPatchVolumeRemoveAllGroups(t, volName)
+	volCleanup(t, volName)
+}
+
 // Helper to create a volume
 func volCreate(t *testing.T, volName string) {
 	// Create a volume
