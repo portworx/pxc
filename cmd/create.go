@@ -28,7 +28,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "create",
 		Short: "Create an object in Portworx",
 		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see px create --help for more information")
+			util.Printf("Please see pxc create --help for more information")
 		},
 	}
 })

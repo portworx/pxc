@@ -60,17 +60,17 @@ var _ = commander.RegisterCommandVar(func() {
 
 		// TODO:
 		Example: `1. Create volume called "myvolume" with size as 3GiB:
-	$ px create volume myvolume --size=3
+	$ pxc create volume myvolume --size=3
 2. Create volume called "myvolume" with size as 3GiB and replica set to 3:
-	$ px create volume myvolume --size=3 --replicas=3
+	$ pxc create volume myvolume --size=3 --replicas=3
 3. Create shared volume called "myvolume" with size as 3GiB:
-	$ px create volume myvolume --size=3 --shared
+	$ pxc create volume myvolume --size=3 --shared
 4. Create shared volume called "myvolume" with size as 2GiB and replicas set to 3:
-	$ px create volume myvolume --size=3 --shared --replicas=3
+	$ pxc create volume myvolume --size=3 --shared --replicas=3
 5. Create volume called "myvolume" with label as "access=slow" and size as 3 GiB:
-	$ px create volume myvolume --size=3 --labels 'access=slow'
+	$ pxc create volume myvolume --size=3 --labels 'access=slow'
 6. Create volume with volume access option flag:
-	$ px create volume myvolume --size=3 --groups group1:r,group2:w,group3:a --collaborators user1:r,user2:a,user3:w`,
+	$ pxc create volume myvolume --size=3 --groups group1:r,group2:w,group3:a --collaborators user1:r,user2:a,user3:w`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("Must supply a name for volume")

@@ -32,22 +32,22 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "node",
 		Short: "Print Portworx logs for specified nodes",
 		Example: `
-        $ px logs node --all-nodes
+        $ pxc logs node --all-nodes
         Return Portworx logs from all nodes
 
-        $ px logs node abc
+        $ pxc logs node abc
         Return Portworx logs from  node abc
 
-        $ px logs node -f  abc
+        $ pxc logs node -f  abc
         Begin streaming the Portworx logs from  node abc
 
-        $ px logs node --tail=20 abc
+        $ pxc logs node --tail=20 abc
         Apply filters to only the most recent 20 log lines and display the matched lines
 
-        $ px logs node abc --filter "error,warning"
+        $ pxc logs node abc --filter "error,warning"
         Display all log lines that has either error or warning on node abc
 
-        $ px logs node --since=1h node
+        $ pxc logs node --since=1h node
         Show all Portworx logs from node abc written in the last hour`,
 		RunE: logsNodesExec,
 	}
@@ -96,7 +96,7 @@ func logsNodesExec(cmd *cobra.Command, args []string) error {
 	// Create a cliVolumeOps object
 	cvOps := cliops.NewCliVolumeOps(cvi)
 
-	// Connect to px and k8s (if needed)
+	// Connect to pxc and k8s (if needed)
 	err := cvOps.Connect()
 	if err != nil {
 		return err

@@ -50,7 +50,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:     "clusterpair",
 		Aliases: []string{"clusterpairs"},
 		Short:   "Pair this cluster with another Portworx cluster",
-		Example: "$ px create clusterpair TODO ADD EXAMPLEs",
+		Example: "$ pxc create clusterpair TODO ADD EXAMPLEs",
 		Long: `TODO
 
 ADD EXAMPLES

@@ -30,7 +30,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "patch",
 		Short: "Update field(s) of a Portworx resource",
 		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see px patch --help for more information")
+			util.Printf("Please see pxc patch --help for more information")
 		},
 	}
 })

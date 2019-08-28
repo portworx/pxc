@@ -48,7 +48,7 @@ type ClientContext struct {
 	Kubeconfig string        `json:"kubeconfig" yaml:"kubeconfig"`
 }
 
-// ContextConfig provides information about the px context information
+// ContextConfig provides information about the pxc context information
 type ContextConfig struct {
 	Current        string          `json:"current" yaml:"current"`
 	Configurations []ClientContext `json:"configurations" yaml:"configurations"`

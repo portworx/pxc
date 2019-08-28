@@ -31,7 +31,7 @@ var _ = commander.RegisterCommandVar(func() {
 	contextDeleteCmd = &cobra.Command{
 		Use:     "delete [NAME]",
 		Short:   "Deletes the given context",
-		Example: "$ px context delete mycontext",
+		Example: "$ pxc context delete mycontext",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("Must supply a name for context")

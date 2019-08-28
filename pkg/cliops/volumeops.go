@@ -94,7 +94,7 @@ func NewCliVolumeOps(
 	}
 }
 
-// Connect will make connections to px and k8s (if needed).
+// Connect will make connections to pxc and k8s (if needed).
 func (p *CliVolumeOps) Connect() error {
 	ctx, conn, err := portworx.PxConnectDefault()
 	if err != nil {

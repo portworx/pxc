@@ -32,19 +32,19 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "volume",
 		Short: "Print Portworx logs related to specified volume(s)",
 		Example: `
-        $ px logs volume abc
+        $ pxc logs volume abc
         Return Portworx logs related to volume abc
 
-        $ px logs volume -f  abc
+        $ pxc logs volume -f  abc
         Begin streaming the Portworx logs related to volume abc
 
-        $ px logs volume --tail=20 abc
+        $ pxc logs volume --tail=20 abc
         Apply the volume filters  and the filters specified in --filters to the most recent 20 log lines of each relevant pod  and display only lines that match
 
-        $ px logs node abc --filter "error,warning"
+        $ pxc logs node abc --filter "error,warning"
         Display all log lines that is related to volume abc or has either error or warning in the log lines
 
-        $ px logs volume --since=1h volume
+        $ pxc logs volume --since=1h volume
         Show all Portworx logs related to volume abc written in the last hour`,
 		RunE: logsVolumesExec,
 	}
@@ -105,7 +105,7 @@ func logsVolumesExec(cmd *cobra.Command, args []string) error {
 	// Create a cliVolumeOps object
 	cvOps := cliops.NewCliVolumeOps(cvi)
 
-	// Connect to px and k8s (if needed)
+	// Connect to pxc and k8s (if needed)
 	err := cvOps.Connect()
 	if err != nil {
 		return err

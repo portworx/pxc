@@ -37,11 +37,11 @@ var _ = commander.RegisterCommandVar(func() {
 		Example: `
   # To create a context called k8s which will communicate to a Kubernetes
   # cluster and to one of the nodes running Portworx:
-  px context create mycluster --kubeconfig=/path/to/kubeconfig --endpoint=123.456.1.10:9020
+  pxc context create mycluster --kubeconfig=/path/to/kubeconfig --endpoint=123.456.1.10:9020
 
   # To create a context called mycluster which will point to one of the Portworx
   # nodes on the cluster:
-  px context create mycluster --endpoint=123.456.1.10:9020`,
+  pxc context create mycluster --endpoint=123.456.1.10:9020`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("Must supply a name for context")

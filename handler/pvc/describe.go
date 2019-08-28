@@ -35,11 +35,11 @@ var _ = commander.RegisterCommandVar(func() {
 		Short: "Describe Portworx volume for Kubernetes PVCs",
 		Long:  "Show detailed information of Portworx volume for Kubernetes PVCs",
 		Example: `1. Describe all pvcs that are Portworx volumes:
-	$ px describe pvc
+	$ pxc describe pvc
 2. Describe specific pvc called pvc:
-	$ px describe pvc abc
+	$ pxc describe pvc abc
 3. Describe list of pvcs (abc, xyz):
-	$ px describe pvc abc xyz`,
+	$ pxc describe pvc abc xyz`,
 		RunE: describePvcExec,
 	}
 })
@@ -64,7 +64,7 @@ func describePvcExec(cmd *cobra.Command, args []string) error {
 	// Create a cliVolumeOps object
 	cvOps := cliops.NewCliVolumeOps(cvi)
 
-	// Connect to px and k8s (if needed)
+	// Connect to pxc and k8s (if needed)
 	err := cvOps.Connect()
 	if err != nil {
 		return err

@@ -63,7 +63,7 @@ var _ = commander.RegisterCommandVar(func() {
 	patchVolumeCmd = &cobra.Command{
 		Use:   "volume [NAME]",
 		Short: "Update field(s) of a portworx volume",
-		Example: `$ px patch  volume test --halevel 3
+		Example: `$ pxc patch  volume test --halevel 3
 		This set halevel of volume to 3.
 
 		$px patch volume test --size 2

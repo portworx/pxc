@@ -97,7 +97,7 @@ func getVolumeStatsExec(cmd *cobra.Command, args []string) error {
 	// Create a cliVolumeOps object
 	cvOps := cliops.NewCliVolumeOps(cvi)
 
-	// Connect to px and k8s (if needed)
+	// Connect to pxc and k8s (if needed)
 	err = cvOps.Connect()
 	if err != nil {
 		return err

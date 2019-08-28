@@ -66,7 +66,7 @@ var (
 func testGetPxVolumeOps(t *testing.T) PxVolumeOps {
 	volOps := &pxVolumeOps{}
 	// Fill the PxVolumeOps with dummy data
-	// so we  dont need connections to px and k8s
+	// so we  dont need connections to pxc and k8s
 	// We can test all public interfaces of PxVolumeOps except for GetStats
 	err := json.Unmarshal([]byte(dummyInputJson), volOps)
 	assert.Equal(t, err, nil, "Error Unmarshalling string")

@@ -20,7 +20,7 @@ var (
 	cmdInitFncs []func()
 )
 
-// RegisterCommandVar is used to register with px the initialization function
+// RegisterCommandVar is used to register with pxc the initialization function
 // for the command variable.
 // Something must be returned to use the `var _ = ` trick.
 func RegisterCommandVar(c func()) bool {
@@ -29,7 +29,7 @@ func RegisterCommandVar(c func()) bool {
 	return true
 }
 
-// RegisterCommandInit is used to register with px the initialization function
+// RegisterCommandInit is used to register with pxc the initialization function
 // for the command flags.
 // Something must be returned to use the `var _ = ` trick.
 func RegisterCommandInit(c func()) bool {
@@ -37,7 +37,7 @@ func RegisterCommandInit(c func()) bool {
 	return true
 }
 
-// Main starts the px cli
+// Main starts the pxc cli
 // Stupid simple initialization
 func Setup() {
 	// Setup all variables.

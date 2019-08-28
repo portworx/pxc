@@ -48,11 +48,11 @@ var _ = commander.RegisterCommandVar(func() {
 		Short:   "Describe a Portworx volume",
 		Long:    "Show detailed information of Portworx volumes",
 		Example: `1. Describe all the volumes:
-	$ px describe volume
+	$ pxc describe volume
 2. Describe specific volume called abc:
-	$ px describe volume abc
+	$ pxc describe volume abc
 3. Describe list of volumes (abc, xyz)
-	$ px describe volume abc xyz`,
+	$ pxc describe volume abc xyz`,
 		RunE: describeVolumesExec,
 	}
 })
@@ -76,7 +76,7 @@ func describeVolumesExec(cmd *cobra.Command, args []string) error {
 	// Create a CliVolumeOps object
 	cvOps := cliops.NewCliVolumeOps(cvi)
 
-	// Connect to px and k8s (if needed)
+	// Connect to pxc and k8s (if needed)
 	err := cvOps.Connect()
 	if err != nil {
 		return err

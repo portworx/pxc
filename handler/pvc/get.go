@@ -42,11 +42,11 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:     "pvc",
 		Aliases: []string{"pvcs"},
 		Short:   "Show Portworx volume information for Kubernetes PVCs",
-		Example: `$ px get pvc
+		Example: `$ pxc get pvc
 				  This gets information for all pvcs that are Portworx volumes
-				  $ px get pvc abc
+				  $ pxc get pvc abc
 				    This gets information for pvc abc
-					$ px get pvc abc xyz
+					$ pxc get pvc abc xyz
 					  This gets information for pvcs abc and xyz`,
 		RunE: getPvcExec,
 	}
@@ -73,7 +73,7 @@ func getPvcExec(cmd *cobra.Command, args []string) error {
 	// Create a cliVolumeOps object
 	cvOps := cliops.NewCliVolumeOps(cvi)
 
-	// Connect to px and k8s (if needed)
+	// Connect to pxc and k8s (if needed)
 	err := cvOps.Connect()
 	if err != nil {
 		return err
@@ -234,13 +234,13 @@ func (p *pvcGetFormatter) getLine(pxpvc *kubernetes.PxPvc) ([]interface{}, error
 	pods := strings.Join(pxpvc.PodNames, ",")
 
 	/*
-	   $ px get pvc
+	   $ pxc get pvc
 	   NAME        VOLUME                                    CAPACITY  SHARED  STATE  PODS
 	   ----        ------                                    --------  ------  -----  ----
 	   mysql-data  pvc-d2a47415-1aef-428c-b998-5aee138d93a9  2         1       false  on lpabon-k8s-1-node2  default/mysql-59b76b98f9-grcvd
 
 	   lpabon@PDC4-SM26-N8 : ~/git/golang/porx/src/github.com/portworx/px
-	   $ px get pvc -o wide
+	   $ pxc get pvc -o wide
 	   NAME        VOLUME                                    VOLUME ID           HA  CAPACITY  SHARED  STATUS  STATE  SNAP ENABLED           ENCRYPTED  PODS
 	   ----        ------                                    ---------           --  --------  ------  ------  -----  ------------           ---------  ----
 	   mysql-data  pvc-d2a47415-1aef-428c-b998-5aee138d93a9  605625582897896102  1   2         1       false   UP     on lpabon-k8s-1-node2  false      false  default/mysql-59b76b98f9-grcvd

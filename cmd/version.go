@@ -33,7 +33,7 @@ var versionCmd *cobra.Command
 var _ = commander.RegisterCommandVar(func() {
 	versionCmd = &cobra.Command{
 		Use:   "version",
-		Short: "Show px version information",
+		Short: "Show pxc version information",
 		Run: func(cmd *cobra.Command, args []string) {
 			versionExec(cmd, args)
 		},

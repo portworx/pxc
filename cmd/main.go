@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	pxDefaultDir        = ".px"
+	pxDefaultDir        = ".pxc"
 	pxDefaultConfigName = "config.yml"
 
 	Ki = 1024
@@ -81,7 +81,7 @@ func Execute() {
 	}
 }
 
-// Main starts the px cli
+// Main starts the pxc cli
 // Stupid simple initialization
 func Main() error {
 	commander.Setup()

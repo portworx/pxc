@@ -27,7 +27,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "logs",
 		Short: "Print Portworx logs",
 		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see px logs --help for more information")
+			util.Printf("Please see pxc logs --help for more information")
 		},
 	}
 })

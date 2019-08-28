@@ -30,7 +30,7 @@ func RootAddCommand(c *cobra.Command) {
 var _ = commander.RegisterCommandVar(func() {
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd = &cobra.Command{
-		Use:           "px",
+		Use:           "pxc",
 		Short:         "Portworx command line tool",
 		SilenceUsage:  true,
 		SilenceErrors: true,

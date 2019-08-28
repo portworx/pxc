@@ -33,7 +33,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:     "cluster",
 		Short:   "Describe a Portworx cluster",
 		Long:    "Show detailed information of Portworx cluster",
-		Example: `$ px describe cluster`,
+		Example: `$ pxc describe cluster`,
 
 		RunE: describeClusterExec,
 	}
