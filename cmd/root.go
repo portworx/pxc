@@ -42,9 +42,6 @@ var _ = commander.RegisterCommandInit(func() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+")")
 	rootCmd.PersistentFlags().StringVar(&cfgContext, "context", "", "Force context name for the command")
 
-	// TODO: move these flags out of persistent
-	rootCmd.PersistentFlags().Bool("show-labels", false, "Show labels in the last column of the output")
-
 	// Global cobra configurations
 	rootCmd.Flags().SortFlags = false
 })
