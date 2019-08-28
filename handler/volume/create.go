@@ -119,9 +119,10 @@ func createVolumeExec(c *cobra.Command, args []string) error {
 		}
 	}
 
-	cvOpts.req.Spec.Ownership = &api.Ownership{}
-	cvOpts.req.Spec.Ownership.Acls = &api.Ownership_AccessControl{}
-
+	if len(cvOpts.collaborators) != 0 || len(cvOpts.groups) != 0 {
+		cvOpts.req.Spec.Ownership = &api.Ownership{}
+		cvOpts.req.Spec.Ownership.Acls = &api.Ownership_AccessControl{}
+	}
 	// Get collaborators
 	if len(cvOpts.collaborators) != 0 {
 		collaborators, err := util.GetAclMapFromString(cvOpts.collaborators)
