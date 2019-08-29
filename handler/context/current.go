@@ -31,7 +31,10 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:     "current",
 		Aliases: []string{"show", "current-context"},
 		Short:   "Show current context name",
-		RunE:    contextCurrentExec,
+		Example: `
+  # Display current used context information:
+  pxc context current`,
+		RunE: contextCurrentExec,
 	}
 })
 
