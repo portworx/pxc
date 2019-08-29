@@ -44,8 +44,9 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "volumesnapshot [VOLUME] [NAME]",
 		Short: "Create a volume snapshot",
 		Long:  `Create a snapshot for the specified volume`,
-		Example: `$ pxc create volumesnapshot mysnap --labels color=blue,fabric=wool --volume myvol
-This creates a snapshot named mysnap for the specified volume myvol.`,
+		Example: `
+  # This will create a snapshot named mysnap for the specified volume "myvol":
+  pxc create volumesnapshot mysnap --labels color=blue,fabric=wool --volume myvol`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 2 {
 				return fmt.Errorf("Must supply the volume to snap and a new name for the snapshot")
