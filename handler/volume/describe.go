@@ -71,33 +71,46 @@ func DescribeAddCommand(cmd *cobra.Command) {
 
 func describeVolumesExec(cmd *cobra.Command, args []string) error {
 	// Parse out all of the common cli volume flags
-	cvi := cliops.GetCliVolumeInputs(cmd, args)
+	cvi := cliops.NewCliInputs(cmd, args)
 
-	// Create a CliVolumeOps object
-	cvOps := cliops.NewCliVolumeOps(cvi)
+	// Create a CliOps object
+	cliOps := cliops.NewCliOps(cvi)
 
 	// Connect to pxc and k8s (if needed)
-	err := cvOps.Connect()
+	err := cliOps.Connect()
 	if err != nil {
 		return err
 	}
-	defer cvOps.Close()
+	defer cliOps.Close()
 
 	// Create the parser object
-	vcf := NewVolumeDescribeFormatter(cvOps)
+	vcf := NewVolumeDescribeFormatter(cliOps)
 
 	// Print details and return any errors found during parsing
 	return util.PrintFormatted(vcf)
 }
 
 type VolumeDescribeFormatter struct {
-	cliops.CliVolumeOps
+	util.BaseFormatOutput
+	cliOps  cliops.CliOps
+	volumes portworx.Volumes
+	nodes   portworx.Nodes
+	pods    portworx.Pods
 }
 
-func NewVolumeDescribeFormatter(cvOps *cliops.CliVolumeOps) *VolumeDescribeFormatter {
-	return &VolumeDescribeFormatter{
-		CliVolumeOps: *cvOps,
+func NewVolumeDescribeFormatter(cliOps cliops.CliOps) *VolumeDescribeFormatter {
+	volSpec := &portworx.VolumeSpec{
+		VolNames: cliOps.CliInputs().Args,
+		Labels:   cliOps.CliInputs().Labels,
 	}
+	d := &VolumeDescribeFormatter{
+		cliOps:  cliOps,
+		volumes: portworx.NewVolumes(cliOps.PxOps(), volSpec),
+		nodes:   portworx.NewNodes(cliOps.PxOps()),
+		pods:    portworx.NewPods(cliOps.COps(), &portworx.PodSpec{}),
+	}
+	d.FormatType = cliOps.CliInputs().FormatType
+	return d
 }
 
 // DefaultFormat returns the default string representation of the object
@@ -110,7 +123,7 @@ func (p *VolumeDescribeFormatter) toTabbed() (string, error) {
 	writer := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
 	t := tabby.NewCustom(writer)
 
-	vols, err := p.PxVolumeOps.GetVolumes()
+	vols, err := p.volumes.GetVolumes()
 	if err != nil {
 		return "", err
 	}
@@ -122,7 +135,7 @@ func (p *VolumeDescribeFormatter) toTabbed() (string, error) {
 
 	for i, n := range vols {
 		v := n.GetVolume()
-		usedPods, err := p.PxVolumeOps.PodsUsingVolume(v)
+		usedPods, err := p.pods.PodsUsingVolume(v)
 		if err != nil {
 			return "", err
 		}
@@ -206,7 +219,7 @@ func (p *VolumeDescribeFormatter) addVolumeBasicInfo(
 	spec := v.GetSpec()
 
 	// Determine the state of the volume
-	state, err := p.PxVolumeOps.GetAttachedState(v)
+	state, err := p.nodes.GetAttachedState(v)
 	if err != nil {
 		return err
 	}
@@ -214,7 +227,7 @@ func (p *VolumeDescribeFormatter) addVolumeBasicInfo(
 	// Print basic info
 	t.AddLine("Volume:", v.GetId())
 	t.AddLine("Name:", v.GetLocator().GetName())
-	if p.ShowK8s == true {
+	if p.cliOps.CliInputs().ShowK8s == true {
 		labels := v.GetLocator().GetVolumeLabels()
 		pvc := labels["pvc"]
 		ns := labels["namespace"]
@@ -275,7 +288,7 @@ func (p *VolumeDescribeFormatter) addVolumeStatsInfo(
 	v *api.Volume,
 	t *tabby.Tabby,
 ) error {
-	stats, err := p.PxVolumeOps.GetStats(v, false)
+	stats, err := p.volumes.GetStats(v, false)
 	if err != nil {
 		return err
 	}
@@ -295,7 +308,7 @@ func (p *VolumeDescribeFormatter) addVolumeReplicationInfo(
 	v *api.Volume,
 	t *tabby.Tabby,
 ) error {
-	replInfo, err := p.PxVolumeOps.GetReplicationInfo(v)
+	replInfo, err := p.nodes.GetReplicationInfo(v)
 	if err != nil {
 		return err
 	}

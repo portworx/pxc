@@ -67,7 +67,7 @@ func NodeAddCommand(cmd *cobra.Command) {
 func getNodeLogOptions(
 	cmd *cobra.Command,
 	args []string,
-	cvOps *cliops.CliVolumeOps,
+	cliOps cliops.CliOps,
 ) (*kubernetes.COpsLogOptions, error) {
 	allNodes, _ := cmd.Flags().GetBool("all-nodes")
 	if (allNodes == false && len(args) == 0) ||
@@ -79,7 +79,7 @@ func getNodeLogOptions(
 	if err != nil {
 		return nil, err
 	}
-	p, err := cliops.GetRequiredPortworxPods(cvOps, args, lo.PortworxNamespace)
+	p, err := cliops.GetRequiredPortworxPods(cliOps, args, lo.PortworxNamespace)
 	if err != nil {
 		return nil, err
 	}
@@ -88,25 +88,25 @@ func getNodeLogOptions(
 }
 
 func logsNodesExec(cmd *cobra.Command, args []string) error {
-	cvi := &cliops.CliVolumeInputs{
+	cvi := &cliops.CliInputs{
 		ShowK8s: true,
 	}
 	cvi.GetNamespace(cmd)
 
 	// Create a cliVolumeOps object
-	cvOps := cliops.NewCliVolumeOps(cvi)
+	cliOps := cliops.NewCliOps(cvi)
 
 	// Connect to pxc and k8s (if needed)
-	err := cvOps.Connect()
+	err := cliOps.Connect()
 	if err != nil {
 		return err
 	}
-	defer cvOps.Close()
+	defer cliOps.Close()
 
-	lo, err := getNodeLogOptions(cmd, args, cvOps)
+	lo, err := getNodeLogOptions(cmd, args, cliOps)
 	if err != nil {
 		return err
 	}
 
-	return cvOps.PxVolumeOps.GetCOps().GetLogs(lo, util.Stdout)
+	return cliOps.COps().GetLogs(lo, util.Stdout)
 }

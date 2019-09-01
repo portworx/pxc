@@ -56,7 +56,7 @@ var (
 	}
 )
 
-func testVolumeCommon(t *testing.T, volOps PxVolumeOps, v *api.Volume) {
+func testVolumeCommon(t *testing.T, v *api.Volume) {
 	name := v.GetLocator().GetName()
 	snapSchedule, err := SchedSummary(v)
 	assert.Equal(t, err, nil, "Got error parsing snapshot schedule")
@@ -77,11 +77,11 @@ func testVolumeCommon(t *testing.T, volOps PxVolumeOps, v *api.Volume) {
 }
 
 func TestVolumeCommon(t *testing.T) {
-	volOps := testGetPxVolumeOps(t)
-	svols, err := volOps.GetVolumes()
+	to := testData(t)
+	svols, err := to.vols.GetVolumes()
 	assert.Equal(t, err, nil, "Could not get volumes")
 	for _, sv := range svols {
 		v := sv.GetVolume()
-		testVolumeCommon(t, volOps, v)
+		testVolumeCommon(t, v)
 	}
 }

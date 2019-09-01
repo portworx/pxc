@@ -25,6 +25,7 @@ import (
 	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/pxc/pkg/cliops"
+	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/tui"
 )
 
@@ -81,7 +82,8 @@ var (
 )
 
 type volumeStatsData struct {
-	cvOps      *cliops.CliVolumeOps
+	cliOps     cliops.CliOps
+	volumes    portworx.Volumes
 	vols       []*api.Volume
 	curStats   []*statsData
 	curIndex   int
@@ -112,12 +114,14 @@ type statsTotal struct {
 }
 
 func NewVolumeStats(
-	cvOps *cliops.CliVolumeOps,
+	cliOps cliops.CliOps,
 	resp []*api.SdkVolumeInspectResponse,
+	volumes portworx.Volumes,
 ) VolumeStats {
 	vsd := &volumeStatsData{
-		cvOps: cvOps,
-		vols:  make([]*api.Volume, len(resp)),
+		cliOps:  cliOps,
+		volumes: volumes,
+		vols:    make([]*api.Volume, len(resp)),
 		sortInfo: &statsSorterInfo{
 			ascending: false,
 			column:    DEFAULT_SORT_COLUMN,
@@ -257,7 +261,7 @@ func (vsd *volumeStatsData) colNameToNum(str string) ColNum {
 }
 
 func (vsd *volumeStatsData) getStats(v *api.Volume) (*statsData, error) {
-	stats, err := vsd.cvOps.PxVolumeOps.GetStats(v, true)
+	stats, err := vsd.volumes.GetStats(v, true)
 	if err != nil {
 		return nil, err
 	}

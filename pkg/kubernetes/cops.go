@@ -44,6 +44,13 @@ type COpsLogOptions struct {
 }
 
 type COps interface {
+	// Close close the connection
+	Close()
+	// GetDefaultNamespace returns the default namespace
+	GetDefaultNamespace() (string, error)
+	// GetNamespace returns the default namespace if namespace is nil
+	// else returns *namespace
+	GetNamespace(namespace *string) (string, error)
 	// GetPodsByLabels returns pods from specified namespace with the given labels
 	// labels should be of the form "abc=def,xyz=mno"
 	GetPodsByLabels(namespace string, labels string) ([]v1.Pod, error)

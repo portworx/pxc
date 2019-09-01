@@ -22,6 +22,7 @@ import (
 	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
+	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -132,13 +133,13 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 	var volumeFlagStatus volumeUpdateOptionStatus
 
 	// Parse out all of the common cli volume flags
-	cvi := cliops.GetCliVolumeInputs(cmd, args)
+	cvi := cliops.NewCliInputs(cmd, args)
 	// Create a CliVolumeOps object
-	cvOps := cliops.NewCliVolumeOps(cvi)
+	cliOps := cliops.NewCliOps(cvi)
 	// Connect to px and k8s (if needed)
-	err := cvOps.Connect()
+	err := cliOps.Connect()
 
-	defer cvOps.Close()
+	defer cliOps.Close()
 
 	// fetch the volume name from args
 	updateReq.req.VolumeId = args[0]
@@ -160,12 +161,16 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 
 	if len(updateReq.addCollaborators) != 0 || len(updateReq.addGroups) != 0 ||
 		len(updateReq.removeCollaborators) != 0 || len(updateReq.removeGroups) != 0 {
-		cvOps.PxVolumeOps.GetPxVolumeOpsInfo().VolNames = make([]string, 1, 1)
+		volNames := make([]string, 1, 1)
 		// Assign the user given volume Name
-		cvOps.PxVolumeOps.GetPxVolumeOpsInfo().VolNames[0] = updateReq.req.VolumeId
+		volNames[0] = updateReq.req.VolumeId
+		volSpec := &portworx.VolumeSpec{
+			VolNames: volNames,
+		}
+		vo := portworx.NewVolumes(cliOps.PxOps(), volSpec)
 
 		// Get the current copy of the volume spec
-		vols, err := cvOps.PxVolumeOps.GetVolumes()
+		vols, err := vo.GetVolumes()
 		if err != nil {
 			return err
 		}
@@ -324,8 +329,8 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	volumes := api.NewOpenStorageVolumeClient(cvOps.PxVolumeOps.GetPxVolumeOpsInfo().PxConnectionData.Conn)
-	_, err = volumes.Update(cvOps.PxVolumeOps.GetPxVolumeOpsInfo().PxConnectionData.Ctx, updateReq.req)
+	volumes := api.NewOpenStorageVolumeClient(cliOps.PxOps().GetConn())
+	_, err = volumes.Update(cliOps.PxOps().GetCtx(), updateReq.req)
 	if err != nil {
 		return util.PxErrorMessage(err, "Failed to patch volume")
 	}

@@ -21,6 +21,7 @@ import (
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/kubernetes"
+	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -65,7 +66,7 @@ func VolumeAddCommand(cmd *cobra.Command) {
 func getVolumeLogOptions(
 	cmd *cobra.Command,
 	args []string,
-	cvOps *cliops.CliVolumeOps,
+	cliOps cliops.CliOps,
 ) (*kubernetes.COpsLogOptions, error) {
 	err := cliops.ValidateCliInput(cmd, args)
 	if err != nil {
@@ -77,7 +78,14 @@ func getVolumeLogOptions(
 		return nil, err
 	}
 
-	vols, err := cvOps.PxVolumeOps.GetVolumes()
+	volSpec := &portworx.VolumeSpec{
+		VolNames: cliOps.CliInputs().Args,
+		Labels:   cliOps.CliInputs().Labels,
+	}
+
+	vo := portworx.NewVolumes(cliOps.PxOps(), volSpec)
+
+	vols, err := vo.GetVolumes()
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +96,7 @@ func getVolumeLogOptions(
 	}
 
 	allLogs, _ := cmd.Flags().GetBool("all-logs")
-	err = cliops.FillContainerInfo(vols, cvOps, lo, allLogs)
+	err = cliops.FillContainerInfo(vols, cliOps, lo, allLogs)
 	if err != nil {
 		return nil, err
 	}
@@ -96,23 +104,23 @@ func getVolumeLogOptions(
 }
 
 func logsVolumesExec(cmd *cobra.Command, args []string) error {
-	cvi := cliops.GetCliVolumeInputs(cmd, args)
+	cvi := cliops.NewCliInputs(cmd, args)
 	cvi.ShowK8s = true
 	if len(cvi.Labels) == 0 && len(args) == 0 {
 		return fmt.Errorf("Please specify either --selector or volume name")
 	}
 
 	// Create a cliVolumeOps object
-	cvOps := cliops.NewCliVolumeOps(cvi)
+	cliOps := cliops.NewCliOps(cvi)
 
 	// Connect to pxc and k8s (if needed)
-	err := cvOps.Connect()
+	err := cliOps.Connect()
 	if err != nil {
 		return err
 	}
-	defer cvOps.Close()
+	defer cliOps.Close()
 
-	lo, err := getVolumeLogOptions(cmd, args, cvOps)
+	lo, err := getVolumeLogOptions(cmd, args, cliOps)
 	if err != nil {
 		return err
 	}
@@ -120,5 +128,5 @@ func logsVolumesExec(cmd *cobra.Command, args []string) error {
 	if lo == nil || len(lo.CInfo) == 0 {
 		return nil
 	}
-	return cvOps.PxVolumeOps.GetCOps().GetLogs(lo, util.Stdout)
+	return cliOps.COps().GetLogs(lo, util.Stdout)
 }

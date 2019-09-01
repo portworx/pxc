@@ -23,6 +23,7 @@ import (
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -63,29 +64,59 @@ var (
 	}
 )
 
-func testGetPxVolumeOps(t *testing.T) PxVolumeOps {
-	volOps := &pxVolumeOps{}
-	// Fill the PxVolumeOps with dummy data
-	// so we  dont need connections to pxc and k8s
-	// We can test all public interfaces of PxVolumeOps except for GetStats
-	err := json.Unmarshal([]byte(dummyInputJson), volOps)
-	assert.Equal(t, err, nil, "Error Unmarshalling string")
-	return volOps
+type TestData struct {
+	Vols    []*api.SdkVolumeInspectResponse
+	Pvcs    []v1.PersistentVolumeClaim
+	Pods    []v1.Pod
+	NodeMap map[string]*api.StorageNode
 }
 
-func testPxVolumeOps(t *testing.T, volOps PxVolumeOps, v *api.Volume) {
+type testOps struct {
+	vols  Volumes
+	nodes Nodes
+	pods  Pods
+	pvcs  Pvcs
+}
+
+func testData(t *testing.T) *testOps {
+	td := &TestData{}
+	err := json.Unmarshal([]byte(dummyInputJson), td)
+	assert.Equal(t, err, nil, "Error Unmarshalling string")
+	to := &testOps{}
+	to.vols = &volumes{
+		vols: td.Vols,
+	}
+
+	to.nodes = &nodes{
+		nodeMap: td.NodeMap,
+	}
+
+	to.pods = &pods{
+		pods: td.Pods,
+	}
+
+	to.pvcs = &pvcs{
+		pvcs: td.Pvcs,
+		pods: to.pods,
+		vols: to.vols,
+	}
+
+	return to
+}
+
+func testAllOps(t *testing.T, to *testOps, v *api.Volume) {
 	name := v.GetLocator().GetName()
-	state, err := volOps.GetAttachedState(v)
+	state, err := to.nodes.GetAttachedState(v)
 	assert.Equal(t, err, nil, "Got error getting attached state")
 	expectedState := attachedState[name]
 	assert.Equalf(t, state, expectedState, "Attached state is not correct for %s", name)
-	pods, err := volOps.PodsUsingVolume(v)
+	pods, err := to.pods.PodsUsingVolume(v)
 	assert.Equal(t, err, nil, "Got error getting pods using volume")
 	for _, pod := range pods {
 		vn := podToVolume[pod.Name]
 		assert.Equalf(t, vn, name, "%s should be using %s", pod.Name, name)
 	}
-	replInfo, err := volOps.GetReplicationInfo(v)
+	replInfo, err := to.nodes.GetReplicationInfo(v)
 	assert.Equal(t, err, nil, "Got error getting replication info")
 	ejson := volumeToReplicationInfo[name]
 	eReplInfo := &ReplicationInfo{}
@@ -95,17 +126,17 @@ func testPxVolumeOps(t *testing.T, volOps PxVolumeOps, v *api.Volume) {
 	assert.Equalf(t, b, true, "ReplicationInfo is not same for %s", name)
 }
 
-func TestPxVolumeOps(t *testing.T) {
-	volOps := testGetPxVolumeOps(t)
-	svols, err := volOps.GetVolumes()
+func TestOps(t *testing.T) {
+	to := testData(t)
+	svols, err := to.vols.GetVolumes()
 	assert.Equal(t, err, nil, "Could not get volumes")
 	nodeNames := make(map[string]bool)
 	for _, sv := range svols {
 		v := sv.GetVolume()
-		testPxVolumeOps(t, volOps, v)
-		err := volOps.GetAllNodesForVolume(v, nodeNames)
+		testAllOps(t, to, v)
+		err := to.nodes.GetAllNodesForVolume(v, nodeNames)
 		assert.NoError(t, err)
-		cinfo, err := volOps.GetContainerInfoForVolume(v)
+		cinfo, err := to.pods.GetContainerInfoForVolume(v)
 		for _, ci := range cinfo {
 			volName := podToVolume[ci.Pod.Name]
 			assert.Equal(t, volName, v.GetLocator().GetName())
@@ -123,7 +154,7 @@ func TestPxVolumeOps(t *testing.T) {
 		assert.Equal(t, ok, true)
 	}
 
-	pxPvcs, err := volOps.GetPxPvcs()
+	pxPvcs, err := to.pvcs.GetPxPvcs()
 	assert.Equal(t, err, nil, "Got error while trying to get PxPvcs")
 	for _, pxPvc := range pxPvcs {
 		vname := pxPvc.PxVolume.GetLocator().GetName()

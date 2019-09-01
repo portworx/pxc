@@ -27,6 +27,7 @@ import (
 	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
+	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 
 	"github.com/spf13/cobra"
@@ -55,20 +56,20 @@ func GetAddCommand(cmd *cobra.Command) {
 
 func getNodesExec(cmd *cobra.Command, args []string) error {
 	// Parse out all of the common cli volume flags
-	cvi := cliops.GetCliVolumeInputs(cmd, make([]string, 0))
+	cvi := cliops.NewCliInputs(cmd, args)
 
-	// Create a cliVolumeOps object
-	cvOps := cliops.NewCliVolumeOps(cvi)
+	// Create a cliOps object
+	cliOps := cliops.NewCliOps(cvi)
 
 	// Connect to pxc and k8s (if needed)
-	err := cvOps.Connect()
+	err := cliOps.Connect()
 	if err != nil {
 		return err
 	}
-	defer cvOps.Close()
+	defer cliOps.Close()
 
 	// Create the parser object
-	ngf := NewNodesGetFormatter(cvOps, args)
+	ngf := NewNodesGetFormatter(cliOps)
 
 	// Print the details and return errors if any
 	return util.PrintFormatted(ngf)
@@ -76,19 +77,24 @@ func getNodesExec(cmd *cobra.Command, args []string) error {
 }
 
 type nodesGetFormatter struct {
-	cliops.CliVolumeOps
+	util.BaseFormatOutput
+	cliOps          cliops.CliOps
 	nodeIdentifiers []string
+	nodes           portworx.Nodes
 }
 
-func NewNodesGetFormatter(cvOps *cliops.CliVolumeOps, nodeIdentifiers []string) *nodesGetFormatter {
-	return &nodesGetFormatter{
-		CliVolumeOps:    *cvOps,
-		nodeIdentifiers: nodeIdentifiers,
+func NewNodesGetFormatter(cliOps cliops.CliOps) *nodesGetFormatter {
+	n := &nodesGetFormatter{
+		cliOps:          cliOps,
+		nodeIdentifiers: cliOps.CliInputs().Args,
+		nodes:           portworx.NewNodes(cliOps.PxOps()),
 	}
+	n.FormatType = cliOps.CliInputs().FormatType
+	return n
 }
 
 func (p *nodesGetFormatter) getNodes() ([]*api.StorageNode, error) {
-	ns, err := p.PxVolumeOps.EnumerateNodes()
+	ns, err := p.cliOps.PxOps().EnumerateNodes()
 	if err != nil {
 		return make([]*api.StorageNode, 0), err
 	}
@@ -98,7 +104,7 @@ func (p *nodesGetFormatter) getNodes() ([]*api.StorageNode, error) {
 	// Store all of the found ids
 	foundNodes := make(map[string]bool)
 	for _, nid := range ns {
-		n, err := p.PxVolumeOps.GetNode(nid)
+		n, err := p.nodes.GetNode(nid)
 		if err != nil {
 			// Just print it and continue to other nodes
 			util.PrintPxErrorMessagef(err, "Failed to get information about node %s", nid)
@@ -152,7 +158,6 @@ func (p *nodesGetFormatter) JsonFormat() (string, error) {
 
 // WideFormat returns the wide string representation of the object
 func (p *nodesGetFormatter) WideFormat() (string, error) {
-	p.Wide = true
 	return p.toTabbed()
 }
 
@@ -193,12 +198,12 @@ func (p *nodesGetFormatter) toTabbed() (string, error) {
 
 func (p *nodesGetFormatter) getHeader() []interface{} {
 	var header []interface{}
-	if p.Wide {
+	if p.cliOps.CliInputs().Wide {
 		header = []interface{}{"Id", "Hostname", "IP", "Data IP", "SchedulerNodeName", "Used", "Capacity", "# Disks", "# Pools", "Status"}
 	} else {
 		header = []interface{}{"Hostname", "IP", "SchedulerNodeName", "Used", "Capacity", "Status"}
 	}
-	if p.ShowLabels {
+	if p.cliOps.CliInputs().ShowLabels {
 		header = append(header, "Labels")
 	}
 
@@ -220,7 +225,7 @@ func (p *nodesGetFormatter) getLine(n *api.StorageNode) ([]interface{}, error) {
 
 	// Return a line
 	var line []interface{}
-	if p.Wide {
+	if p.cliOps.CliInputs().Wide {
 		line = []interface{}{
 			n.GetId(), n.GetHostname(), n.GetMgmtIp(),
 			n.GetDataIp(), n.GetSchedulerNodeName(), usedStr, capacityStr,
@@ -233,7 +238,7 @@ func (p *nodesGetFormatter) getLine(n *api.StorageNode) ([]interface{}, error) {
 			n.GetStatus(),
 		}
 	}
-	if p.ShowLabels {
+	if p.cliOps.CliInputs().ShowLabels {
 		line = append(line, util.StringMapToCommaString(n.GetNodeLabels()))
 	}
 	return line, nil

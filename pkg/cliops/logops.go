@@ -21,6 +21,7 @@ import (
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/pxc/pkg/kubernetes"
+	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -121,13 +122,13 @@ func GetCommonLogOptions(cmd *cobra.Command) (*kubernetes.COpsLogOptions, error)
 	return lo, nil
 }
 
-// From the given lost of nodeName, figures out the Portworx pods on those nodes
+// From the given lot of nodeName, figures out the Portworx pods on those nodes
 func GetRequiredPortworxPods(
-	cvOps *CliVolumeOps,
+	cliOps CliOps,
 	nodeNames []string,
 	portworxNamespace string,
 ) ([]kubernetes.ContainerInfo, error) {
-	co := cvOps.PxVolumeOps.GetCOps()
+	co := cliOps.COps()
 	allPods, err := co.GetPodsByLabels(portworxNamespace, "name=portworx")
 	if err != nil {
 		return nil, err
@@ -170,10 +171,12 @@ func GetRequiredPortworxPods(
 // Figures out all the unique namespace, pod and container combinations and returns those
 func FillContainerInfo(
 	vols []*api.SdkVolumeInspectResponse,
-	cvOps *CliVolumeOps,
+	cliOps CliOps,
 	lo *kubernetes.COpsLogOptions,
 	allLogs bool,
 ) error {
+	nodes := portworx.NewNodes(cliOps.PxOps())
+	pods := portworx.NewPods(cliOps.COps(), &portworx.PodSpec{})
 	// Get All relevant pods.
 	nodeNamesMap := make(map[string]bool)
 	ciInfoList := make(map[string]kubernetes.ContainerInfo)
@@ -181,12 +184,12 @@ func FillContainerInfo(
 		// Get all of the nodes associated with the volume
 		// Get all of the pods using the volume
 		v := resp.GetVolume()
-		err := cvOps.PxVolumeOps.GetAllNodesForVolume(v, nodeNamesMap)
+		err := nodes.GetAllNodesForVolume(v, nodeNamesMap)
 		if err != nil {
 			return err
 		}
 
-		cinfo, err := cvOps.PxVolumeOps.GetContainerInfoForVolume(v)
+		cinfo, err := pods.GetContainerInfoForVolume(v)
 
 		if allLogs != true {
 			lo.Filters = append(lo.Filters, v.GetLocator().GetName())
@@ -210,7 +213,7 @@ func FillContainerInfo(
 	}
 
 	// Convert Portworx node names to pods
-	cinfo, err := GetRequiredPortworxPods(cvOps, nodeNames, lo.PortworxNamespace)
+	cinfo, err := GetRequiredPortworxPods(cliOps, nodeNames, lo.PortworxNamespace)
 	if err != nil {
 		return err
 	}
