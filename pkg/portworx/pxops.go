@@ -24,17 +24,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-type VolumeSpec struct {
-	VolNames []string
-	Labels   map[string]string
-}
-
 type PxOps interface {
 	// Close the connection to Portworx
 	Close()
-	// GetVolumes returns the array of volume objects
-	// filtered by the specification  in volSpec
-	GetVolumes(volSpec *VolumeSpec) ([]*api.SdkVolumeInspectResponse, error)
+	// GetVolumesByLabel returns volumes filtered by specified labels
+	GetVolumesByLabel(labels map[string]string) ([]*api.SdkVolumeInspectResponse, error)
+	// Gets details of the specified volume
+	GetVolumeById(id string) (*api.SdkVolumeInspectResponse, error)
 	// GetStats returns the stats for the specified volume
 	GetStats(v *api.Volume, notCumulative bool) (*api.Stats, error)
 	// EnumerateNodes returns list of nodes  ids
@@ -77,16 +73,7 @@ func (p *pxOps) GetConn() *grpc.ClientConn {
 	return p.conn
 }
 
-func (p *pxOps) GetVolumes(volSpec *VolumeSpec) ([]*api.SdkVolumeInspectResponse, error) {
-	// Determine if we should get all the volumes or specific ones
-	if len(volSpec.VolNames) != 0 {
-		return p.getVolumesByName(volSpec.VolNames)
-	} else {
-		return p.getVolumesByLabel(volSpec.Labels)
-	}
-}
-
-func (p *pxOps) getVolumesByLabel(labels map[string]string) ([]*api.SdkVolumeInspectResponse, error) {
+func (p *pxOps) GetVolumesByLabel(labels map[string]string) ([]*api.SdkVolumeInspectResponse, error) {
 	volumes := api.NewOpenStorageVolumeClient(p.conn)
 	volsInfo, err := volumes.InspectWithFilters(p.ctx,
 		&api.SdkVolumeInspectWithFiltersRequest{
@@ -99,18 +86,9 @@ func (p *pxOps) getVolumesByLabel(labels map[string]string) ([]*api.SdkVolumeIns
 	return volsInfo.GetVolumes(), nil
 }
 
-func (p *pxOps) getVolumesByName(names []string) ([]*api.SdkVolumeInspectResponse, error) {
+func (p *pxOps) GetVolumeById(id string) (*api.SdkVolumeInspectResponse, error) {
 	volumes := api.NewOpenStorageVolumeClient(p.conn)
-	vols := make([]*api.SdkVolumeInspectResponse, len(names))
-	for i, v := range names {
-		vol, err := volumes.Inspect(p.ctx,
-			&api.SdkVolumeInspectRequest{VolumeId: v})
-		if err != nil {
-			return nil, util.PxErrorMessagef(err, "Failed to get volume %s", v)
-		}
-		vols[i] = vol
-	}
-	return vols, nil
+	return volumes.Inspect(p.ctx, &api.SdkVolumeInspectRequest{VolumeId: id})
 }
 
 func (p *pxOps) GetStats(v *api.Volume, notCumulative bool) (*api.Stats, error) {

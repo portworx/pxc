@@ -50,16 +50,15 @@ type pvcs struct {
 func NewPvcs(pxops PxOps, cops kubernetes.COps, pvcSpec *PvcSpec) Pvcs {
 	podSpec := &PodSpec{
 		Namespace: pvcSpec.Namespace,
-		Labels:    pvcSpec.Labels,
 	}
-	volLables := make(map[string]string)
+	volLabels := make(map[string]string)
 	// If a namespace is specified only look for volumes
 	// that has the namespace=pvcSpec.Namespace
 	if pvcSpec.Namespace != "" {
-		volLables["namespace"] = pvcSpec.Namespace
+		volLabels["namespace"] = pvcSpec.Namespace
 	}
 	volSpec := &VolumeSpec{
-		Labels: volLables,
+		Labels: volLabels,
 	}
 	return &pvcs{
 		pxops:   pxops,

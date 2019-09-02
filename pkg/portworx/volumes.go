@@ -19,6 +19,11 @@ import (
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 )
 
+type VolumeSpec struct {
+	VolNames []string
+	Labels   map[string]string
+}
+
 type Volumes interface {
 	Objs
 	// GetVolumes returns the array of volume objects
@@ -52,12 +57,32 @@ func (p *volumes) GetVolumes() ([]*api.SdkVolumeInspectResponse, error) {
 	if len(p.vols) > 0 {
 		return p.vols, nil
 	}
-	vols, err := p.pxops.GetVolumes(p.volSpec)
+	var (
+		err  error
+		vols []*api.SdkVolumeInspectResponse
+	)
+	if len(p.volSpec.VolNames) == 0 {
+		vols, err = p.pxops.GetVolumesByLabel(p.volSpec.Labels)
+	} else {
+		vols, err = p.getVolsByName(p.volSpec.VolNames)
+	}
 	if err != nil {
 		return nil, err
 	}
 	p.vols = vols
 	return p.vols, nil
+}
+
+func (p *volumes) getVolsByName(names []string) ([]*api.SdkVolumeInspectResponse, error) {
+	vols := make([]*api.SdkVolumeInspectResponse, len(names))
+	for i, v := range names {
+		vol, err := p.pxops.GetVolumeById(v)
+		if err != nil {
+			return nil, err
+		}
+		vols[i] = vol
+	}
+	return vols, nil
 }
 
 func (p *volumes) GetStats(
