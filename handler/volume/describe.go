@@ -34,10 +34,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-const (
-	timeLayout = "Jan 3 15:04:05 UTC 2006"
-)
-
 var describeVolumeCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
@@ -238,7 +234,7 @@ func (p *VolumeDescribeFormatter) addVolumeBasicInfo(
 	t.AddLine("HA:", spec.GetHaLevel())
 	t.AddLine("IO Priority:", spec.GetCos())
 	t.AddLine("Creation Time:",
-		prototime.TimestampToTime(v.GetCtime()).Format(timeLayout))
+		prototime.TimestampToTime(v.GetCtime()).Format(util.TimeFormat))
 	if v.GetSource() != nil && len(v.GetSource().GetParent()) != 0 {
 		t.AddLine("Parent:", v.GetSource().GetParent())
 	}

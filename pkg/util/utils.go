@@ -18,12 +18,13 @@ package util
 import (
 	"errors"
 	"fmt"
-	"github.com/asaskevich/govalidator"
-	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"net"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/asaskevich/govalidator"
+	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 )
 
 var (
@@ -32,6 +33,7 @@ var (
 
 const (
 	DefaultPort = "9020"
+	TimeFormat  = "Jan 2 15:04:05 UTC 2006"
 )
 
 // ListContains returns true when string s is found in the list
