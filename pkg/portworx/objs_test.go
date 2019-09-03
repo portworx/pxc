@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+	"github.com/portworx/pxc/pkg/util"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 )
@@ -83,12 +84,21 @@ func testData(t *testing.T) *testOps {
 	err := json.Unmarshal([]byte(dummyInputJson), td)
 	assert.Equal(t, err, nil, "Error Unmarshalling string")
 	to := &testOps{}
+	v := make([]*api.Volume, len(td.Vols))
+	for i, vol := range td.Vols {
+		v[i] = vol.GetVolume()
+	}
 	to.vols = &volumes{
-		vols: td.Vols,
+		vols: v,
 	}
 
+	n := make([]*api.StorageNode, len(td.NodeMap))
+	for _, node := range td.NodeMap {
+		n = append(n, node)
+	}
 	to.nodes = &nodes{
 		nodeMap: td.NodeMap,
+		nodes:   n,
 	}
 
 	to.pods = &pods{
@@ -130,13 +140,10 @@ func TestOps(t *testing.T) {
 	to := testData(t)
 	svols, err := to.vols.GetVolumes()
 	assert.Equal(t, err, nil, "Could not get volumes")
-	nodeNames := make(map[string]bool)
-	for _, sv := range svols {
-		v := sv.GetVolume()
+	for _, v := range svols {
 		testAllOps(t, to, v)
-		err := to.nodes.GetAllNodesForVolume(v, nodeNames)
-		assert.NoError(t, err)
 		cinfo, err := to.pods.GetContainerInfoForVolume(v)
+		assert.NoError(t, err)
 		for _, ci := range cinfo {
 			volName := podToVolume[ci.Pod.Name]
 			assert.Equal(t, volName, v.GetLocator().GetName())
@@ -148,10 +155,13 @@ func TestOps(t *testing.T) {
 			}
 		}
 	}
-	assert.Equal(t, len(expectedNodes), len(nodeNames))
-	for _, n := range expectedNodes {
-		_, ok := nodeNames[n]
-		assert.Equal(t, ok, true)
+
+	ns := GetNodeSpec(svols)
+	assert.Equal(t, len(expectedNodes), len(ns.NodeNames))
+	for _, n := range ns.NodeNames {
+		node, err := to.nodes.GetNode(n)
+		assert.NoError(t, err)
+		assert.True(t, util.ListContains(expectedNodes, node.GetHostname()))
 	}
 
 	pxPvcs, err := to.pvcs.GetPxPvcs()

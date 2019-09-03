@@ -106,7 +106,6 @@ func NewVolumeDescribeFormatter(cliOps cliops.CliOps) *VolumeDescribeFormatter {
 	d := &VolumeDescribeFormatter{
 		cliOps:  cliOps,
 		volumes: portworx.NewVolumes(cliOps.PxOps(), volSpec),
-		nodes:   portworx.NewNodes(cliOps.PxOps()),
 		pods:    portworx.NewPods(cliOps.COps(), &portworx.PodSpec{}),
 	}
 	d.FormatType = cliOps.CliInputs().FormatType
@@ -133,8 +132,12 @@ func (p *VolumeDescribeFormatter) toTabbed() (string, error) {
 		return "", nil
 	}
 
-	for i, n := range vols {
-		v := n.GetVolume()
+	p.nodes, err = portworx.NewNodesForVolumes(p.cliOps.PxOps(), vols)
+	if err != nil {
+		return "", err
+	}
+
+	for i, v := range vols {
 		usedPods, err := p.pods.PodsUsingVolume(v)
 		if err != nil {
 			return "", err

@@ -101,7 +101,6 @@ func NewVolumeGetFormatter(cliOps cliops.CliOps) *volumeGetFormatter {
 	v := &volumeGetFormatter{
 		cliOps:  cliOps,
 		volumes: portworx.NewVolumes(cliOps.PxOps(), volSpec),
-		nodes:   portworx.NewNodes(cliOps.PxOps()),
 		pods:    portworx.NewPods(cliOps.COps(), &portworx.PodSpec{}),
 	}
 	v.FormatType = cliOps.CliInputs().FormatType
@@ -151,6 +150,10 @@ func (p *volumeGetFormatter) toTabbed() (string, error) {
 		return "", nil
 	}
 
+	p.nodes, err = portworx.NewNodesForVolumes(p.cliOps.PxOps(), vols)
+	if err != nil {
+		return "", err
+	}
 	// Start the columns
 	t.AddHeader(p.getHeader()...)
 
@@ -183,8 +186,7 @@ func (p *volumeGetFormatter) getHeader() []interface{} {
 	return header
 }
 
-func (p *volumeGetFormatter) getLine(resp *api.SdkVolumeInspectResponse) ([]interface{}, error) {
-	v := resp.GetVolume()
+func (p *volumeGetFormatter) getLine(v *api.Volume) ([]interface{}, error) {
 	spec := v.GetSpec()
 
 	var line []interface{}

@@ -177,8 +177,7 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 		if len(vols) == 0 {
 			return fmt.Errorf("Error: Volume: %s not found\n", updateReq.req.VolumeId)
 		}
-		v := vols[0].GetVolume()
-		spec := v.GetSpec()
+		spec := vols[0].GetSpec()
 
 		// Read the current collaborators
 		currentCollaborators = spec.GetOwnership().GetAcls().GetCollaborators()

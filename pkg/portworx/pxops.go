@@ -28,7 +28,7 @@ type PxOps interface {
 	// Close the connection to Portworx
 	Close()
 	// GetVolumesByLabel returns volumes filtered by specified labels
-	GetVolumesByLabel(labels map[string]string) ([]*api.SdkVolumeInspectResponse, error)
+	GetVolumesBySpec(vs *VolumeSpec) ([]*api.SdkVolumeInspectResponse, error)
 	// Gets details of the specified volume
 	GetVolumeById(id string) (*api.SdkVolumeInspectResponse, error)
 	// GetStats returns the stats for the specified volume
@@ -73,11 +73,13 @@ func (p *pxOps) GetConn() *grpc.ClientConn {
 	return p.conn
 }
 
-func (p *pxOps) GetVolumesByLabel(labels map[string]string) ([]*api.SdkVolumeInspectResponse, error) {
+func (p *pxOps) GetVolumesBySpec(
+	vs *VolumeSpec,
+) ([]*api.SdkVolumeInspectResponse, error) {
 	volumes := api.NewOpenStorageVolumeClient(p.conn)
 	volsInfo, err := volumes.InspectWithFilters(p.ctx,
 		&api.SdkVolumeInspectWithFiltersRequest{
-			Labels: labels,
+			Labels: vs.Labels,
 		})
 
 	if err != nil {

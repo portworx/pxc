@@ -80,8 +80,7 @@ func TestVolumeCommon(t *testing.T) {
 	to := testData(t)
 	svols, err := to.vols.GetVolumes()
 	assert.Equal(t, err, nil, "Could not get volumes")
-	for _, sv := range svols {
-		v := sv.GetVolume()
+	for _, v := range svols {
 		testVolumeCommon(t, v)
 	}
 }

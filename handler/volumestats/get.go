@@ -122,7 +122,7 @@ func getVolumeStatsExec(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	vsd := NewVolumeStats(cliOps, vols, vs)
+	vsd := NewVolumeStats(cliOps, vs)
 	vsd.SetSortInfo(sortOn, so)
 	watch, err := cmd.Flags().GetBool("watch")
 	if err != nil {
@@ -159,7 +159,10 @@ type volumeStatsGetFormatter struct {
 
 func (p *volumeStatsGetFormatter) getStats() (map[string]*api.Stats, error) {
 	stats := make(map[string]*api.Stats)
-	vols := p.vsd.GetVolumes()
+	vols, err := p.vsd.GetVolumes()
+	if err != nil {
+		return nil, err
+	}
 	for _, v := range vols {
 		s, err := p.cliOps.PxOps().GetStats(v, true)
 		if err != nil {

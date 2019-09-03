@@ -17,7 +17,7 @@ package kubernetes
 
 import (
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 type PxPvc struct {
@@ -48,15 +48,13 @@ func (p *PxPvc) GetPodNames() []string {
 }
 
 // SetVolume return true if found
-func (p *PxPvc) SetVolume(responses []*api.SdkVolumeInspectResponse) bool {
+func (p *PxPvc) SetVolume(vols []*api.Volume) bool {
 
 	if p.Pvc == nil {
 		return false
 	}
 
-	for _, resp := range responses {
-		volume := resp.GetVolume()
-
+	for _, volume := range vols {
 		// Match by name
 		if volume.GetLocator().GetName() == p.Pvc.Spec.VolumeName {
 			p.PxVolume = volume

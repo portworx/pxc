@@ -87,14 +87,14 @@ func NewNodesGetFormatter(cliOps cliops.CliOps) *nodesGetFormatter {
 	n := &nodesGetFormatter{
 		cliOps:          cliOps,
 		nodeIdentifiers: cliOps.CliInputs().Args,
-		nodes:           portworx.NewNodes(cliOps.PxOps()),
+		nodes:           portworx.NewNodes(cliOps.PxOps(), &portworx.NodeSpec{}),
 	}
 	n.FormatType = cliOps.CliInputs().FormatType
 	return n
 }
 
 func (p *nodesGetFormatter) getNodes() ([]*api.StorageNode, error) {
-	ns, err := p.cliOps.PxOps().EnumerateNodes()
+	ns, err := p.nodes.GetNodes()
 	if err != nil {
 		return make([]*api.StorageNode, 0), err
 	}
@@ -103,13 +103,7 @@ func (p *nodesGetFormatter) getNodes() ([]*api.StorageNode, error) {
 
 	// Store all of the found ids
 	foundNodes := make(map[string]bool)
-	for _, nid := range ns {
-		n, err := p.nodes.GetNode(nid)
-		if err != nil {
-			// Just print it and continue to other nodes
-			util.PrintPxErrorMessagef(err, "Failed to get information about node %s", nid)
-			continue
-		}
+	for _, n := range ns {
 		if len(p.nodeIdentifiers) != 0 {
 			str, found := util.ListHaveMatch(p.nodeIdentifiers,
 				[]string{n.GetId(),

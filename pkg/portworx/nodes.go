@@ -23,15 +23,18 @@ import (
 
 	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+	"github.com/portworx/pxc/pkg/kubernetes"
 	"github.com/portworx/pxc/pkg/util"
 )
 
+type NodeSpec struct {
+	NodeNames []string
+}
+
 type Nodes interface {
 	Objs
-	// EnumerateNodes lists all nodes in the cluster
-	EnumerateNodes() ([]string, error)
 	// Gets the nodes details for the named nodes
-	GetNodes(names []string) ([]*api.StorageNode, error)
+	GetNodes() ([]*api.StorageNode, error)
 	// Gets a specific node
 	GetNode(id string) (*api.StorageNode, error)
 	// Get the node that volume is attached on
@@ -40,60 +43,89 @@ type Nodes interface {
 	GetAttachedState(v *api.Volume) (string, error)
 	// GetReplicationInfo returns the details of the replicas of the specified volume
 	GetReplicationInfo(v *api.Volume) (*ReplicationInfo, error)
-	// GetAllNodesForVolume will return all nodes that currently has anything to do with the volume
-	// nodeNames are filled up and returned
-	GetAllNodesForVolume(v *api.Volume, nodeNames map[string]bool) error
 }
 
 type nodes struct {
-	pxops   PxOps
-	nodeMap map[string]*api.StorageNode
+	pxops    PxOps
+	nodeSpec *NodeSpec
+	nodeMap  map[string]*api.StorageNode
+	nodes    []*api.StorageNode
 }
 
-func NewNodes(pxops PxOps) Nodes {
+func NewNodes(pxops PxOps, nodeSpec *NodeSpec) Nodes {
 	return &nodes{
-		pxops:   pxops,
-		nodeMap: make(map[string]*api.StorageNode),
+		pxops:    pxops,
+		nodeSpec: nodeSpec,
+		nodeMap:  make(map[string]*api.StorageNode),
 	}
+}
+
+func NewNodesForVolumes(pxops PxOps, vols []*api.Volume) (Nodes, error) {
+	ns := GetNodeSpec(vols)
+	nodes := NewNodes(pxops, ns)
+	_, err := nodes.GetNodes()
+	if err != nil {
+		return nil, err
+	}
+	return nodes, err
+}
+
+func NewNodesForPxPvcs(pxops PxOps, pxpvcs []*kubernetes.PxPvc) (Nodes, error) {
+	vols := make([]*api.Volume, len(pxpvcs))
+	for i, pvc := range pxpvcs {
+		vols[i] = pvc.PxVolume
+	}
+	return NewNodesForVolumes(pxops, vols)
 }
 
 func (p *nodes) Reset() {
 	p.nodeMap = make(map[string]*api.StorageNode)
+	p.nodes = make([]*api.StorageNode, 0)
 }
 
 func (p *nodes) GetNode(id string) (*api.StorageNode, error) {
+	if len(p.nodes) == 0 {
+		return nil, fmt.Errorf("Please call GetNodes before calling GetNode")
+	}
 	if n, ok := p.nodeMap[id]; ok {
 		return n, nil
 	}
-	n, err := p.pxops.GetNode(id)
-	if err != nil {
-		return nil, err
-	}
-	p.nodeMap[id] = n
-	return n, nil
+	return nil, fmt.Errorf("Node not found")
 }
 
-func (p *nodes) EnumerateNodes() ([]string, error) {
-	return p.pxops.EnumerateNodes()
+func (p *nodes) GetNodes() ([]*api.StorageNode, error) {
+	if len(p.nodes) == 0 {
+		err := p.getNodes()
+		if err != nil {
+			return make([]*api.StorageNode, 0), nil
+		}
+	}
+	return p.nodes, nil
 }
 
-func (p *nodes) GetNodes(names []string) ([]*api.StorageNode, error) {
-	var err error
-	if len(names) == 0 {
-		names, err = p.EnumerateNodes()
+func (p *nodes) getNodes() error {
+	var (
+		err   error
+		names []string
+	)
+	if len(p.nodeSpec.NodeNames) == 0 {
+		names, err = p.pxops.EnumerateNodes()
 		if err != nil {
-			return nil, err
+			return err
 		}
+	} else {
+		names = p.nodeSpec.NodeNames
 	}
-	m := make([]*api.StorageNode, 0, len(names))
-	for _, n := range names {
-		node, err := p.GetNode(n)
+	p.nodes = make([]*api.StorageNode, 0)
+	for _, name := range names {
+		node, err := p.pxops.GetNode(name)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		m = append(m, node)
+		p.nodeMap[name] = node
+		p.nodes = append(p.nodes, node)
 	}
-	return m, nil
+	return nil
 }
 
 func (p *nodes) GetAttachedOn(
@@ -333,11 +365,23 @@ func getMidsArray(irs map[string]string, key string, nodeIds map[string]bool) {
 
 // This basically looks at the current runtime state of the volume
 // and picks out all of the nodes referenced
-func (p *nodes) GetAllNodesForVolume(
-	v *api.Volume,
-	nodeNames map[string]bool,
-) error {
-	nodeIds := make(map[string]bool)
+func GetNodeSpec(
+	vols []*api.Volume,
+) *NodeSpec {
+	nodeNames := make(map[string]bool)
+	for _, v := range vols {
+		getAllNodeNamesForVolume(v, nodeNames)
+	}
+	names := make([]string, 0, len(nodeNames))
+	for k, _ := range nodeNames {
+		names = append(names, k)
+	}
+	return &NodeSpec{
+		NodeNames: names,
+	}
+}
+
+func getAllNodeNamesForVolume(v *api.Volume, nodeIds map[string]bool) {
 	runtimeStates := v.GetRuntimeState()
 	for i, rset := range v.GetReplicaSets() {
 		if i < len(runtimeStates) && runtimeStates[i].GetRuntimeState() != nil {
@@ -357,12 +401,4 @@ func (p *nodes) GetAllNodesForVolume(
 		}
 		addToNodeIds(nodeIds, rset.Nodes)
 	}
-	for k, _ := range nodeIds {
-		n, err := p.GetNode(k)
-		if err != nil {
-			return err
-		}
-		nodeNames[n.GetHostname()] = true
-	}
-	return nil
 }

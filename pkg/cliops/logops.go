@@ -170,31 +170,40 @@ func GetRequiredPortworxPods(
 //    containers inside those pods use the volume
 // Figures out all the unique namespace, pod and container combinations and returns those
 func FillContainerInfo(
-	vols []*api.SdkVolumeInspectResponse,
+	vols []*api.Volume,
 	cliOps CliOps,
 	lo *kubernetes.COpsLogOptions,
 	allLogs bool,
 ) error {
-	nodes := portworx.NewNodes(cliOps.PxOps())
-	pods := portworx.NewPods(cliOps.COps(), &portworx.PodSpec{})
 	// Get All relevant pods.
-	nodeNamesMap := make(map[string]bool)
+
+	// This map will keep track of pods for any specific namespace the volume belongs to
+	// This is so that we don't repeatedly get pods for a given namespace
+	podMap := make(map[string]portworx.Pods)
 	ciInfoList := make(map[string]kubernetes.ContainerInfo)
-	for _, resp := range vols {
-		// Get all of the nodes associated with the volume
+	for _, v := range vols {
 		// Get all of the pods using the volume
-		v := resp.GetVolume()
-		err := nodes.GetAllNodesForVolume(v, nodeNamesMap)
+		labels := v.GetLocator().GetVolumeLabels()
+		namespace, ok := labels["namespace"]
+		if !ok || namespace == "" {
+			// Means this is not a pvc
+			continue
+		}
+		pods, ok := podMap[namespace]
+		if !ok {
+			ps := &portworx.PodSpec{
+				Namespace: namespace,
+			}
+			pods = portworx.NewPods(cliOps.COps(), ps)
+			podMap[namespace] = pods
+		}
+		cinfo, err := pods.GetContainerInfoForVolume(v)
 		if err != nil {
 			return err
 		}
-
-		cinfo, err := pods.GetContainerInfoForVolume(v)
-
 		if allLogs != true {
 			lo.Filters = append(lo.Filters, v.GetLocator().GetName())
 			lo.Filters = append(lo.Filters, v.GetId())
-			labels := v.GetLocator().GetVolumeLabels()
 			if pvcName, ok := labels["pvc"]; ok {
 				lo.Filters = append(lo.Filters, pvcName)
 			}
@@ -207,9 +216,16 @@ func FillContainerInfo(
 		}
 	}
 
+	// Get all of the nodes associated with the volumes
+	nodeSpec := portworx.GetNodeSpec(vols)
+	na := portworx.NewNodes(cliOps.PxOps(), nodeSpec)
+	n, err := na.GetNodes()
+	if err != nil {
+		return err
+	}
 	nodeNames := make([]string, 0)
-	for k, _ := range nodeNamesMap {
-		nodeNames = append(nodeNames, k)
+	for _, node := range n {
+		nodeNames = append(nodeNames, node.GetHostname())
 	}
 
 	// Convert Portworx node names to pods

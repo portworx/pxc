@@ -28,7 +28,7 @@ type Volumes interface {
 	Objs
 	// GetVolumes returns the array of volume objects
 	// filtered by the list of volume names specified
-	GetVolumes() ([]*api.SdkVolumeInspectResponse, error)
+	GetVolumes() ([]*api.Volume, error)
 	// GetStats returns the stats for the specified volume
 	GetStats(v *api.Volume, notCumulative bool) (*api.Stats, error)
 }
@@ -39,7 +39,7 @@ type volumes struct {
 	//volspec specifies the volume specification to use
 	volSpec *VolumeSpec
 	// volume details
-	vols []*api.SdkVolumeInspectResponse
+	vols []*api.Volume
 }
 
 func NewVolumes(pxops PxOps, volSpec *VolumeSpec) Volumes {
@@ -50,19 +50,19 @@ func NewVolumes(pxops PxOps, volSpec *VolumeSpec) Volumes {
 }
 
 func (p *volumes) Reset() {
-	p.vols = make([]*api.SdkVolumeInspectResponse, 0)
+	p.vols = make([]*api.Volume, 0)
 }
 
-func (p *volumes) GetVolumes() ([]*api.SdkVolumeInspectResponse, error) {
+func (p *volumes) GetVolumes() ([]*api.Volume, error) {
 	if len(p.vols) > 0 {
 		return p.vols, nil
 	}
 	var (
 		err  error
-		vols []*api.SdkVolumeInspectResponse
+		vols []*api.Volume
 	)
 	if len(p.volSpec.VolNames) == 0 {
-		vols, err = p.pxops.GetVolumesByLabel(p.volSpec.Labels)
+		vols, err = p.getVolsBySpec(p.volSpec)
 	} else {
 		vols, err = p.getVolsByName(p.volSpec.VolNames)
 	}
@@ -73,14 +73,26 @@ func (p *volumes) GetVolumes() ([]*api.SdkVolumeInspectResponse, error) {
 	return p.vols, nil
 }
 
-func (p *volumes) getVolsByName(names []string) ([]*api.SdkVolumeInspectResponse, error) {
-	vols := make([]*api.SdkVolumeInspectResponse, len(names))
+func (p *volumes) getVolsByName(names []string) ([]*api.Volume, error) {
+	vols := make([]*api.Volume, len(names))
 	for i, v := range names {
 		vol, err := p.pxops.GetVolumeById(v)
 		if err != nil {
 			return nil, err
 		}
-		vols[i] = vol
+		vols[i] = vol.GetVolume()
+	}
+	return vols, nil
+}
+
+func (p *volumes) getVolsBySpec(vs *VolumeSpec) ([]*api.Volume, error) {
+	v, err := p.pxops.GetVolumesBySpec(vs)
+	if err != nil {
+		return nil, err
+	}
+	vols := make([]*api.Volume, len(v))
+	for i, vol := range v {
+		vols[i] = vol.GetVolume()
 	}
 	return vols, nil
 }

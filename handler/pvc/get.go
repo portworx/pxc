@@ -105,7 +105,6 @@ func NewPvcGetFormatter(cliOps cliops.CliOps) *pvcGetFormatter {
 		cliOps:   cliOps,
 		pvcNames: cliOps.CliInputs().Args,
 		pvcs:     pvcs,
-		nodes:    portworx.NewNodes(cliOps.PxOps()),
 	}
 	p.FormatType = cliOps.CliInputs().FormatType
 	return p
@@ -198,6 +197,11 @@ func (p *pvcGetFormatter) toTabbed() (string, error) {
 	if len(pvcs) == 0 {
 		util.Printf("No resources found\n")
 		return "", nil
+	}
+
+	p.nodes, err = portworx.NewNodesForPxPvcs(p.cliOps.PxOps(), pvcs)
+	if err != nil {
+		return "", err
 	}
 
 	// Start the columns
