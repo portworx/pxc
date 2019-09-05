@@ -36,7 +36,6 @@ var (
 type kubeConnection struct {
 	clientConfig clientcmd.ClientConfig
 	clientSet    *kclikube.Clientset
-	namespace    string
 }
 
 func NewCOps(connect bool) (COps, error) {
