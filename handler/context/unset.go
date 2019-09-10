@@ -29,6 +29,9 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "unset",
 		Short: "Unset the current context configuration",
 		Long:  ``,
+		Example: `
+  # Unsetting context called mycontext:
+  pxc context mycontext`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return contextUnsetExec(cmd, args)
 		},

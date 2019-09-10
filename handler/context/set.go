@@ -31,8 +31,10 @@ var _ = commander.RegisterCommandVar(func() {
 	contextSetCmd = &cobra.Command{
 		Use:     "set [NAME]",
 		Aliases: []string{"use"},
-		Example: "$ pxc context set mynewcontext",
-		Short:   "Set the current context configuration",
+		Example: `
+  # Set the current context to mynewcontext:
+  pxc context set mynewcontext`,
+		Short: "Set the current context configuration",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("Must supply a name for context")

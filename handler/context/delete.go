@@ -29,18 +29,18 @@ var contextDeleteCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
 	contextDeleteCmd = &cobra.Command{
-		Use:     "delete [NAME]",
-		Short:   "Deletes the given context",
-		Example: "$ pxc context delete mycontext",
+		Use:   "delete [NAME]",
+		Short: "Deletes the given context",
+		Example: `
+  # Delete context called mycontext:
+  pxc context delete mycontext`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("Must supply a name for context")
 			}
 			return nil
 		},
-		Long: `Usage:
-px context delete --name context1
-	`,
+		Long: `Deletes user provided context from config.yaml file`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return contextDeleteExec(cmd, args)
 		},
