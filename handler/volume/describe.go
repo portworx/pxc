@@ -47,12 +47,13 @@ var _ = commander.RegisterCommandVar(func() {
 		Aliases: []string{"volumes"},
 		Short:   "Describe a Portworx volume",
 		Long:    "Show detailed information of Portworx volumes",
-		Example: `1. Describe all the volumes:
-	$ pxc describe volume
-2. Describe specific volume called abc:
-	$ pxc describe volume abc
-3. Describe list of volumes (abc, xyz)
-	$ pxc describe volume abc xyz`,
+		Example: `
+  # To describe all the volumes:
+  pxc describe volume
+  # To describe specific volume called "abc":
+  pxc describe volume abc
+  # To describe list of volumes (abc, xyz)
+  pxc describe volume abc xyz`,
 		RunE: describeVolumesExec,
 	}
 })

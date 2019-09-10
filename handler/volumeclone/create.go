@@ -32,8 +32,9 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "volumeclone [VOLUME] [NAME]",
 		Short: "Creates a new volume from a volume or snapshot",
 		Long:  `Create a clone for the specified volume`,
-		Example: `$ pxc create volumeclone oldvolume newvolume
-This creates a new volume called 'newvolume' from an existing volume called 'oldvolume'`,
+		Example: `
+  # This will create a new volume called 'newvolume' from an existing volume called 'oldvolume':
+  pxc create volumeclone oldvolume newvolume`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 2 {
 				return fmt.Errorf("Must supply the volume to clone and a new name for the clone")

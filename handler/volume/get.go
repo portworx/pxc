@@ -39,7 +39,10 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:     "volume",
 		Aliases: []string{"volumes"},
 		Short:   "Get information about Portworx volumes",
-		RunE:    getVolumesExec,
+		Example: `
+  # To get informtation about the portworx volumes:
+  pxc get volume`,
+		RunE: getVolumesExec,
 	}
 })
 
