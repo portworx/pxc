@@ -47,12 +47,12 @@ var (
 		"pvc-34d0f15c-65b9-4229-8b3e-b7bb912e382f": []string{},
 	}
 	expectedShared = map[string]string{
-		"tp1":      "no",
-		"tp2":      "no",
-		"tp2-snap": "no",
-		"tp3":      "no",
-		"pvc-6fc1fe2d-25f4-40b0-a616-04c019572154": "no",
-		"pvc-34d0f15c-65b9-4229-8b3e-b7bb912e382f": "yes",
+		"tp1":      "false",
+		"tp2":      "false",
+		"tp2-snap": "false",
+		"tp3":      "false",
+		"pvc-6fc1fe2d-25f4-40b0-a616-04c019572154": "false",
+		"pvc-34d0f15c-65b9-4229-8b3e-b7bb912e382f": "true",
 	}
 )
 
@@ -70,10 +70,10 @@ func testVolumeCommon(t *testing.T, volOps PxVolumeOps, v *api.Volume) {
 	ba := BooleanAttributes(v)
 	eba := expectedAttributes[name]
 	assert.Equalf(t, reflect.DeepEqual(ba, eba), true, "Wrong attributes for %s", name)
-	y := YesOrNo(true)
-	assert.Equal(t, y, "yes", "bool translation not correct")
-	n := YesOrNo(false)
-	assert.Equal(t, n, "no", "bool translation not correct")
+	y := TrueOrFalse(true)
+	assert.Equal(t, y, "true", "bool translation not correct")
+	n := TrueOrFalse(false)
+	assert.Equal(t, n, "false", "bool translation not correct")
 }
 
 func TestVolumeCommon(t *testing.T) {

@@ -21,10 +21,6 @@ import (
 	"github.com/portworx/pxc/pkg/openstorage/sched"
 )
 
-const (
-	timeLayout = "Jan 2 15:04:05 UTC 2006"
-)
-
 // SchedSummary returns the formatted string version of the schedule
 func SchedSummary(v *api.Volume) ([]string, error) {
 	schedule := v.GetSpec().GetSnapshotSchedule()
@@ -56,15 +52,15 @@ func SharedString(v *api.Volume) string {
 	if v.Spec.Sharedv4 {
 		return "v4"
 	}
-	return YesOrNo(v.Spec.Shared)
+	return TrueOrFalse(v.Spec.Shared)
 }
 
-// YesOrNo returns the string representation of bool
-func YesOrNo(b bool) string {
+// TrueOrFalse returns the string representation of bool
+func TrueOrFalse(b bool) string {
 	if b {
-		return "yes"
+		return "true"
 	} else {
-		return "no"
+		return "false"
 	}
 }
 
