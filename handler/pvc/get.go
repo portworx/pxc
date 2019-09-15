@@ -42,12 +42,15 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:     "pvc",
 		Aliases: []string{"pvcs"},
 		Short:   "Show Portworx volume information for Kubernetes PVCs",
-		Example: `$ pxc get pvc
-				  This gets information for all pvcs that are Portworx volumes
-				  $ pxc get pvc abc
-				    This gets information for pvc abc
-					$ pxc get pvc abc xyz
-					  This gets information for pvcs abc and xyz`,
+		Example: `
+  # To get information for all pvcs that are Portworx volumes.
+  pxc get pvc
+
+  # To get information for pvc abc
+  pxc get pvc abc
+
+  # To get information for pvcs abc and xyz
+  pxc get pvc abc xyz`,
 		RunE: getPvcExec,
 	}
 })

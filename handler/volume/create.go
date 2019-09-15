@@ -70,17 +70,23 @@ var _ = commander.RegisterCommandVar(func() {
 
 		Example: `
   # To create volume called "myvolume" with size as 3GiB:
-  pxc create volume myvolume --size=3
+  pxc create volume myvolume --size 3
+
   # To create volume called "myvolume" with size as 3GiB and replicas set to 3:
-  pxc create volume myvolume --size=3 --replicas=3
+  pxc create volume myvolume --size 3 --replicas 3
+
   # To create shared volume called "myvolume" with size as 3GiB:
-  pxc create volume myvolume --size=3 --shared
+  pxc create volume myvolume --size 3 --shared
+
   # To create shared volume called "myvolume" with size as 2GiB and replicas set to 3:
-  pxc create volume myvolume --size=3 --shared --replicas=3
+  pxc create volume myvolume --size 3 --shared --replicas 3
+
   # To create volume called "myvolume" with label as "access=slow" and size as 3 GiB:
-  pxc create volume myvolume --size=3 --labels 'access=slow'
+  pxc create volume myvolume --size 3 --labels 'access=slow'
+
   # To create volume called 'myvolume" with volume access (collaborators and groups) option flag.
   # r - read, w - write, a -admin:
+
   pxc create volume myvolume --size=3 --groups group1:r,group2:w,group3:a --collaborators user1:r,user2:a,user3:w
   
   # To create volume with periodic snapshot policy for every 15 minutes with retain=2 (maintaing two snapshot copies at a given time):

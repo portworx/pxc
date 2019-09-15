@@ -16,15 +16,18 @@ limitations under the License.
 package util
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
-	"os"
-	"strings"
-	"time"
-
 	"github.com/asaskevich/govalidator"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+	yaml "gopkg.in/yaml.v2"
+	"io/ioutil"
+	"net"
+	"os"
+	_ "os"
+	"strings"
+	"time"
 )
 
 var (
@@ -200,4 +203,68 @@ func GetAclFromString(s string) (string, api.Ownership_AccessType, error) {
 		}
 	}
 	return parts[0], access, nil
+}
+
+// Convert Yaml input file to a json object
+// Return a json object
+func ConvertYamlToJsonObj(i interface{}) interface{} {
+	switch list := i.(type) {
+
+	case map[interface{}]interface{}:
+		obj := map[string]interface{}{}
+		for k, v := range list {
+			obj[k.(string)] = ConvertYamlToJsonObj(v)
+		}
+		return obj
+	case []interface{}:
+		for i, v := range list {
+			list[i] = ConvertYamlToJsonObj(v)
+		}
+	}
+
+	return i
+}
+
+// Convert a json format string to yaml
+func ConvertJsonOutputToYaml(output interface{}) ([]byte, error) {
+	j, _ := json.Marshal(output)
+	y, _ := ConvertJsonObjToYaml(j)
+	return y, nil
+}
+
+func ConvertJsonObjToYaml(j []byte) ([]byte, error) {
+	var jsonObj interface{}
+
+	err := yaml.Unmarshal(j, &jsonObj)
+	if err != nil {
+		return nil, err
+	}
+
+	return yaml.Marshal(jsonObj)
+}
+
+// Reads a role config file either in yaml or json format.
+// Returns a role structure mapped from an input file.
+// First tires an yaml format and if not valid, switches to json format.
+func LoadRoleCfg(roleFile string) (*api.SdkRole, error) {
+
+	var role api.SdkRole
+	var rules interface{}
+
+	data, err := ioutil.ReadFile(roleFile)
+
+	if err != nil {
+		return &role, fmt.Errorf("unable to read role file %v", err)
+	}
+
+	if err := yaml.Unmarshal([]byte(data), &rules); err != nil {
+		return &role, fmt.Errorf("Not a valid config file %v", err)
+	}
+	rules = ConvertYamlToJsonObj(rules)
+	b, err := json.Marshal(rules)
+	if err != nil {
+		return &role, fmt.Errorf("Not a valid config format %v", err)
+	}
+	err = json.Unmarshal(b, &role)
+	return &role, err
 }

@@ -18,6 +18,9 @@ package alerts
 
 import (
 	"bytes"
+	"text/tabwriter"
+	"unsafe"
+
 	"github.com/cheynewallace/tabby"
 	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/cliops"
@@ -25,8 +28,6 @@ import (
 	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
-	"text/tabwriter"
-	"unsafe"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	prototime "github.com/portworx/pxc/pkg/openstorage/proto/time"
@@ -40,22 +41,22 @@ var _ = commander.RegisterCommandVar(func() {
 		Aliases: []string{"alerts"},
 		Short:   "Get information about Portworx alerts",
 		Example: `
-  # To get portworx related alerts :
+  # To get portworx related alerts
   pxc get alerts
 
-  # To fetch alert based on particular alert id. Fetch all alerts based on "VolumeCreateSuccess" id :
+  # To fetch alert based on particualr alert id. Fetch all alerts based on "VolumeCreateSuccess" id
   pxc get alerts --id "VolumeCreateSuccess"
 
-  # To fetch alerts between a time window :
+  # To fetch alerts between a time window
   pxctl alerts show --start-time "2019-09-19T09:40:26.371Z" --end-time "2019-09-19T09:43:59.371Z"
 
-  # To fetch alerts with min severity level :
+  # To fetch alerts with min severity level
   pxc get alerts --severity "alarm"
 
-  # To fetch alerts based on resource type. Here we fetch all "volume" related alerts :
+  # To fetch alerts based on resource type. Here we fetch all "volume" related alerts
   pxc get alerts -t "volume"
 
-  # To fetch alerts based on resource id. Here we fetch alerts related to "cluster" :
+  # To fetch alerts based on resource id. Here we fetch alerts related to "cluster"
   pxc get alerts --id "1f95a5e7-6a38-41f9-9cb2-8bb4f8ab72c5"`,
 		RunE: getAlertsExec,
 	}

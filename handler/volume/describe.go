@@ -46,10 +46,13 @@ var _ = commander.RegisterCommandVar(func() {
 		Example: `
   # To describe all the volumes:
   pxc describe volume
+
   # To describe specific volume called "abc":
   pxc describe volume abc
+
   # To describe list of volumes (abc, xyz)
   pxc describe volume abc xyz`,
+
 		RunE: describeVolumesExec,
 	}
 })

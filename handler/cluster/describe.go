@@ -34,7 +34,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Short: "Describe a Portworx cluster",
 		Long:  "Show detailed information of Portworx cluster",
 		Example: `
-  # Display detailed information about Portworx cluster:
+  # Display detailed information about Portworx cluster
   pxc describe cluster`,
 		RunE: describeClusterExec,
 	}

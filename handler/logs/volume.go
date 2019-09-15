@@ -33,20 +33,21 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "volume",
 		Short: "Print Portworx logs related to specified volume(s)",
 		Example: `
-        $ pxc logs volume abc
-        Return Portworx logs related to volume abc
+  # Return Portworx logs related to volume abc
+  pxc logs volume abc
 
-        $ pxc logs volume -f  abc
-        Begin streaming the Portworx logs related to volume abc
+  # Begin streaming the Portworx logs related to volume abc
+  pxc logs volume -f  abc
 
-        $ pxc logs volume --tail=20 abc
-        Apply the volume filters  and the filters specified in --filters to the most recent 20 log lines of each relevant pod  and display only lines that match
+  # Apply the volume filters  and the filters specified in --filters to the most recent 20 log lines of each relevant pod  and display only lines that match
+  pxc logs volume --tail=20 abc
 
-        $ pxc logs node abc --filter "error,warning"
-        Display all log lines that is related to volume abc or has either error or warning in the log lines
+  # Display all log lines that is related to volume abc or has either error or warning in the log lines
+  pxc logs node abc --filter "error,warning"
 
-        $ pxc logs volume --since=1h volume
-        Show all Portworx logs related to volume abc written in the last hour`,
+  # Show all Portworx logs related to volume abc written in the last hour
+  pxc logs volume --since=1h volume`,
+
 		RunE: logsVolumesExec,
 	}
 })

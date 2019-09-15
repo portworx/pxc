@@ -326,3 +326,44 @@ func PxTestCreateVolumeSnap(t *testing.T, volName string, policy string) {
 
 	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Volume %s created with id", volName)))
 }
+
+func PxTestGetRole(t *testing.T) *bytes.Buffer {
+	cli := fmt.Sprintf("pxc get role")
+	so, _, err := executeCliRaw(cli)
+	assert.NoError(t, err)
+	return so
+}
+
+func PxTestCreateRole(t *testing.T, filename string, roleName string) {
+	cli := fmt.Sprintf("pxc create role --role-config %s", filename)
+	lines, _, err := ExecuteCli(cli)
+	assert.NoError(t, err)
+	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Role %s created", roleName)))
+	so := PxTestGetRole(t)
+	assert.Contains(t, so.String(), roleName)
+}
+
+func PxTestPatchRole(t *testing.T, filename string, roleName string) {
+	cli := fmt.Sprintf("pxc patch role --role-config %s", filename)
+	lines, _, err := ExecuteCli(cli)
+	assert.NoError(t, err)
+	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Role %s patched", roleName)))
+}
+
+func PxTestDeleteRole(t *testing.T, roleName string) {
+	cli := fmt.Sprintf("pxc delete role %s", roleName)
+	lines, _, err := ExecuteCli(cli)
+	assert.NoError(t, err)
+	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Role %s deleted", roleName)))
+	so := PxTestGetRole(t)
+	assert.NotContains(t, so.String(), roleName)
+}
+
+func PxTestDescribeRole(t *testing.T, name string, all bool) {
+	cli := fmt.Sprintf("pxc describe role")
+	if all != true {
+		cli = fmt.Sprintf("pxc describe role %s", name)
+	}
+	_, _, err := ExecuteCli(cli)
+	assert.NoError(t, err)
+}
