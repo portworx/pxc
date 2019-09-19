@@ -64,17 +64,25 @@ var _ = commander.RegisterCommandVar(func() {
 	patchVolumeCmd = &cobra.Command{
 		Use:   "volume [NAME]",
 		Short: "Update field(s) of a portworx volume",
-		Example: `$ pxc patch  volume test --halevel 3
-		This set halevel of volume to 3.
-
-		$px patch volume test --size 2
-		Updating volume size to 2GiB
-
-		$px patch volume test --sticky
-		Updating volume to be sticky
-
-		$px patch volume test --shared
-		Updating volume to shared`,
+		Example: `
+  # To set the halevel of the volume test to 3:
+  pxc patch  volume test --halevel 3
+  # To update the size of the volume to 2GiB:
+  pxc patch volume test --size 2
+  # To set the sticky flag of the volume test:
+  pxc patch volume test --sticky
+  # To set the shared flag of the volume test:
+  pxc patch volume test --shared
+  # To update collaborators and groups of the volume access list:
+  pxc patch volume test --add-collaborators user1:r,user2:w,user3:a --add-groups group1:r,group2:w,group3:a
+  # To remove collaborators and groups from exisiting volume access list:
+  pxc patch volume test --remove-collaborators user1:r, --remove-groups group1:r
+  # To remove all the collaborators and groups from exisiting volume access list:
+  pxc patch volume test --remove-all-collaborators --remove-all-groups
+  # To update collaborators and remove few groups from the volume access list:
+  pxc patch volume test --add-collaborators user4:r,user5:w, --remove-groups group1:r
+  # To update the access type of the existing collaborators and groups:
+  pxc patch volume test --add-collaborators user1:a --add-groups group1:a`,
 
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {

@@ -45,8 +45,15 @@ var _ = commander.RegisterCommandVar(func() {
 	createCloudmigrationCmd = &cobra.Command{
 		Use:   "cloudmigration",
 		Short: "Start a cloud migration",
-		Long:  `TODO Add long description`,
-		RunE:  createCloudmigrationExec,
+		Long:  `Migrates set of volumes or a particualr volume or a group from cluster pair`,
+		Example: `
+  # Migrating all volumes from cluster 9548a6e0-053b-43fb-8d26-42b628d6c405:
+  pxc create cloudmigration --all -c 9548a6e0-053b-43fb-8d26-42b628d6c405
+
+  # Migrating particualar volume from clusterpair
+  # Here volid 134771906220836406 is being migrated:
+  pxc create cloudmigration --volume-id 134771906220836406`,
+		RunE: createCloudmigrationExec,
 	}
 })
 

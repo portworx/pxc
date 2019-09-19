@@ -30,8 +30,10 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:     "list",
 		Aliases: []string{"contexts", "ctx"},
 		Short:   "List all context configurations",
-		Long: `List all context configurations
-px get context`,
+		Long:    `List all available context configurations from config.yaml file`,
+		Example: `
+  # List all context configurations:
+  pxc context list`,
 		RunE: contextListExec,
 	}
 })

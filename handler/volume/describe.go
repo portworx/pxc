@@ -34,10 +34,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-const (
-	timeLayout = "Jan 3 15:04:05 UTC 2006"
-)
-
 var describeVolumeCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
@@ -47,12 +43,13 @@ var _ = commander.RegisterCommandVar(func() {
 		Aliases: []string{"volumes"},
 		Short:   "Describe a Portworx volume",
 		Long:    "Show detailed information of Portworx volumes",
-		Example: `1. Describe all the volumes:
-	$ pxc describe volume
-2. Describe specific volume called abc:
-	$ pxc describe volume abc
-3. Describe list of volumes (abc, xyz)
-	$ pxc describe volume abc xyz`,
+		Example: `
+  # To describe all the volumes:
+  pxc describe volume
+  # To describe specific volume called "abc":
+  pxc describe volume abc
+  # To describe list of volumes (abc, xyz)
+  pxc describe volume abc xyz`,
 		RunE: describeVolumesExec,
 	}
 })
@@ -254,7 +251,7 @@ func (p *VolumeDescribeFormatter) addVolumeBasicInfo(
 	t.AddLine("HA:", spec.GetHaLevel())
 	t.AddLine("IO Priority:", spec.GetCos())
 	t.AddLine("Creation Time:",
-		prototime.TimestampToTime(v.GetCtime()).Format(timeLayout))
+		prototime.TimestampToTime(v.GetCtime()).Format(util.TimeFormat))
 	if v.GetSource() != nil && len(v.GetSource().GetParent()) != 0 {
 		t.AddLine("Parent:", v.GetSource().GetParent())
 	}

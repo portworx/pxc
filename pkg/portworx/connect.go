@@ -61,10 +61,17 @@ func PxConnectCurrent(cfgFile string) (context.Context, *grpc.ClientConn, error)
 		caerr       error
 	)
 
-	// If user has provided valid CA cert, append to the existing system CA pool
-	if len(pxctx.TlsData.Cacert) != 0 {
-		// cannot set Insecure with TLS
-		dialOptions, caerr = PxAppendCaCertcontext(pxctx)
+	// If secure: true set in config.yaml file, use TLS
+	if pxctx.Secure {
+		// cannot set Insecure with TLS.
+		if len(pxctx.TlsData.Cacert) != 0 {
+			// If user has provided valid CA cert, append to the existing system CA pool.
+			// Parameter "true" signifies user provided CA.
+			dialOptions, caerr = PxAppendCaCertcontext(pxctx, true)
+		} else {
+			// Parameter "false" signifies load available CA from the system.
+			dialOptions, caerr = PxAppendCaCertcontext(pxctx, false)
+		}
 		if caerr != nil {
 			return nil, nil, caerr
 		}
@@ -101,10 +108,17 @@ func PxConnectNamed(cfgFile string, name string) (context.Context, *grpc.ClientC
 		caerr       error
 	)
 
-	// If user has provided valid CA cert, append to the existing system CA pool
-	if len(pxctx.TlsData.Cacert) != 0 {
-		// cannot set Insecure with TLS
-		dialOptions, caerr = PxAppendCaCertcontext(pxctx)
+	// If secure: true set in config.yaml file, use TLS
+	if pxctx.Secure {
+		// cannot set Insecure with TLS.
+		if len(pxctx.TlsData.Cacert) != 0 {
+			// If user has provided valid CA cert, append to the existing system CA pool.
+			// Parameter "true" signifies user provided CA.
+			dialOptions, caerr = PxAppendCaCertcontext(pxctx, true)
+		} else {
+			// Parameter "false" signifies load available CA from the system.
+			dialOptions, caerr = PxAppendCaCertcontext(pxctx, false)
+		}
 		if caerr != nil {
 			return nil, nil, caerr
 		}
@@ -125,13 +139,16 @@ func PxConnectNamed(cfgFile string, name string) (context.Context, *grpc.ClientC
 	return ctx, conn, nil
 }
 
-// Append the provided valid CA from the user to the existing systemPool, used
-// for authentication with the sdk server.
-func PxAppendCaCertcontext(pxctx *contextconfig.ClientContext) ([]grpc.DialOption, error) {
+// Append the provided valid CA from the user to the existing systemPool or
+// load the default CA certs used for authentication with the sdk server.
+func PxAppendCaCertcontext(pxctx *contextconfig.ClientContext, userCa bool) ([]grpc.DialOption, error) {
 	// Read the provided CA cert from the user
 	capool, err := x509.SystemCertPool()
-	if !capool.AppendCertsFromPEM([]byte(pxctx.TlsData.Cacert)) {
-		return nil, err
+	// If user provided CA cert, then append it to systemCertPool.
+	if userCa {
+		if !capool.AppendCertsFromPEM([]byte(pxctx.TlsData.Cacert)) {
+			return nil, err
+		}
 	}
 
 	dialOptions := []grpc.DialOption{grpc.WithTransportCredentials(

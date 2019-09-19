@@ -22,6 +22,7 @@ import (
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
+	"github.com/portworx/pxc/pkg/util"
 )
 
 type StatsModel interface {
@@ -71,7 +72,6 @@ type statsView struct {
 
 const (
 	TOP_LINE_HEIGHT   = 2
-	TIME_FORMAT       = "Jan 3 15:04:05 UTC 2006"
 	TABLE_WIDTH_RATIO = 0.75 // Occupy 75% of terminal
 	MAX_GRAPH_POINTS  = 400
 )
@@ -139,7 +139,7 @@ func (tv *statsView) Display(ti StatsModel, interval time.Duration) error {
 
 func getCurrentDateTime() string {
 	now := time.Now()
-	return now.Format(TIME_FORMAT)
+	return now.Format(util.TimeFormat)
 }
 
 func (tv *statsView) toggleSortOrder(ti StatsModel) error {

@@ -128,7 +128,7 @@ func verifyVolumeDescription(
 		index++
 	}
 	k, v = getKeyValue(d[index])
-	verifyKeyValue(t, k, v, "Shared", "no")
+	verifyKeyValue(t, k, v, "Shared", "false")
 	index++
 	k, v = getKeyValue(d[index])
 	verifyKeyValue(t, k, v, "Status", "UP")
