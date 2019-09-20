@@ -70,37 +70,49 @@ func getVolumesExec(cmd *cobra.Command, args []string) error {
 	}
 
 	// Parse out all of the common cli volume flags
-	cvi := cliops.GetCliVolumeInputs(cmd, args)
+	cvi := cliops.NewCliInputs(cmd, args)
 
-	// Create a cliVolumeOps object
-	cvOps := cliops.NewCliVolumeOps(cvi)
+	// Create a cliOps object
+	cliOps := cliops.NewCliOps(cvi)
 
 	// Connect to pxc and k8s (if needed)
-	err := cvOps.Connect()
+	err := cliOps.Connect()
 	if err != nil {
 		return err
 	}
-	defer cvOps.Close()
+	defer cliOps.Close()
 	// Create the parser object
-	vgf := NewVolumeGetFormatter(cvOps)
+	vgf := NewVolumeGetFormatter(cliOps)
 
 	// Print the details and return errors if any
 	return util.PrintFormatted(vgf)
 }
 
 type volumeGetFormatter struct {
-	cliops.CliVolumeOps
+	util.BaseFormatOutput
+	cliOps  cliops.CliOps
+	volumes portworx.Volumes
+	nodes   portworx.Nodes
+	pods    portworx.Pods
 }
 
-func NewVolumeGetFormatter(cvOps *cliops.CliVolumeOps) *volumeGetFormatter {
-	return &volumeGetFormatter{
-		CliVolumeOps: *cvOps,
+func NewVolumeGetFormatter(cliOps cliops.CliOps) *volumeGetFormatter {
+	volSpec := &portworx.VolumeSpec{
+		VolNames: cliOps.CliInputs().Args,
+		Labels:   cliOps.CliInputs().Labels,
 	}
+	v := &volumeGetFormatter{
+		cliOps:  cliOps,
+		volumes: portworx.NewVolumes(cliOps.PxOps(), volSpec),
+		pods:    portworx.NewPods(cliOps.COps(), &portworx.PodSpec{}),
+	}
+	v.FormatType = cliOps.CliInputs().FormatType
+	return v
 }
 
 // YamlFormat returns the yaml representation of the object
 func (p *volumeGetFormatter) YamlFormat() (string, error) {
-	vols, err := p.PxVolumeOps.GetVolumes()
+	vols, err := p.volumes.GetVolumes()
 	if err != nil {
 		return "", err
 	}
@@ -109,7 +121,7 @@ func (p *volumeGetFormatter) YamlFormat() (string, error) {
 
 // JsonFormat returns the json representation of the object
 func (p *volumeGetFormatter) JsonFormat() (string, error) {
-	vols, err := p.PxVolumeOps.GetVolumes()
+	vols, err := p.volumes.GetVolumes()
 	if err != nil {
 		return "", err
 	}
@@ -118,7 +130,6 @@ func (p *volumeGetFormatter) JsonFormat() (string, error) {
 
 // WideFormat returns the wide string representation of the object
 func (p *volumeGetFormatter) WideFormat() (string, error) {
-	p.Wide = true
 	return p.toTabbed()
 }
 
@@ -132,7 +143,7 @@ func (p *volumeGetFormatter) toTabbed() (string, error) {
 	writer := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
 	t := tabby.NewCustom(writer)
 
-	vols, err := p.PxVolumeOps.GetVolumes()
+	vols, err := p.volumes.GetVolumes()
 	if err != nil {
 		return "", err
 	}
@@ -142,6 +153,10 @@ func (p *volumeGetFormatter) toTabbed() (string, error) {
 		return "", nil
 	}
 
+	p.nodes, err = portworx.NewNodesForVolumes(p.cliOps.PxOps(), vols)
+	if err != nil {
+		return "", err
+	}
 	// Start the columns
 	t.AddHeader(p.getHeader()...)
 
@@ -159,34 +174,33 @@ func (p *volumeGetFormatter) toTabbed() (string, error) {
 
 func (p *volumeGetFormatter) getHeader() []interface{} {
 	var header []interface{}
-	if p.Wide {
+	if p.cliOps.CliInputs().Wide {
 		header = []interface{}{"Id", "Name", "Size Gi", "HA", "Shared", "Encrypted", "Io Profile", "Status", "State", "Snap Enabled"}
 	} else {
 		header = []interface{}{"Name", "Size", "HA", "Shared", "Status", "State"}
 	}
-	if p.ShowK8s {
+	if p.cliOps.CliInputs().ShowK8s {
 		header = append(header, "Pods")
 	}
-	if p.ShowLabels {
+	if p.cliOps.CliInputs().ShowLabels {
 		header = append(header, "Labels")
 	}
 
 	return header
 }
 
-func (p *volumeGetFormatter) getLine(resp *api.SdkVolumeInspectResponse) ([]interface{}, error) {
-	v := resp.GetVolume()
+func (p *volumeGetFormatter) getLine(v *api.Volume) ([]interface{}, error) {
 	spec := v.GetSpec()
 
 	var line []interface{}
 
-	state, err := p.PxVolumeOps.GetAttachedState(v)
+	state, err := p.nodes.GetAttachedState(v)
 	if err != nil {
 		return line, err
 	}
 
 	size := humanize.BigIBytes(big.NewInt(int64(spec.GetSize())))
-	if p.Wide {
+	if p.cliOps.CliInputs().Wide {
 		line = []interface{}{
 			v.GetId(), v.GetLocator().GetName(), size, spec.GetHaLevel(),
 			spec.GetShared() || spec.GetSharedv4(), spec.GetEncrypted(),
@@ -198,21 +212,21 @@ func (p *volumeGetFormatter) getLine(resp *api.SdkVolumeInspectResponse) ([]inte
 			spec.GetShared() || spec.GetSharedv4(), portworx.PrettyStatus(v), state,
 		}
 	}
-	if p.ShowK8s {
+	if p.cliOps.CliInputs().ShowK8s {
 		pods, err := p.podsUsingVolume(v)
 		if err != nil {
 			return line, err
 		}
 		line = append(line, pods)
 	}
-	if p.ShowLabels {
+	if p.cliOps.CliInputs().ShowLabels {
 		line = append(line, util.StringMapToCommaString(v.GetLocator().GetVolumeLabels()))
 	}
 	return line, nil
 }
 
 func (p *volumeGetFormatter) podsUsingVolume(v *api.Volume) (string, error) {
-	usedPods, err := p.PxVolumeOps.PodsUsingVolume(v)
+	usedPods, err := p.pods.PodsUsingVolume(v)
 	if err != nil {
 		return "", err
 	}

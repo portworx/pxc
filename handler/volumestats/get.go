@@ -27,6 +27,7 @@ import (
 	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
+	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/tui"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
@@ -92,19 +93,26 @@ func getVolumeStatsExec(cmd *cobra.Command, args []string) error {
 	}
 
 	// Parse out all of the common cli volume flags
-	cvi := cliops.GetCliVolumeInputs(cmd, args)
+	cvi := cliops.NewCliInputs(cmd, args)
 
-	// Create a cliVolumeOps object
-	cvOps := cliops.NewCliVolumeOps(cvi)
+	// Create a cliOps object
+	cliOps := cliops.NewCliOps(cvi)
 
 	// Connect to pxc and k8s (if needed)
-	err = cvOps.Connect()
+	err = cliOps.Connect()
 	if err != nil {
 		return err
 	}
-	defer cvOps.Close()
+	defer cliOps.Close()
 
-	vols, err := cvOps.PxVolumeOps.GetVolumes()
+	volSpec := &portworx.VolumeSpec{
+		VolNames: cliOps.CliInputs().Args,
+		Labels:   cliOps.CliInputs().Labels,
+	}
+
+	vs := portworx.NewVolumes(cliOps.PxOps(), volSpec)
+
+	vols, err := vs.GetVolumes()
 	if err != nil {
 		return err
 	}
@@ -114,7 +122,7 @@ func getVolumeStatsExec(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	vsd := NewVolumeStats(cvOps, vols)
+	vsd := NewVolumeStats(cliOps, vs)
 	vsd.SetSortInfo(sortOn, so)
 	watch, err := cmd.Flags().GetBool("watch")
 	if err != nil {
@@ -123,41 +131,46 @@ func getVolumeStatsExec(cmd *cobra.Command, args []string) error {
 
 	if watch {
 		vsd.ShowSortMarker(true)
-		return doWatch(cmd, cvOps, vsd)
+		return doWatch(cmd, cliOps, vsd)
 	} else {
 		vsd.ShowSortMarker(false)
-		volStatsFormatter := NewVolumeStatsGetFormatter(cvOps, vsd)
+		volStatsFormatter := NewVolumeStatsGetFormatter(cliOps, vsd)
 		return util.PrintFormatted(volStatsFormatter)
 	}
 }
 
 func NewVolumeStatsGetFormatter(
-	cvOps *cliops.CliVolumeOps,
+	cliOps cliops.CliOps,
 	vsd VolumeStats,
 ) *volumeStatsGetFormatter {
-	return &volumeStatsGetFormatter{
-		CliVolumeOps: *cvOps,
-		vsd:          vsd,
+	v := &volumeStatsGetFormatter{
+		cliOps: cliOps,
+		vsd:    vsd,
 	}
+	v.FormatType = cliOps.CliInputs().FormatType
+	return v
 }
 
 type volumeStatsGetFormatter struct {
-	cliops.CliVolumeOps
-	vsd VolumeStats
+	util.BaseFormatOutput
+	cliOps cliops.CliOps
+	vsd    VolumeStats
 }
 
 func (p *volumeStatsGetFormatter) getStats() (map[string]*api.Stats, error) {
 	stats := make(map[string]*api.Stats)
-	vols := p.vsd.GetVolumes()
+	vols, err := p.vsd.GetVolumes()
+	if err != nil {
+		return nil, err
+	}
 	for _, v := range vols {
-		s, err := p.PxVolumeOps.GetStats(v, true)
+		s, err := p.cliOps.PxOps().GetStats(v, true)
 		if err != nil {
 			return nil, err
 		}
 		stats[v.GetLocator().GetName()] = s
 	}
 	return stats, nil
-
 }
 
 // YamlFormat returns the yaml representation of the object
@@ -179,7 +192,6 @@ func (p *volumeStatsGetFormatter) JsonFormat() (string, error) {
 }
 
 func (p *volumeStatsGetFormatter) WideFormat() (string, error) {
-	p.Wide = true
 	return p.toTabbed()
 }
 
@@ -224,7 +236,7 @@ func (p *volumeStatsGetFormatter) toTabbed() (string, error) {
 
 func doWatch(
 	cmd *cobra.Command,
-	cvOps *cliops.CliVolumeOps,
+	cliOps cliops.CliOps,
 	vsd VolumeStats,
 ) error {
 	// Get all the watch specific flags

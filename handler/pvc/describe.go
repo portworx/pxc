@@ -23,6 +23,7 @@ import (
 	"github.com/portworx/pxc/handler/volume"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
+	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -57,12 +58,12 @@ func DescribeAddCommand(cmd *cobra.Command) {
 
 func describePvcExec(cmd *cobra.Command, args []string) error {
 	// Parse out all of the common cli volume flags
-	cvi := cliops.GetCliVolumeInputs(cmd, make([]string, 0))
+	cvi := cliops.NewCliInputs(cmd, make([]string, 0))
 	cvi.ShowK8s = true
 	cvi.GetNamespace(cmd)
 
-	// Create a cliVolumeOps object
-	cvOps := cliops.NewCliVolumeOps(cvi)
+	// Create a cliOps object
+	cvOps := cliops.NewCliOps(cvi)
 
 	// Connect to pxc and k8s (if needed)
 	err := cvOps.Connect()
@@ -81,13 +82,21 @@ func describePvcExec(cmd *cobra.Command, args []string) error {
 type pvcDescribeFormatter struct {
 	volume.VolumeDescribeFormatter
 	pvcNames []string
+	pvcs     portworx.Pvcs
 }
 
-func NewPvcDescribeFormatter(cvOps *cliops.CliVolumeOps, pvcNames []string) *pvcDescribeFormatter {
-	vcf := volume.NewVolumeDescribeFormatter(cvOps)
+func NewPvcDescribeFormatter(cliOps cliops.CliOps, pvcNames []string) *pvcDescribeFormatter {
+	vcf := volume.NewVolumeDescribeFormatter(cliOps)
+
+	pvcSpec := &portworx.PvcSpec{
+		Namespace: cliOps.CliInputs().Namespace,
+		Labels:    cliOps.CliInputs().Labels,
+	}
+	pvcs := portworx.NewPvcs(cliOps.PxOps(), cliOps.COps(), pvcSpec)
 	return &pvcDescribeFormatter{
 		VolumeDescribeFormatter: *vcf,
 		pvcNames:                pvcNames,
+		pvcs:                    pvcs,
 	}
 }
 
@@ -101,7 +110,7 @@ func (p *pvcDescribeFormatter) toTabbed() (string, error) {
 	writer := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
 	t := tabby.NewCustom(writer)
 
-	allPvcs, err := p.PxVolumeOps.GetPxPvcs()
+	allPvcs, err := p.pvcs.GetPxPvcs()
 	if err != nil {
 		return "", err
 	}

@@ -145,12 +145,12 @@ func PxTestVolumeInfo(t *testing.T, id string) *api.Volume {
 	so, _, err := executeCliRaw(cli)
 	assert.NoError(t, err)
 
-	var vols []api.SdkVolumeInspectResponse
+	var vols []api.Volume
 	err = json.Unmarshal([]byte(so.String()), &vols)
 	assert.NoError(t, err)
 	assert.Len(t, vols, 1)
 
-	return vols[0].GetVolume()
+	return &vols[0]
 }
 
 // Returns a list of all volume ids

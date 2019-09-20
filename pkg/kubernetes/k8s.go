@@ -33,23 +33,52 @@ var (
 	NODE_KEY = []byte("node=")
 )
 
-type KubeConnectionData struct {
-	ClientConfig clientcmd.ClientConfig
-	ClientSet    *kclikube.Clientset
+type kubeConnection struct {
+	clientConfig clientcmd.ClientConfig
+	clientSet    *kclikube.Clientset
 }
 
-func NewCOps(kc *KubeConnectionData) COps {
-	return kc
+func NewCOps(connect bool) (COps, error) {
+	if connect == true {
+		cc, cs, err := KubeConnectDefault()
+		if err != nil {
+			return nil, err
+		}
+		return &kubeConnection{
+			clientConfig: cc,
+			clientSet:    cs,
+		}, nil
+	}
+	return &kubeConnection{}, nil
 }
 
-func (p *KubeConnectionData) GetPodsByLabels(
+func (p *kubeConnection) Close() {
+	// Nothing to do
+}
+
+func (p *kubeConnection) GetNamespace(s *string) (string, error) {
+	if s != nil {
+		return *s, nil
+	}
+	return p.GetDefaultNamespace()
+}
+
+func (p *kubeConnection) GetDefaultNamespace() (string, error) {
+	ns, _, err := p.clientConfig.Namespace()
+	if err != nil {
+		return "", err
+	}
+	return ns, nil
+}
+
+func (p *kubeConnection) GetPodsByLabels(
 	namespace string,
 	labels string,
 ) ([]v1.Pod, error) {
-	if p.ClientSet == nil {
+	if p.clientSet == nil {
 		return make([]v1.Pod, 0), nil
 	}
-	podClient := p.ClientSet.CoreV1().Pods(namespace)
+	podClient := p.clientSet.CoreV1().Pods(namespace)
 	lo := metav1.ListOptions{}
 	if len(labels) > 0 {
 		lo.LabelSelector = labels
@@ -61,15 +90,15 @@ func (p *KubeConnectionData) GetPodsByLabels(
 	return podList.Items, nil
 }
 
-func (p *KubeConnectionData) GetPvcsByLabels(
+func (p *kubeConnection) GetPvcsByLabels(
 	namespace string,
 	labels string,
 ) ([]v1.PersistentVolumeClaim, error) {
-	if p.ClientSet == nil {
+	if p.clientSet == nil {
 		return make([]v1.PersistentVolumeClaim, 0), nil
 	}
-	p.ClientSet.CoreV1().Pods(namespace)
-	pvcClient := p.ClientSet.CoreV1().PersistentVolumeClaims(namespace)
+	p.clientSet.CoreV1().Pods(namespace)
+	pvcClient := p.clientSet.CoreV1().PersistentVolumeClaims(namespace)
 
 	lo := metav1.ListOptions{}
 	if len(labels) > 0 {
@@ -89,7 +118,7 @@ type logPayload struct {
 	podNamespace string
 }
 
-func (p *KubeConnectionData) GetLogs(
+func (p *kubeConnection) GetLogs(
 	lo *COpsLogOptions,
 	out io.Writer,
 ) error {
@@ -103,7 +132,7 @@ func (p *KubeConnectionData) GetLogs(
 		// We don't need a deep copy since we are only modifying the container name
 		optionsCopy := lo.PodLogOptions
 		optionsCopy.Container = ci.Container
-		ret := p.ClientSet.CoreV1().Pods(ci.Pod.Namespace).GetLogs(ci.Pod.Name,
+		ret := p.clientSet.CoreV1().Pods(ci.Pod.Namespace).GetLogs(ci.Pod.Name,
 			&optionsCopy)
 
 		lp := &logPayload{

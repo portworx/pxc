@@ -66,37 +66,48 @@ func GetAddCommand(cmd *cobra.Command) {
 
 func getPvcExec(cmd *cobra.Command, args []string) error {
 	// Parse out all of the common cli volume flags
-	cvi := cliops.GetCliVolumeInputs(cmd, make([]string, 0))
+	cvi := cliops.NewCliInputs(cmd, args)
 	cvi.ShowK8s = true
 	cvi.GetNamespace(cmd)
 
 	// Create a cliVolumeOps object
-	cvOps := cliops.NewCliVolumeOps(cvi)
+	cliOps := cliops.NewCliOps(cvi)
 
 	// Connect to pxc and k8s (if needed)
-	err := cvOps.Connect()
+	err := cliOps.Connect()
 	if err != nil {
 		return err
 	}
-	defer cvOps.Close()
+	defer cliOps.Close()
 
 	// Create the parser object
-	pgf := NewPvcGetFormatter(cvOps, args)
+	pgf := NewPvcGetFormatter(cliOps)
 
 	// Print the details and return errors if any
 	return util.PrintFormatted(pgf)
 }
 
 type pvcGetFormatter struct {
-	cliops.CliVolumeOps
+	util.BaseFormatOutput
+	cliOps   cliops.CliOps
 	pvcNames []string
+	nodes    portworx.Nodes
+	pvcs     portworx.Pvcs
 }
 
-func NewPvcGetFormatter(cvOps *cliops.CliVolumeOps, pvcNames []string) *pvcGetFormatter {
-	return &pvcGetFormatter{
-		CliVolumeOps: *cvOps,
-		pvcNames:     pvcNames,
+func NewPvcGetFormatter(cliOps cliops.CliOps) *pvcGetFormatter {
+	pvcSpec := &portworx.PvcSpec{
+		Namespace: cliOps.CliInputs().Namespace,
+		Labels:    cliOps.CliInputs().Labels,
 	}
+	pvcs := portworx.NewPvcs(cliOps.PxOps(), cliOps.COps(), pvcSpec)
+	p := &pvcGetFormatter{
+		cliOps:   cliOps,
+		pvcNames: cliOps.CliInputs().Args,
+		pvcs:     pvcs,
+	}
+	p.FormatType = cliOps.CliInputs().FormatType
+	return p
 }
 
 func filterPxPvcs(
@@ -125,7 +136,7 @@ func filterPxPvcs(
 }
 
 func (p *pvcGetFormatter) getPvcs() ([]*v1.PersistentVolumeClaim, error) {
-	allPxPvcs, err := p.PxVolumeOps.GetPxPvcs()
+	allPxPvcs, err := p.pvcs.GetPxPvcs()
 	if err != nil {
 		return make([]*v1.PersistentVolumeClaim, 0), err
 	}
@@ -161,7 +172,6 @@ func (p *pvcGetFormatter) JsonFormat() (string, error) {
 
 // WideFormat returns the wide string representation of the object
 func (p *pvcGetFormatter) WideFormat() (string, error) {
-	p.Wide = true
 	return p.toTabbed()
 }
 
@@ -175,7 +185,7 @@ func (p *pvcGetFormatter) toTabbed() (string, error) {
 	writer := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
 	t := tabby.NewCustom(writer)
 
-	allPvcs, err := p.PxVolumeOps.GetPxPvcs()
+	allPvcs, err := p.pvcs.GetPxPvcs()
 	if err != nil {
 		return "", err
 	}
@@ -187,6 +197,11 @@ func (p *pvcGetFormatter) toTabbed() (string, error) {
 	if len(pvcs) == 0 {
 		util.Printf("No resources found\n")
 		return "", nil
+	}
+
+	p.nodes, err = portworx.NewNodesForPxPvcs(p.cliOps.PxOps(), pvcs)
+	if err != nil {
+		return "", err
 	}
 
 	// Start the columns
@@ -205,12 +220,12 @@ func (p *pvcGetFormatter) toTabbed() (string, error) {
 
 func (p *pvcGetFormatter) getHeader() []interface{} {
 	var header []interface{}
-	if p.Wide {
+	if p.cliOps.CliInputs().Wide {
 		header = []interface{}{"NAME", "VOLUME", "VOLUME ID", "HA", "CAPACITY", "SHARED", "STATUS", "STATE", "SNAP ENABLED", "ENCRYPTED", "PODS"}
 	} else {
 		header = []interface{}{"NAME", "VOLUME", "CAPACITY", "SHARED", "STATE", "PODS"}
 	}
-	if p.ShowLabels {
+	if p.cliOps.CliInputs().ShowLabels {
 		header = append(header, "LABELS")
 	}
 
@@ -226,7 +241,7 @@ func (p *pvcGetFormatter) getLine(pxpvc *kubernetes.PxPvc) ([]interface{}, error
 	var line []interface{}
 
 	spec := v.GetSpec()
-	state, err := p.PxVolumeOps.GetAttachedState(v)
+	state, err := p.nodes.GetAttachedState(v)
 	if err != nil {
 		return line, err
 	}
@@ -246,7 +261,7 @@ func (p *pvcGetFormatter) getLine(pxpvc *kubernetes.PxPvc) ([]interface{}, error
 	   mysql-data  pvc-d2a47415-1aef-428c-b998-5aee138d93a9  605625582897896102  1   2         1       false   UP     on lpabon-k8s-1-node2  false      false  default/mysql-59b76b98f9-grcvd
 	*/
 
-	if p.Wide {
+	if p.cliOps.CliInputs().Wide {
 		line = []interface{}{
 			pxpvc.Name,
 			v.GetLocator().GetName(),
@@ -270,7 +285,7 @@ func (p *pvcGetFormatter) getLine(pxpvc *kubernetes.PxPvc) ([]interface{}, error
 			pods,
 		}
 	}
-	if p.ShowLabels {
+	if p.cliOps.CliInputs().ShowLabels {
 		line = append(line, util.StringMapToCommaString(v.GetLocator().GetVolumeLabels()))
 	}
 	return line, nil

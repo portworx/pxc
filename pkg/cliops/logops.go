@@ -21,6 +21,7 @@ import (
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/pxc/pkg/kubernetes"
+	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -121,13 +122,13 @@ func GetCommonLogOptions(cmd *cobra.Command) (*kubernetes.COpsLogOptions, error)
 	return lo, nil
 }
 
-// From the given lost of nodeName, figures out the Portworx pods on those nodes
+// From the given lot of nodeName, figures out the Portworx pods on those nodes
 func GetRequiredPortworxPods(
-	cvOps *CliVolumeOps,
+	cliOps CliOps,
 	nodeNames []string,
 	portworxNamespace string,
 ) ([]kubernetes.ContainerInfo, error) {
-	co := cvOps.PxVolumeOps.GetCOps()
+	co := cliOps.COps()
 	allPods, err := co.GetPodsByLabels(portworxNamespace, "name=portworx")
 	if err != nil {
 		return nil, err
@@ -169,29 +170,40 @@ func GetRequiredPortworxPods(
 //    containers inside those pods use the volume
 // Figures out all the unique namespace, pod and container combinations and returns those
 func FillContainerInfo(
-	vols []*api.SdkVolumeInspectResponse,
-	cvOps *CliVolumeOps,
+	vols []*api.Volume,
+	cliOps CliOps,
 	lo *kubernetes.COpsLogOptions,
 	allLogs bool,
 ) error {
 	// Get All relevant pods.
-	nodeNamesMap := make(map[string]bool)
+
+	// This map will keep track of pods for any specific namespace the volume belongs to
+	// This is so that we don't repeatedly get pods for a given namespace
+	podMap := make(map[string]portworx.Pods)
 	ciInfoList := make(map[string]kubernetes.ContainerInfo)
-	for _, resp := range vols {
-		// Get all of the nodes associated with the volume
+	for _, v := range vols {
 		// Get all of the pods using the volume
-		v := resp.GetVolume()
-		err := cvOps.PxVolumeOps.GetAllNodesForVolume(v, nodeNamesMap)
+		labels := v.GetLocator().GetVolumeLabels()
+		namespace, ok := labels["namespace"]
+		if !ok || namespace == "" {
+			// Means this is not a pvc
+			continue
+		}
+		pods, ok := podMap[namespace]
+		if !ok {
+			ps := &portworx.PodSpec{
+				Namespace: namespace,
+			}
+			pods = portworx.NewPods(cliOps.COps(), ps)
+			podMap[namespace] = pods
+		}
+		cinfo, err := pods.GetContainerInfoForVolume(v)
 		if err != nil {
 			return err
 		}
-
-		cinfo, err := cvOps.PxVolumeOps.GetContainerInfoForVolume(v)
-
 		if allLogs != true {
 			lo.Filters = append(lo.Filters, v.GetLocator().GetName())
 			lo.Filters = append(lo.Filters, v.GetId())
-			labels := v.GetLocator().GetVolumeLabels()
 			if pvcName, ok := labels["pvc"]; ok {
 				lo.Filters = append(lo.Filters, pvcName)
 			}
@@ -204,13 +216,20 @@ func FillContainerInfo(
 		}
 	}
 
+	// Get all of the nodes associated with the volumes
+	nodeSpec := portworx.GetNodeSpec(vols)
+	na := portworx.NewNodes(cliOps.PxOps(), nodeSpec)
+	n, err := na.GetNodes()
+	if err != nil {
+		return err
+	}
 	nodeNames := make([]string, 0)
-	for k, _ := range nodeNamesMap {
-		nodeNames = append(nodeNames, k)
+	for _, node := range n {
+		nodeNames = append(nodeNames, node.GetHostname())
 	}
 
 	// Convert Portworx node names to pods
-	cinfo, err := GetRequiredPortworxPods(cvOps, nodeNames, lo.PortworxNamespace)
+	cinfo, err := GetRequiredPortworxPods(cliOps, nodeNames, lo.PortworxNamespace)
 	if err != nil {
 		return err
 	}

@@ -25,13 +25,14 @@ import (
 	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/pxc/pkg/cliops"
+	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/tui"
 )
 
 type VolumeStats interface {
 	tui.StatsModel
 	// Returns the volumes that this Stats are for
-	GetVolumes() []*api.Volume
+	GetVolumes() ([]*api.Volume, error)
 	// Set if we need to show the sort marker in the column header
 	ShowSortMarker(fg bool)
 }
@@ -81,8 +82,8 @@ var (
 )
 
 type volumeStatsData struct {
-	cvOps      *cliops.CliVolumeOps
-	vols       []*api.Volume
+	cliOps     cliops.CliOps
+	volumes    portworx.Volumes
 	curStats   []*statsData
 	curIndex   int
 	sortInfo   *statsSorterInfo
@@ -112,12 +113,12 @@ type statsTotal struct {
 }
 
 func NewVolumeStats(
-	cvOps *cliops.CliVolumeOps,
-	resp []*api.SdkVolumeInspectResponse,
+	cliOps cliops.CliOps,
+	volumes portworx.Volumes,
 ) VolumeStats {
 	vsd := &volumeStatsData{
-		cvOps: cvOps,
-		vols:  make([]*api.Volume, len(resp)),
+		cliOps:  cliOps,
+		volumes: volumes,
 		sortInfo: &statsSorterInfo{
 			ascending: false,
 			column:    DEFAULT_SORT_COLUMN,
@@ -125,14 +126,11 @@ func NewVolumeStats(
 		curTotal:   &statsTotal{},
 		sortMarker: true,
 	}
-	for i, r := range resp {
-		vsd.vols[i] = r.GetVolume()
-	}
 	return vsd
 }
 
-func (vsd *volumeStatsData) GetVolumes() []*api.Volume {
-	return vsd.vols
+func (vsd *volumeStatsData) GetVolumes() ([]*api.Volume, error) {
+	return vsd.volumes.GetVolumes()
 }
 
 func (vsd *volumeStatsData) ShowSortMarker(fg bool) {
@@ -140,10 +138,14 @@ func (vsd *volumeStatsData) ShowSortMarker(fg bool) {
 }
 
 func (vsd *volumeStatsData) Refresh() error {
-	vsd.curStats = make([]*statsData, len(vsd.vols))
+	vols, err := vsd.volumes.GetVolumes()
+	if err != nil {
+		return err
+	}
+	vsd.curStats = make([]*statsData, len(vols))
 	vsd.curTotal = &statsTotal{}
 	vsd.curIndex = 0
-	for i, v := range vsd.vols {
+	for i, v := range vols {
 		sd, err := vsd.getStats(v)
 		if err != nil {
 			return err
@@ -177,7 +179,11 @@ func (vsd *volumeStatsData) GetHeaders() []string {
 }
 
 func (vsd *volumeStatsData) NextRow() ([]string, error) {
-	if vsd.curIndex >= len(vsd.vols) {
+	vols, err := vsd.volumes.GetVolumes()
+	if err != nil {
+		return make([]string, 0), err
+	}
+	if vsd.curIndex >= len(vols) {
 		return make([]string, 0), nil
 	}
 
@@ -257,7 +263,7 @@ func (vsd *volumeStatsData) colNameToNum(str string) ColNum {
 }
 
 func (vsd *volumeStatsData) getStats(v *api.Volume) (*statsData, error) {
-	stats, err := vsd.cvOps.PxVolumeOps.GetStats(v, true)
+	stats, err := vsd.volumes.GetStats(v, true)
 	if err != nil {
 		return nil, err
 	}

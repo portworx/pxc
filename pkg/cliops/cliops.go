@@ -22,125 +22,152 @@ import (
 	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
-	kclikube "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
-type CliVolumeInputs struct {
+type CliInputs struct {
 	util.BaseFormatOutput
-	Wide        bool
-	ShowLabels  bool
-	VolumeNames []string
-	ShowK8s     bool
-	// If namespace is nil, use default namespace
-	// if namespace is "", use all-namespaces
+	Wide       bool
+	ShowLabels bool
+	ShowK8s    bool
+	// If ns is nil, use default namespace
+	// if ns is "", use all-namespaces
 	// else use specified namespace
-	Namespace *string
+	ns        *string
+	Namespace string
 	Labels    map[string]string
+	Args      []string
 }
 
-type CliVolumeOps struct {
-	CliVolumeInputs
-	PxVolumeOps portworx.PxVolumeOps
+type CliOps interface {
+	// Connect creates connections to portworx and if needed to k8s
+	Connect() error
+	// Close connections to portworx and k8s
+	Close()
+	// CliInputs returns the CliInputs
+	CliInputs() *CliInputs
+	// PxOps returns the portwor connection object
+	PxOps() portworx.PxOps
+	// COps returns the k8s connection object
+	COps() kubernetes.COps
 }
 
-// GetCliVolumeInputs looks for all of the common flags and create a new cliVolumeInputs object
-func GetCliVolumeInputs(cmd *cobra.Command, args []string) *CliVolumeInputs {
+type cliOps struct {
+	cliInputs *CliInputs
+	pxops     portworx.PxOps
+	cops      kubernetes.COps
+}
+
+var (
+	inst CliOps
+)
+
+func GetCliOps() CliOps {
+	return inst
+}
+
+// NewCliVolumeInputs looks for all of the common flags and create a new cliVolumeInputs object
+func NewCliInputs(cmd *cobra.Command, args []string) *CliInputs {
 	showK8s, _ := cmd.Flags().GetBool("show-k8s-info")
 	output, _ := cmd.Flags().GetString("output")
+	wide := false
+	if output == "wide" {
+		wide = true
+	}
 	showLabels, _ := cmd.Flags().GetBool("show-labels")
 	namespace := string("")
 	labels, _ := cmd.Flags().GetString("selector")
 	//convert string to map
 	mlabels, _ := util.CommaStringToStringMap(labels)
 	// If valid label is present, we need to pass it.
-	return &CliVolumeInputs{
+	return &CliInputs{
 		BaseFormatOutput: util.BaseFormatOutput{
 			FormatType: output,
 		},
-		ShowK8s:     showK8s,
-		ShowLabels:  showLabels,
-		VolumeNames: args,
-		Namespace:   &namespace, // In most places use all namespaces
-		Labels:      mlabels,
+		ShowK8s:    showK8s,
+		Wide:       wide,
+		ShowLabels: showLabels,
+		Args:       args,
+		ns:         &namespace, // In most places use all namespaces
+		Labels:     mlabels,
 	}
 }
 
 // Checks if namespace is specified and if so set it
-func (p *CliVolumeInputs) GetNamespace(cmd *cobra.Command) {
+func (p *CliInputs) GetNamespace(cmd *cobra.Command) {
 	flagNamespace, _ := cmd.Flags().GetString("namespace")
 	if len(flagNamespace) != 0 {
-		p.Namespace = &flagNamespace
+		p.ns = &flagNamespace
 		return
 	}
 
 	allNamespaces, _ := cmd.Flags().GetBool("all-namespaces")
 	if allNamespaces {
 		str := string("")
-		p.Namespace = &str
+		p.ns = &str
 		return
 	}
 
 	// No default namespace was specified so use default namespace
-	p.Namespace = nil
+	p.ns = nil
 }
 
-// Create a new cliVolumeOps object
-func NewCliVolumeOps(
-	cvi *CliVolumeInputs,
-) *CliVolumeOps {
-	return &CliVolumeOps{
-		CliVolumeInputs: *cvi,
+func NewCliOps(ci *CliInputs) CliOps {
+	inst = &cliOps{
+		cliInputs: ci,
 	}
+	return inst
+}
+
+func (co *cliOps) CliInputs() *CliInputs {
+	return co.cliInputs
+}
+
+func (co *cliOps) PxOps() portworx.PxOps {
+	return co.pxops
+}
+
+func (co *cliOps) COps() kubernetes.COps {
+	return co.cops
 }
 
 // Connect will make connections to pxc and k8s (if needed).
-func (p *CliVolumeOps) Connect() error {
-	ctx, conn, err := portworx.PxConnectDefault()
+func (p *cliOps) Connect() error {
+	// Already connected, just return
+	if p.pxops != nil {
+		return nil
+	}
+
+	pxops, err := portworx.NewPxOps()
 	if err != nil {
 		return err
 	}
+	p.pxops = pxops
 
-	var (
-		cc clientcmd.ClientConfig
-		cs *kclikube.Clientset
-	)
-
-	if p.ShowK8s {
-		cc, cs, err = kubernetes.KubeConnectDefault()
+	cops, err := kubernetes.NewCOps(p.cliInputs.ShowK8s)
+	if err != nil {
+		return err
+	}
+	p.cops = cops
+	if p.cliInputs.ShowK8s {
+		ns, err := cops.GetNamespace(p.cliInputs.ns)
 		if err != nil {
 			return err
 		}
-		// Determine default namespace if nothing specified
-		if p.Namespace == nil {
-			ns, _, err := cc.Namespace()
-			if err != nil {
-				return err
-			}
-			p.Namespace = &ns
-		}
+		p.cliInputs.Namespace = ns
 	}
 
-	volOpsInfo := &portworx.PxVolumeOpsInfo{
-		PxConnectionData: portworx.PxConnectionData{
-			Ctx:  ctx,
-			Conn: conn,
-		},
-		KubeConnectionData: kubernetes.KubeConnectionData{
-			ClientConfig: cc,
-			ClientSet:    cs,
-		},
-		Namespace: *p.Namespace,
-		VolNames:  p.VolumeNames,
-		Labels:    p.Labels,
-	}
-
-	p.PxVolumeOps, err = portworx.NewPxVolumeOps(volOpsInfo)
-	return err
+	return nil
 }
 
-func (p *CliVolumeOps) Close() {
-	p.PxVolumeOps.GetPxVolumeOpsInfo().Close()
+func (p *cliOps) Close() {
+	if p.pxops != nil {
+		p.pxops.Close()
+		p.pxops = nil
+	}
+	if p.cops != nil {
+		p.cops.Close()
+		p.cops = nil
+	}
 }
 
 // Validating the user provided options
