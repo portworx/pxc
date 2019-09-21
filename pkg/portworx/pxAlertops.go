@@ -21,13 +21,25 @@ import (
 	"github.com/portworx/pxc/pkg/util"
 	"io"
 	"sort"
+	"time"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+	prototime "github.com/portworx/pxc/pkg/openstorage/proto/time"
 )
 
 type PxAlertOps interface {
-	GetPxAlerts(alert string, alertId string) (AlertResp, error)
+	GetPxAlerts(cliAlertInputs CliAlertInputs) (AlertResp, error)
 	DeletePxAlerts(alert string) error
+}
+
+type CliAlertInputs struct {
+	util.BaseFormatOutput
+	Wide      bool
+	AlertType string
+	AlertId   string
+	StartTime string
+	EndTime   string
+	Severity  string
 }
 
 type pxAlertOps struct{}
@@ -56,7 +68,7 @@ func NewPxAlertOps() PxAlertOps {
 	return &pxAlertOps{}
 }
 
-func (p *pxAlertOps) GetPxAlerts(alert string, alertId string) (AlertResp, error) {
+func (p *pxAlertOps) GetPxAlerts(cliAlertInputs CliAlertInputs) (AlertResp, error) {
 	alertResp := AlertResp{}
 
 	ctx, conn, err := PxConnectDefault()
@@ -69,6 +81,50 @@ func (p *pxAlertOps) GetPxAlerts(alert string, alertId string) (AlertResp, error
 		req: &api.SdkAlertsEnumerateWithFiltersRequest{},
 	}
 	var myAlerts []*api.Alert
+	var opts []*api.SdkAlertsOption
+
+	if (len(cliAlertInputs.StartTime) > 0) && (len(cliAlertInputs.EndTime) > 0) {
+		st, err := time.Parse(time.RFC3339, cliAlertInputs.StartTime)
+		if err != nil {
+			return alertResp, errors.New("Invaid start-time timestamp format.")
+		}
+
+		et, err := time.Parse(time.RFC3339, cliAlertInputs.EndTime)
+		if err != nil {
+			return alertResp, errors.New("Invaid end-time timestamp format.")
+		}
+
+		opts = append(opts, &api.SdkAlertsOption{
+			Opt: &api.SdkAlertsOption_TimeSpan{
+				TimeSpan: &api.SdkAlertsTimeSpan{
+					StartTime: prototime.TimeToTimestamp(
+						st),
+					EndTime: prototime.TimeToTimestamp(et),
+				},
+			},
+		})
+	}
+
+	// Appending severity level if provided
+	if len(cliAlertInputs.Severity) > 0 {
+		var severity api.SeverityType
+		switch cliAlertInputs.Severity {
+		case "notify":
+			severity = api.SeverityType_SEVERITY_TYPE_NOTIFY
+		case "warning", "warn":
+			severity = api.SeverityType_SEVERITY_TYPE_WARNING
+		case "alarm":
+			severity = api.SeverityType_SEVERITY_TYPE_ALARM
+		default:
+			return alertResp, errors.New("Invalid severity level.")
+		}
+
+		opts = append(opts, &api.SdkAlertsOption{
+			Opt: &api.SdkAlertsOption_MinSeverityType{
+				MinSeverityType: severity,
+			},
+		})
+	}
 
 	alertResp.AlertNameToId = make(map[string]int64)
 	alertResp.AlertIdToName = make(map[int64]string)
@@ -79,11 +135,15 @@ func (p *pxAlertOps) GetPxAlerts(alert string, alertId string) (AlertResp, error
 		alertResp.AlertIdToName[id] = name
 	}
 
-	alterType := getAlertType(alert)
+	alterType := getAlertType(cliAlertInputs.AlertType)
+	if len(alterType) == 0 {
+		return alertResp, errors.New("Invalid type provided.")
+	}
+
 	for _, resourceType := range alterType {
 		resourceType := resourceType
-		if len(alertId) > 0 {
-			id, ok := alertResp.AlertNameToId[alertId]
+		if len(cliAlertInputs.AlertId) > 0 {
+			id, ok := alertResp.AlertNameToId[cliAlertInputs.AlertId]
 			if !ok {
 				return alertResp, nil
 			}
@@ -96,6 +156,7 @@ func (p *pxAlertOps) GetPxAlerts(alert string, alertId string) (AlertResp, error
 							AlertType:    id,
 						},
 					},
+					Opts: opts,
 				},
 			}
 
@@ -107,6 +168,7 @@ func (p *pxAlertOps) GetPxAlerts(alert string, alertId string) (AlertResp, error
 							ResourceType: resourceType,
 						},
 					},
+					Opts: opts,
 				},
 			}
 
@@ -116,8 +178,7 @@ func (p *pxAlertOps) GetPxAlerts(alert string, alertId string) (AlertResp, error
 		client := api.NewOpenStorageAlertsClient(conn)
 		resp, err := client.EnumerateWithFilters(ctx, getAlertsGetReq.req)
 		if err != nil {
-			util.Eprintf("Failed to fetch alerts ")
-			return alertResp, nil
+			return alertResp, errors.New("Failed to fetch alerts.")
 		}
 
 		for {
