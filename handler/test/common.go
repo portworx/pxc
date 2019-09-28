@@ -326,3 +326,27 @@ func PxTestCreateVolumeSnap(t *testing.T, volName string, policy string) {
 
 	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Volume %s created with id", volName)))
 }
+
+func PxTestPatchVolumeEarlyAck(t *testing.T, volName string, value string) {
+	cli := fmt.Sprintf("px patch volume %s  --early-ack=%s", volName, value)
+	lines, _, _ := ExecuteCli(cli)
+	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
+}
+
+func PxTestPatchVolumeAsyncIo(t *testing.T, volName string, value string) {
+	cli := fmt.Sprintf("px patch volume %s  --async-io=%s", volName, value)
+	lines, _, _ := ExecuteCli(cli)
+	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
+}
+
+func PxTestPatchVolumeIoProfile(t *testing.T, volName string, profile string) {
+	cli := fmt.Sprintf("px patch volume %s  --io-profile=%s", volName, profile)
+	lines, _, _ := ExecuteCli(cli)
+	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
+}
+
+func PxTestPatchVolumeNoDiscard(t *testing.T, volName string, value string) {
+	cli := fmt.Sprintf("px patch volume %s  --nodiscard=%s", volName, value)
+	lines, _, _ := ExecuteCli(cli)
+	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
+}
