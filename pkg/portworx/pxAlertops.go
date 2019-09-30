@@ -17,7 +17,7 @@ limitations under the License.
 package portworx
 
 import (
-	"fmt"
+	"errors"
 	"github.com/portworx/pxc/pkg/util"
 	"io"
 	"sort"
@@ -27,7 +27,7 @@ import (
 
 type PxAlertOps interface {
 	GetPxAlerts(alert string, alertId string) (AlertResp, error)
-	DeletePxAlerts()
+	DeletePxAlerts(alert string) error
 }
 
 type pxAlertOps struct{}
@@ -42,8 +42,8 @@ type getAlertsOpts struct {
 	req *api.SdkAlertsEnumerateWithFiltersRequest
 }
 
-func (p *pxAlertOps) DeletePxAlerts() {
-	fmt.Println("TODO: Yet to be implemented")
+type delAlertsOpts struct {
+	req *api.SdkAlertsDeleteRequest
 }
 
 type alertsList []*api.Alert
@@ -131,6 +131,51 @@ func (p *pxAlertOps) GetPxAlerts(alert string, alertId string) (AlertResp, error
 	sort.Sort(alertsList(myAlerts))
 	alertResp.AlertResp = myAlerts
 	return alertResp, nil
+}
+
+func (p *pxAlertOps) DeletePxAlerts(alert string) error {
+	alertResp := AlertResp{}
+
+	ctx, conn, err := PxConnectDefault()
+	_ = ctx
+	if err != nil {
+		return err
+	}
+
+	defer conn.Close()
+	delAlertsGetReq := delAlertsOpts{
+		req: &api.SdkAlertsDeleteRequest{},
+	}
+
+	alertResp.AlertNameToId = make(map[string]int64)
+	alertResp.AlertIdToName = make(map[int64]string)
+	for k, v := range TypeToSpec() {
+		id := int64(k)
+		name := v.Name
+		alertResp.AlertNameToId[name] = id
+		alertResp.AlertIdToName[id] = name
+	}
+
+	// TODO: For now making it all, will change once PR#69 gets merged
+	alterType := getAlertType(alert)
+	for _, resourceType := range alterType {
+		delAlertsGetReq.req.Queries = []*api.SdkAlertsQuery{
+			{
+				Query: &api.SdkAlertsQuery_ResourceTypeQuery{
+					ResourceTypeQuery: &api.SdkAlertsResourceTypeQuery{
+						ResourceType: resourceType,
+					},
+				},
+			},
+		}
+		// Send request
+		client := api.NewOpenStorageAlertsClient(conn)
+		_, err = client.Delete(ctx, delAlertsGetReq.req)
+		if err != nil {
+			return errors.New("Failed to delete alerts")
+		}
+	}
+	return err
 }
 
 func getAlertType(alr string) []api.ResourceType {
