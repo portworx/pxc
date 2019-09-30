@@ -36,6 +36,9 @@ type createVolumeOpts struct {
 	IoProfile          string
 	groups             string
 	collaborators      string
+	earlyAck           bool
+	asyncIo            bool
+	passPhrase         string
 }
 
 var (
@@ -98,6 +101,14 @@ var _ = commander.RegisterCommandInit(func() {
 	createVolumeCmd.Flags().StringVar(&cvOpts.IoProfile, "ioprofile", "", "IO Profile (Valid Values: [sequential cms db db_remote sync_shared]) (default sequential)")
 	createVolumeCmd.Flags().StringVar(&cvOpts.groups, "groups", "", "list of group with volume access details, 'group1:r, group2:w'")
 	createVolumeCmd.Flags().StringVar(&cvOpts.collaborators, "collaborators", "", "list of collaborators with volume access details, 'user1:r, user2:w'")
+	createVolumeCmd.Flags().Uint32Var(&cvOpts.req.Spec.QueueDepth, "queue-depth", 128, "block device queue depth (Valid Range: [1 256]) (default 128)")
+	createVolumeCmd.Flags().BoolVar(&cvOpts.earlyAck, "early-ack", false, "Reply to async write requests after it is copied to shared memory")
+	createVolumeCmd.Flags().BoolVar(&cvOpts.asyncIo, "async-io", false, "Enable async IO to backing storage")
+	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Nodiscard, "nodiscard", false, "Disable discard support for this volume")
+	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.GroupEnforced, "group-enforced", false, "Enforce group during provision")
+	createVolumeCmd.Flags().Uint32Var(&cvOpts.req.Spec.Scale, "scale", 0, "auto scale to max number (Valid Range: [1 1024]) (default 1)")
+	createVolumeCmd.Flags().StringVar(&cvOpts.passPhrase, "passphrase", "", "Passphrase for an encrypted volume")
+	createVolumeCmd.Flags().Uint32Var(&cvOpts.req.Spec.SnapshotInterval, "snapshot-interval", 0, "SnapshotInterval in minutes, set to 0 to disable snapshots")
 	createVolumeCmd.Flags().SortFlags = false
 })
 
@@ -182,6 +193,22 @@ func createVolumeExec(c *cobra.Command, args []string) error {
 			flagError := errors.New("Invalid IO profile")
 			return flagError
 		}
+	}
+
+	if cvOpts.req.Spec.QueueDepth < 1 || cvOpts.req.Spec.QueueDepth > 256 {
+		return fmt.Errorf("Queuedepth has to be in the range of 1 to 256.")
+	}
+
+	// Setting Iostrategy
+	ioStrategy := &api.IoStrategy{
+		AsyncIo:  cvOpts.asyncIo,
+		EarlyAck: cvOpts.earlyAck,
+	}
+	cvOpts.req.Spec.IoStrategy = ioStrategy
+
+	// Setting passphrase
+	if len(cvOpts.passPhrase) != 0 {
+		cvOpts.req.Spec.Passphrase = cvOpts.passPhrase
 	}
 
 	// Send request
