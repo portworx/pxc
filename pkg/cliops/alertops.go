@@ -21,34 +21,33 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type CliAlertInputs struct {
-	util.BaseFormatOutput
-	Wide      bool
-	AlertType string
-	AlertId   string
-}
-
 type CliAlertOps struct {
-	CliAlertInputs
+	portworx.CliAlertInputs
 	PxAlertOps portworx.PxAlertOps
 }
 
-func GetCliAlertInputs(cmd *cobra.Command, args []string) *CliAlertInputs {
+func GetCliAlertInputs(cmd *cobra.Command, args []string) *portworx.CliAlertInputs {
 	output, _ := cmd.Flags().GetString("output")
 	alertType, _ := cmd.Flags().GetString("type")
 	alertId, _ := cmd.Flags().GetString("id")
-	return &CliAlertInputs{
+	startTime, _ := cmd.Flags().GetString("start-time")
+	endTime, _ := cmd.Flags().GetString("end-time")
+	severity, _ := cmd.Flags().GetString("severity")
+	return &portworx.CliAlertInputs{
 		BaseFormatOutput: util.BaseFormatOutput{
 			FormatType: output,
 		},
 		AlertType: alertType,
 		AlertId:   alertId,
+		StartTime: startTime,
+		EndTime:   endTime,
+		Severity:  severity,
 	}
 }
 
 // Create a new cliAlertOps object
 func NewCliAlertOps(
-	cvi *CliAlertInputs,
+	cvi *portworx.CliAlertInputs,
 ) *CliAlertOps {
 	return &CliAlertOps{
 		CliAlertInputs: *cvi,

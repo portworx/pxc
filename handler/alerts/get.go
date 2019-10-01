@@ -43,8 +43,20 @@ var _ = commander.RegisterCommandVar(func() {
   # To get portworx related alerts :
   pxc get alerts
 
-  # To fetch alert based on particualr alert id. Fetch all alerts based on "VolumeCreateSuccess" id
-  pxc get alerts --id "VolumeCreateSuccess"`,
+  # To fetch alert based on particualr alert id. Fetch all alerts based on "VolumeCreateSuccess" id :
+  pxc get alerts --id "VolumeCreateSuccess"
+
+  # To fetch alerts between a time window :
+  pxctl alerts show --start-time "2019-09-19T09:40:26.371Z" --end-time "2019-09-19T09:43:59.371Z"
+
+  # To fetch alerts with min severity level :
+  pxc get alerts --severity "alarm"
+
+  # To fetch alerts based on resource type. Here we fetch all "volume" related alerts :
+  pxc get alerts -t "volume"
+
+  # To fetch alerts based on resource id. Here we fetch alerts related to "cluster" :
+  pxc get alerts --id "1f95a5e7-6a38-41f9-9cb2-8bb4f8ab72c5"`,
 		RunE: getAlertsExec,
 	}
 })
@@ -53,8 +65,10 @@ var _ = commander.RegisterCommandInit(func() {
 	cmd.GetAddCommand(getAlertsCmd)
 	getAlertsCmd.Flags().StringP("type", "t", "all", "alert type (Valid Values: [volume node cluster drive all])")
 	getAlertsCmd.Flags().StringP("id", "i", "", "Alert id ")
+	getAlertsCmd.Flags().StringP("start-time", "a", "", "start time span (RFC 3339)")
+	getAlertsCmd.Flags().StringP("end-time", "e", "", "end time span (RFC 3339)")
 	getAlertsCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
-	//TODO: Need to support more flags
+	getAlertsCmd.Flags().StringP("severity", "v", "notify", "Min severity value (Valid Values: [notify warn warning alarm]) (default \"notify\")")
 })
 
 func GetAddCommand(cmd *cobra.Command) {
@@ -94,7 +108,7 @@ func NewAlertGetFormatter(cvOps *cliops.CliAlertOps) *alertGetFormatter {
 
 // YamlFormat returns the yaml representation of the object
 func (p *alertGetFormatter) YamlFormat() (string, error) {
-	alerts, err := p.PxAlertOps.GetPxAlerts(p.CliAlertInputs.AlertType, p.CliAlertInputs.AlertId)
+	alerts, err := p.PxAlertOps.GetPxAlerts(p.CliAlertInputs)
 	if err != nil {
 		return "", err
 	}
@@ -103,7 +117,7 @@ func (p *alertGetFormatter) YamlFormat() (string, error) {
 
 // JsonFormat returns the json representation of the object
 func (p *alertGetFormatter) JsonFormat() (string, error) {
-	alerts, err := p.PxAlertOps.GetPxAlerts(p.CliAlertInputs.AlertType, p.CliAlertInputs.AlertId)
+	alerts, err := p.PxAlertOps.GetPxAlerts(p.CliAlertInputs)
 	if err != nil {
 		return "", err
 	}
@@ -126,7 +140,7 @@ func (p *alertGetFormatter) toTabbed() (string, error) {
 	writer := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
 	t := tabby.NewCustom(writer)
 
-	alerts, err := p.PxAlertOps.GetPxAlerts(p.CliAlertInputs.AlertType, p.CliAlertInputs.AlertId)
+	alerts, err := p.PxAlertOps.GetPxAlerts(p.CliAlertInputs)
 	if err != nil {
 		return "", err
 	}
