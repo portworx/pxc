@@ -17,6 +17,7 @@ package cluster
 import (
 	"fmt"
 
+	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
@@ -95,7 +96,7 @@ func describeClusterExec(c *cobra.Command, args []string) error {
 	}
 
 	t := util.NewTabby()
-	t.AddHeader("Hostname", "IP", "SchedulerNodeName", "Used", "Capacity", "Status")
+	t.AddHeader("Hostname", "IP", "SchedulerNodeName", "Used", "Capacity", "Status", "CPU", "Mem Total", "Mem Free", "Containers", "Kernel Version", "OS")
 	for _, nid := range nodesInfo.GetNodeIds() {
 		node, err := nodes.Inspect(ctx, &api.SdkNodeInspectRequest{NodeId: nid})
 		if err != nil {
@@ -113,7 +114,20 @@ func describeClusterExec(c *cobra.Command, args []string) error {
 		}
 		usedStr := fmt.Sprintf("%d Gi", used/cmd.Gi)
 		capacityStr := fmt.Sprintf("%d Gi", capacity/cmd.Gi)
-		t.AddLine(n.GetHostname(), n.GetMgmtIp(), n.GetSchedulerNodeName(), usedStr, capacityStr, n.GetStatus())
+		kernelVersionStr := "Unavailable"
+		osFlavorStr := "Unavailable"
+
+		if n.NodeLabels["Kernel Version"] != "" {
+			kernelVersionStr = n.NodeLabels["Kernel Version"]
+		}
+
+		if n.NodeLabels["OS"] != "" {
+			osFlavorStr = n.NodeLabels["OS"]
+		}
+
+		t.AddLine(n.GetHostname(), n.GetMgmtIp(), n.GetSchedulerNodeName(), usedStr, capacityStr, n.GetStatus(),
+			humanize.Ftoa(n.GetCpu()), humanize.Bytes(n.GetMemTotal()), humanize.Bytes(n.GetMemFree()),
+			"N/A", kernelVersionStr, osFlavorStr)
 	}
 	t.Print()
 
