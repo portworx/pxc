@@ -18,10 +18,12 @@ package volume
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
+	sched "github.com/portworx/pxc/pkg/openstorage/sched"
 	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
@@ -39,6 +41,11 @@ type createVolumeOpts struct {
 	earlyAck           bool
 	asyncIo            bool
 	passPhrase         string
+	periodic           string
+	daily              []string
+	weekly             []string
+	monthly            []string
+	policy             string
 }
 
 var (
@@ -74,7 +81,20 @@ var _ = commander.RegisterCommandVar(func() {
   pxc create volume myvolume --size=3 --labels 'access=slow'
   # To create volume called 'myvolume" with volume access (collaborators and groups) option flag.
   # r - read, w - write, a -admin:
-  pxc create volume myvolume --size=3 --groups group1:r,group2:w,group3:a --collaborators user1:r,user2:a,user3:w`,
+  pxc create volume myvolume --size=3 --groups group1:r,group2:w,group3:a --collaborators user1:r,user2:a,user3:w
+  
+  # To create volume with periodic snapshot policy for every 15 minutes with retain=2 (maintaing two snapshot copies at a given time):
+  pxc create volume snapvol --periodic 15,2
+
+  # To create volume with daily snapshot policy at 00h:10m with retain=2 (maintaing two snapshot copies at a given time):
+  pxc create volume snapvol --daily 00:10,2
+
+  # To create volume with weekly snapshot for every monday at 00h:12m with retain=2 (maintaing two snapshot copies at a given time):
+  pxc create volume snapvol --weekly monday@00:12,2
+  
+  # To create volume with monthly snapshot on 25th of every month at 10h:10m with retain=2 (maintaing two snapshot copies at a given time):
+  pxc create volume snapvol --monthly 25@10:10,2`,
+
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("Must supply a name for volume")
@@ -108,7 +128,12 @@ var _ = commander.RegisterCommandInit(func() {
 	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.GroupEnforced, "group-enforced", false, "Enforce group during provision")
 	createVolumeCmd.Flags().Uint32Var(&cvOpts.req.Spec.Scale, "scale", 0, "auto scale to max number (Valid Range: [1 1024]) (default 1)")
 	createVolumeCmd.Flags().StringVar(&cvOpts.passPhrase, "passphrase", "", "Passphrase for an encrypted volume")
-	createVolumeCmd.Flags().Uint32Var(&cvOpts.req.Spec.SnapshotInterval, "snapshot-interval", 0, "SnapshotInterval in minutes, set to 0 to disable snapshots")
+	createVolumeCmd.Flags().StringVar(&cvOpts.periodic, "periodic", "", "periodic snapshot interval in mins,k (keeps 5 by default), 0 disables all schedule snapshots")
+	createVolumeCmd.Flags().StringSliceVar(&cvOpts.daily, "daily", []string{}, "daily snapshot at specified hh:mm,k (keeps 7 by default)")
+	createVolumeCmd.Flags().StringSliceVar(&cvOpts.weekly, "weekly", []string{}, "weekly snapshot at specified weekday@hh:mm,k (keeps 5 by default)")
+	createVolumeCmd.Flags().StringSliceVar(&cvOpts.monthly, "monthly", []string{}, "monthly snapshot at specified day@hh:mm,k (keeps 12 by default)")
+	createVolumeCmd.Flags().StringVar(&cvOpts.policy, "policy", "", "Schedule policy names separated by comma")
+
 	createVolumeCmd.Flags().SortFlags = false
 })
 
@@ -210,6 +235,12 @@ func createVolumeExec(c *cobra.Command, args []string) error {
 	if len(cvOpts.passPhrase) != 0 {
 		cvOpts.req.Spec.Passphrase = cvOpts.passPhrase
 	}
+	// Checking if snapshot schedule is set
+	schedule, snapErr := makeSnapSchedule(cvOpts)
+	if snapErr != nil {
+		return snapErr
+	}
+	cvOpts.req.Spec.SnapshotSchedule = schedule
 
 	// Send request
 	volumes := api.NewOpenStorageVolumeClient(conn)
@@ -230,4 +261,54 @@ func createVolumeExec(c *cobra.Command, args []string) error {
 	}
 	util.PrintFormatted(formattedOut)
 	return nil
+}
+
+func makeSnapSchedule(snapOpts *createVolumeOpts) (string, error) {
+	updates := []sched.RetainIntervalSpec{}
+	var err error
+	if len(snapOpts.periodic) > 0 {
+		s, err := sched.ParsePeriodic(snapOpts.periodic)
+		if err != nil {
+			return "", err
+		}
+		updates = append(updates, s)
+		if s.Period == 0 {
+			return sched.ScheduleString(updates, nil)
+		}
+	}
+
+	for freq, parse := range sched.ParseCLI {
+		var items []string
+		switch freq {
+		case sched.DailyType:
+			items = snapOpts.daily
+		case sched.WeeklyType:
+			items = snapOpts.weekly
+		case sched.MonthlyType:
+			items = snapOpts.monthly
+		default:
+			return "", fmt.Errorf("unknown periodicity")
+		}
+
+		// fix items if they have been split during CLI parsing due to comma in the format string.
+		items = util.FixCommaBasedStringSliceInput(items, os.Args)
+
+		for _, item := range items {
+			var s sched.RetainIntervalSpec
+			s, err = parse(item)
+			if err != nil {
+				break
+			}
+			updates = append(updates, s)
+		}
+	}
+
+	if err != nil {
+		return "", err
+	}
+	p, err := sched.NewPolicyTags(snapOpts.policy)
+	if err != nil {
+		return "", err
+	}
+	return sched.ScheduleString(updates, p)
 }
