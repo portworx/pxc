@@ -35,7 +35,7 @@ var _ = commander.RegisterCommandVar(func() {
   # To delete portworx related alerts :
   pxc delete alerts
 
-  # To delete alert based on particualr alert type. Delete all alerts related to "volume" :
+  # To delete alert based on particular alert type. Delete all alerts related to "volume" :
   pxc delete alerts -t "volume"`,
 		RunE: deleteAlertsExec,
 	}
