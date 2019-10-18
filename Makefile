@@ -31,6 +31,12 @@ all: pxc
 install:
 	go install
 
+imports:
+	goimports -w ./cmd
+	goimports -w ./handler
+	goimports -w ./pkg
+	goimports -w *.go
+
 lint:
 	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
 
