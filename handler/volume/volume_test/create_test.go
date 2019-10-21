@@ -16,10 +16,9 @@ limitations under the License.
 package volume_test
 
 import (
-	"testing"
-
 	"github.com/portworx/pxc/handler/test"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 // Testing creation of volume with "sticky" flag set.
@@ -98,6 +97,66 @@ func TestCreateVolumeWithAccess(t *testing.T) {
 
 	// Create volume with access (--groups and --collaborators) flag set
 	test.PxTestCreateVolumeWithAccess(t, volName, 1, "group1:r,group2:a", "user1:r,user2:w")
+	assert.True(t, test.PxTestHasVolume(volName))
+
+	// Delete Volume
+	test.PxTestDeleteVolume(t, volName)
+	assert.False(t, test.PxTestHasVolume(volName))
+}
+
+// Testing creation of volume with periodic snapshot policy
+func TestCreateVolumeWithPeriodPolicy(t *testing.T) {
+	volName := test.GenVolName("snapVol")
+	// Creating periodic policy with 15mins interval and retain = 2
+	snapPolicy := "--periodic 15,2"
+
+	// Create volume with perodic snapshot policy
+	test.PxTestCreateVolumeSnap(t, volName, snapPolicy)
+	assert.True(t, test.PxTestHasVolume(volName))
+
+	// Delete Volume
+	test.PxTestDeleteVolume(t, volName)
+	assert.False(t, test.PxTestHasVolume(volName))
+}
+
+// Testing creation of volume with daily snapshot policy
+func TestCreateVolumeWithDailyPolicy(t *testing.T) {
+	volName := test.GenVolName("snapVol")
+	// Creating daily policy with retain = 2
+	snapPolicy := "--daily 10:10,2"
+
+	// Create volume with perodic snapshot policy
+	test.PxTestCreateVolumeSnap(t, volName, snapPolicy)
+	assert.True(t, test.PxTestHasVolume(volName))
+
+	// Delete Volume
+	test.PxTestDeleteVolume(t, volName)
+	assert.False(t, test.PxTestHasVolume(volName))
+}
+
+// Testing creation of volume with weekly snapshot policy
+func TestCreateVolumeWithWeeklyPolicy(t *testing.T) {
+	volName := test.GenVolName("snapVol")
+	// Creating daily policy with retain = 2
+	snapPolicy := "--weekly monday@10:10,2"
+
+	// Create volume with perodic snapshot policy
+	test.PxTestCreateVolumeSnap(t, volName, snapPolicy)
+	assert.True(t, test.PxTestHasVolume(volName))
+
+	// Delete Volume
+	test.PxTestDeleteVolume(t, volName)
+	assert.False(t, test.PxTestHasVolume(volName))
+}
+
+// Testing creation of volume with monthly snapshot policy
+func TestCreateVolumeWithMonthlyPolicy(t *testing.T) {
+	volName := test.GenVolName("snapVol")
+	// Creating monthly policy with retain = 2
+	snapPolicy := "--monthly 25@10:10,2"
+
+	// Create volume with perodic snapshot policy
+	test.PxTestCreateVolumeSnap(t, volName, snapPolicy)
 	assert.True(t, test.PxTestHasVolume(volName))
 
 	// Delete Volume
