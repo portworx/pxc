@@ -43,7 +43,7 @@ var _ = commander.RegisterCommandVar(func() {
   # To get portworx related alerts :
   pxc get alerts
 
-  # To fetch alert based on particualr alert id. Fetch all alerts based on "VolumeCreateSuccess" id :
+  # To fetch alert based on particular alert id. Fetch all alerts based on "VolumeCreateSuccess" id :
   pxc get alerts --id "VolumeCreateSuccess"
 
   # To fetch alerts between a time window :
