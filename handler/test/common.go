@@ -319,3 +319,10 @@ func PxTestPatchVolumeRemoveAllGroups(t *testing.T, volName string) {
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
+
+func PxTestCreateVolumeSnap(t *testing.T, volName string, policy string) {
+	cli := fmt.Sprintf("pxc create volume %s %s --size 1", volName, policy)
+	lines, _, _ := ExecuteCli(cli)
+
+	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Volume %s created with id", volName)))
+}
