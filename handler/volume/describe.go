@@ -59,6 +59,7 @@ var _ = commander.RegisterCommandInit(func() {
 	describeVolumeCmd.Flags().String("owner", "", "Owner of volume")
 	describeVolumeCmd.Flags().String("volumegroup", "", "Volume group id")
 	describeVolumeCmd.Flags().Bool("deep", false, "Collect more information, this may delay the request")
+	describeVolumeCmd.Flags().MarkHidden("deep")
 	describeVolumeCmd.Flags().Bool("show-k8s-info", false, "Show kubernetes information")
 })
 
