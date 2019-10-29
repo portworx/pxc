@@ -40,19 +40,16 @@ type volumeUpdateOpts struct {
 	removeGroups           string
 	removeAllCollaborators bool
 	removeAllGroups        bool
-}
-
-// Struct that contains flag to track the options that set in the current context.
-// This struct variables will be used to check the invalid combination of the flag options.
-type volumeUpdateOptionStatus struct {
-	haLevelSet, sizeSet, sharedSet, stickySet                              bool
-	addGroupsSet, removeGroupsSet, removeAllGroupsSet                      bool
-	addCollaboratorsSet, removeCollaboratorsSet, removeAllCollaboratorsSet bool
+	earlyAck               string
+	asyncIo                string
+	ioProfile              string
+	noDiscard              string
 }
 
 var (
 	updateReq      *volumeUpdateOpts
 	patchVolumeCmd *cobra.Command
+	cliOps         cliops.CliOps
 )
 
 // updateVolumeCmd represents the updateVolume command
@@ -67,22 +64,42 @@ var _ = commander.RegisterCommandVar(func() {
 		Example: `
   # To set the halevel of the volume test to 3:
   pxc patch  volume test --halevel 3
+
   # To update the size of the volume to 2GiB:
   pxc patch volume test --size 2
+
   # To set the sticky flag of the volume test:
   pxc patch volume test --sticky
+
   # To set the shared flag of the volume test:
   pxc patch volume test --shared
+
   # To update collaborators and groups of the volume access list:
   pxc patch volume test --add-collaborators user1:r,user2:w,user3:a --add-groups group1:r,group2:w,group3:a
+ 
   # To remove collaborators and groups from exisiting volume access list:
   pxc patch volume test --remove-collaborators user1:r, --remove-groups group1:r
+ 
   # To remove all the collaborators and groups from exisiting volume access list:
   pxc patch volume test --remove-all-collaborators --remove-all-groups
+ 
   # To update collaborators and remove few groups from the volume access list:
   pxc patch volume test --add-collaborators user4:r,user5:w, --remove-groups group1:r
+  
   # To update the access type of the existing collaborators and groups:
-  pxc patch volume test --add-collaborators user1:a --add-groups group1:a`,
+  pxc patch volume test --add-collaborators user1:a --add-groups group1:a
+  
+  # To enable earl-ack of the volume test:
+  pxc patch volume test --early-ack "on
+ 
+  # To enable async-io of the volume test:
+  pxc patch volume test --async-io "on"
+  
+  # To update IoProfile to db of the volume test:
+  pxc patch volume test --io-profile "db"
+  
+  # To enable nodiscard of the volume test:
+  pxc patch volume test --nodiscard "on"`,
 
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
@@ -108,27 +125,42 @@ var _ = commander.RegisterCommandInit(func() {
 	patchVolumeCmd.Flags().StringVar(&updateReq.removeGroups, "remove-groups", "", "Remove the given groups from the group list")
 	patchVolumeCmd.Flags().BoolVarP(&updateReq.removeAllCollaborators, "remove-all-collaborators", "", false, "Remove all the user from the collaborators list")
 	patchVolumeCmd.Flags().BoolVarP(&updateReq.removeAllGroups, "remove-all-groups", "", false, "Remove all the groups from the group list")
+	patchVolumeCmd.Flags().StringVar(&updateReq.earlyAck, "early-ack", "", "Reply to async write requests after it is copied to shared memory (Valid Values: [on off]) (default \"off\")")
+	patchVolumeCmd.Flags().StringVar(&updateReq.asyncIo, "async-io", "", "Enable async IO to backing storage (Valid Values: [on off]) (default \"off\")")
+	patchVolumeCmd.Flags().StringVar(&updateReq.ioProfile, "io-profile", "", "IO Profile (Valid Values: [sequential cms db db_remote sync_shared]) (default \"sequential\")")
+	patchVolumeCmd.Flags().StringVar(&updateReq.noDiscard, "nodiscard", "", "Disable discard support for this volume (Valid Values: [on off]) (default \"off\")")
 	patchVolumeCmd.Flags().SortFlags = false
 })
 
 // validateVolumeUpdateOptions will check for the valid combination of the flag option.
-func validateVolumeUpdateOptions(status volumeUpdateOptionStatus) error {
-	if status.haLevelSet {
-		if status.sizeSet || status.sharedSet || status.stickySet {
+//func validateVolumeUpdateOptions(status volumeUpdateOptionStatus) error {
+func validateVolumeUpdateOptions() error {
+	haLevelSet, _ := patchVolumeCmd.Flags().GetInt64("halevel")
+	sizeSet, _ := patchVolumeCmd.Flags().GetUint64("size")
+	sharedSet, _ := patchVolumeCmd.Flags().GetString("shared")
+	stickySet, _ := patchVolumeCmd.Flags().GetString("sticky")
+	if haLevelSet > 0 {
+		if sizeSet > 0 || len(sharedSet) != 0 || len(stickySet) != 0 {
 			return fmt.Errorf("Error: --halevel is not a valid combination with --size or --shared or --sticky")
 		}
 	}
-	if status.removeAllCollaboratorsSet {
-		if status.addCollaboratorsSet || status.removeCollaboratorsSet {
-			return fmt.Errorf("Error: remove-all-collaborators is not a valid combination with --add-collaborators or --remove-collaborators")
-		}
-	}
-	if status.removeAllGroupsSet {
-		if status.addGroupsSet || status.removeGroupsSet {
-			return fmt.Errorf("Error: remove-all-groups is not a valid combination with --add-groups or --remove-groups")
 
+	addCollaborators, _ := patchVolumeCmd.Flags().GetString("add-collaborators")
+	removeAllCollaborators, _ := patchVolumeCmd.Flags().GetBool("remove-all-collaborators")
+	if removeAllCollaborators {
+		if len(addCollaborators) != 0 {
+			return fmt.Errorf("Error: remove-all-collaborators is not a valid combination with --add-collaborators")
 		}
 	}
+
+	removeAllGroupsSet, _ := patchVolumeCmd.Flags().GetBool("remove-all-groups")
+	addGroupsSet, _ := patchVolumeCmd.Flags().GetString("add-groups")
+	if removeAllGroupsSet {
+		if len(addGroupsSet) != 0 {
+			return fmt.Errorf("Error: remove-all-groups is not a valid combination with --add-groups ")
+		}
+	}
+
 	return nil
 }
 
@@ -138,12 +170,11 @@ func PatchAddCommand(cmd *cobra.Command) {
 
 func updateVolume(cmd *cobra.Command, args []string) error {
 
-	var volumeFlagStatus volumeUpdateOptionStatus
-
+	changed := false
 	// Parse out all of the common cli volume flags
 	cvi := cliops.NewCliInputs(cmd, args)
 	// Create a CliVolumeOps object
-	cliOps := cliops.NewCliOps(cvi)
+	cliOps = cliops.NewCliOps(cvi)
 	// Connect to px and k8s (if needed)
 	err := cliOps.Connect()
 
@@ -153,44 +184,47 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 	updateReq.req.VolumeId = args[0]
 
 	updateReq.req.Spec = &api.VolumeSpecUpdate{}
+	currentGroups := make(map[string]api.Ownership_AccessType)
+	currentCollaborators := make(map[string]api.Ownership_AccessType)
+
+	// Fetch the current acls for the volume
+	acls, err := readCurrentAcls()
+	currentCollaborators = acls.GetCollaborators()
+	currentGroups = acls.GetGroups()
+
+	if err != nil {
+		return err
+	}
 
 	if len(updateReq.addCollaborators) != 0 || len(updateReq.addGroups) != 0 ||
-		!updateReq.removeAllCollaborators || !updateReq.removeAllGroups ||
-		len(updateReq.removeCollaborators) != 0 || len(updateReq.removeGroups) != 0 {
+		len(updateReq.removeCollaborators) != 0 || len(updateReq.removeGroups) != 0 ||
+		updateReq.removeAllCollaborators || updateReq.removeAllGroups {
 		// For removeAllCollaborators and removeAllGroups, Initialize a empty Ownership
 		// For addCollaborators, addGroups, removeCollaborators and removeGroups,
 		// Intialize a empty Ownership and update the values later.
-		updateReq.req.Spec.Ownership = &api.Ownership{}
-		updateReq.req.Spec.Ownership.Acls = &api.Ownership_AccessControl{}
+		if acls == nil {
+			updateReq.req.Spec.Ownership = &api.Ownership{
+				Acls: &api.Ownership_AccessControl{},
+			}
+		} else {
+			updateReq.req.Spec.Ownership = &api.Ownership{
+				Acls: acls,
+			}
+		}
+
+		changed = true
 	}
 
-	var currentGroups map[string]api.Ownership_AccessType
-	var currentCollaborators map[string]api.Ownership_AccessType
+	// Removing all collaborators
+	if updateReq.removeAllCollaborators {
+		updateReq.req.Spec.Ownership.Acls.Collaborators = map[string]api.Ownership_AccessType{}
+		changed = true
+	}
 
-	if len(updateReq.addCollaborators) != 0 || len(updateReq.addGroups) != 0 ||
-		len(updateReq.removeCollaborators) != 0 || len(updateReq.removeGroups) != 0 {
-		volNames := make([]string, 1, 1)
-		// Assign the user given volume Name
-		volNames[0] = updateReq.req.VolumeId
-		volSpec := &portworx.VolumeSpec{
-			VolNames: volNames,
-		}
-		vo := portworx.NewVolumes(cliOps.PxOps(), volSpec)
-
-		// Get the current copy of the volume spec
-		vols, err := vo.GetVolumes()
-		if err != nil {
-			return err
-		}
-		if len(vols) == 0 {
-			return fmt.Errorf("Error: Volume: %s not found\n", updateReq.req.VolumeId)
-		}
-		spec := vols[0].GetSpec()
-
-		// Read the current collaborators
-		currentCollaborators = spec.GetOwnership().GetAcls().GetCollaborators()
-		// Read the current Groups
-		currentGroups = spec.GetOwnership().GetAcls().GetGroups()
+	// Removing all groups
+	if updateReq.removeAllGroups {
+		updateReq.req.Spec.Ownership.Acls.Groups = map[string]api.Ownership_AccessType{}
+		changed = true
 	}
 
 	// Update the  collaborators list
@@ -209,8 +243,7 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 			}
 		}
 		updateReq.req.Spec.Ownership.Acls.Collaborators = currentCollaborators
-		updateReq.req.Spec.Ownership.Acls.Groups = currentGroups
-		volumeFlagStatus.addCollaboratorsSet = true
+		changed = true
 	}
 
 	// Update the  groups list
@@ -229,8 +262,7 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 			}
 		}
 		updateReq.req.Spec.Ownership.Acls.Groups = currentGroups
-		updateReq.req.Spec.Ownership.Acls.Collaborators = currentCollaborators
-		volumeFlagStatus.addGroupsSet = true
+		changed = true
 	}
 
 	// Remove the given list of collaborators
@@ -239,12 +271,12 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return nil
 		}
+
 		for key, _ := range removeCollaborators {
 			delete(currentCollaborators, key)
 		}
 		updateReq.req.Spec.Ownership.Acls.Collaborators = currentCollaborators
-		updateReq.req.Spec.Ownership.Acls.Groups = currentGroups
-		volumeFlagStatus.removeCollaboratorsSet = true
+		changed = true
 	}
 
 	// Remove the given list of Groups
@@ -257,18 +289,7 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 			delete(currentGroups, key)
 		}
 		updateReq.req.Spec.Ownership.Acls.Groups = currentGroups
-		updateReq.req.Spec.Ownership.Acls.Collaborators = currentCollaborators
-		volumeFlagStatus.removeGroupsSet = true
-	}
-
-	//Remove All the groups
-	if updateReq.removeAllCollaborators {
-		volumeFlagStatus.removeAllCollaboratorsSet = true
-	}
-
-	// Remove all the groups
-	if updateReq.removeAllGroups {
-		volumeFlagStatus.removeAllGroupsSet = true
+		changed = true
 	}
 
 	// check if halevel providied is valid one
@@ -281,7 +302,7 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 		updateReq.req.Spec.ReplicaSet = &api.ReplicaSet{
 			Nodes: updateReq.replicaSet,
 		}
-		volumeFlagStatus.haLevelSet = true
+		changed = true
 	}
 
 	// check prvoide size is valid
@@ -290,48 +311,122 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 		updateReq.req.Spec.SizeOpt = &api.VolumeSpecUpdate_Size{
 			Size: (updateReq.size * 1024 * 1024 * 1024),
 		}
-		volumeFlagStatus.sizeSet = true
+		changed = true
 	}
 
 	// For setting volume as shared or not
-	switch updateReq.shared {
-	case "on":
-		updateReq.req.Spec.SharedOpt = &api.VolumeSpecUpdate_Shared{
-			Shared: true,
+	if len(updateReq.shared) != 0 {
+		switch updateReq.shared {
+		case "on":
+			updateReq.req.Spec.SharedOpt = &api.VolumeSpecUpdate_Shared{
+				Shared: true,
+			}
+		case "off":
+			updateReq.req.Spec.SharedOpt = &api.VolumeSpecUpdate_Shared{
+				Shared: false,
+			}
+		default:
+			return fmt.Errorf("Invalid input given for shared flag. Valid values are \"on\" or \"off\"")
 		}
-		volumeFlagStatus.sharedSet = true
-	case "off":
-		updateReq.req.Spec.SharedOpt = &api.VolumeSpecUpdate_Shared{
-			Shared: false,
-		}
-		volumeFlagStatus.sharedSet = true
+		changed = true
 	}
 
 	// For setting volume to be sticky
-	switch updateReq.sticky {
-	case "on":
-		updateReq.req.Spec.StickyOpt = &api.VolumeSpecUpdate_Sticky{
-			Sticky: true,
+	if len(updateReq.sticky) != 0 {
+		switch updateReq.sticky {
+		case "on":
+			updateReq.req.Spec.StickyOpt = &api.VolumeSpecUpdate_Sticky{
+				Sticky: true,
+			}
+		case "off":
+			updateReq.req.Spec.StickyOpt = &api.VolumeSpecUpdate_Sticky{
+				Sticky: false,
+			}
+		default:
+			return fmt.Errorf("Invalid input given for sticky flag. Valid values are \"on\" or \"off\"")
 		}
-		volumeFlagStatus.stickySet = true
-	case "off":
-		updateReq.req.Spec.StickyOpt = &api.VolumeSpecUpdate_Sticky{
-			Sticky: false,
-		}
-		volumeFlagStatus.stickySet = true
+		changed = true
 	}
 
-	if !volumeFlagStatus.addCollaboratorsSet && !volumeFlagStatus.addGroupsSet &&
-		!volumeFlagStatus.haLevelSet && !volumeFlagStatus.removeAllCollaboratorsSet &&
-		!volumeFlagStatus.removeAllGroupsSet && !volumeFlagStatus.removeCollaboratorsSet &&
-		!volumeFlagStatus.removeGroupsSet && !volumeFlagStatus.sharedSet &&
-		!volumeFlagStatus.sizeSet && !volumeFlagStatus.stickySet {
+	// Setting IoStrategy
+	updateReq.req.Spec.IoStrategy = &api.IoStrategy{}
+	if len(updateReq.earlyAck) != 0 {
+		switch updateReq.earlyAck {
+		case "on":
+			updateReq.req.Spec.IoStrategy.EarlyAck = true
+		case "off":
+			updateReq.req.Spec.IoStrategy.EarlyAck = false
+		default:
+			return fmt.Errorf("Invalid input given for early-ack. Valid values are \"on\" or \"off\"")
+		}
+		changed = true
+	}
+
+	if len(updateReq.asyncIo) != 0 {
+		switch updateReq.asyncIo {
+		case "on":
+			updateReq.req.Spec.IoStrategy.AsyncIo = true
+		case "off":
+			updateReq.req.Spec.IoStrategy.AsyncIo = false
+		default:
+			return fmt.Errorf("Invalid input given for async-io. Valid values are \"on\" or \"off\"")
+		}
+		changed = true
+	}
+
+	// Setting IoProfile
+	if len(updateReq.ioProfile) > 0 {
+		switch updateReq.ioProfile {
+		case "db":
+			updateReq.req.Spec.IoProfileOpt = &api.VolumeSpecUpdate_IoProfile{
+				IoProfile: api.IoProfile_IO_PROFILE_DB,
+			}
+		case "cms":
+			updateReq.req.Spec.IoProfileOpt = &api.VolumeSpecUpdate_IoProfile{
+				IoProfile: api.IoProfile_IO_PROFILE_CMS,
+			}
+		case "db_remote":
+			updateReq.req.Spec.IoProfileOpt = &api.VolumeSpecUpdate_IoProfile{
+				IoProfile: api.IoProfile_IO_PROFILE_DB_REMOTE,
+			}
+		case "sync_shared":
+			updateReq.req.Spec.IoProfileOpt = &api.VolumeSpecUpdate_IoProfile{
+				IoProfile: api.IoProfile_IO_PROFILE_SYNC_SHARED,
+			}
+		case "sequential":
+			updateReq.req.Spec.IoProfileOpt = &api.VolumeSpecUpdate_IoProfile{
+				IoProfile: api.IoProfile_IO_PROFILE_SEQUENTIAL,
+			}
+		default:
+			return fmt.Errorf("Invalid input given for IoProfile. Please see help.")
+		}
+		changed = true
+	}
+
+	// Setting discard
+	if len(updateReq.noDiscard) != 0 {
+		switch updateReq.noDiscard {
+		case "on":
+			updateReq.req.Spec.NodiscardOpt = &api.VolumeSpecUpdate_Nodiscard{
+				Nodiscard: true,
+			}
+		case "off":
+			updateReq.req.Spec.NodiscardOpt = &api.VolumeSpecUpdate_Nodiscard{
+				Nodiscard: false,
+			}
+		default:
+			return fmt.Errorf("Invalid input given for nodiscard. Valid values are \"on\" or \"off\"")
+		}
+		changed = true
+	}
+
+	if !changed {
 		return fmt.Errorf("Error: Must supply any one of the flags with valid parameters. " +
 			"Please see help for more info")
 	}
 
 	// Check whether the flag options are in valid combination.
-	err = validateVolumeUpdateOptions(volumeFlagStatus)
+	err = validateVolumeUpdateOptions()
 	if err != nil {
 		return err
 	}
@@ -343,4 +438,28 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 	}
 	util.Printf("Volume %s parameter updated successfully\n", updateReq.req.VolumeId)
 	return nil
+}
+
+// Reads current acls for the given volume
+func readCurrentAcls() (*api.Ownership_AccessControl, error) {
+	volNames := make([]string, 1, 1)
+	// Assign the user given volume Name
+	volNames[0] = updateReq.req.VolumeId
+	volSpec := &portworx.VolumeSpec{
+		VolNames: volNames,
+	}
+	vo := portworx.NewVolumes(cliOps.PxOps(), volSpec)
+
+	// Get the current copy of the volume spec
+	vols, err := vo.GetVolumes()
+	if err != nil {
+		return nil, err
+	}
+	if len(vols) == 0 {
+		return nil, fmt.Errorf("Error: Volume: %s not found\n", updateReq.req.VolumeId)
+	}
+	spec := vols[0].GetSpec()
+	acls := spec.GetOwnership().GetAcls()
+
+	return acls, nil
 }

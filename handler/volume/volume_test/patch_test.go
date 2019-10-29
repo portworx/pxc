@@ -119,6 +119,60 @@ func TestPatchVolumeRemoveAllGroups(t *testing.T) {
 	volCleanup(t, volName)
 }
 
+func TestPatchVolumeEarlyAckOn(t *testing.T) {
+	volName := test.GenVolName("testVol")
+	value := "on"
+	volCreate(t, volName)
+	//Enable early_ack
+	test.PxTestPatchVolumeEarlyAck(t, volName, value)
+	volCleanup(t, volName)
+}
+
+func TestPatchVolumeEarlyAckOff(t *testing.T) {
+	volName := test.GenVolName("testVol")
+	value := "off"
+	volCreate(t, volName)
+	//Disable early_ack
+	test.PxTestPatchVolumeEarlyAck(t, volName, value)
+	volCleanup(t, volName)
+}
+
+func TestPatchVolumeAsyncIoOn(t *testing.T) {
+	volName := test.GenVolName("testVol")
+	value := "on"
+	volCreate(t, volName)
+	//Enable async-io
+	test.PxTestPatchVolumeAsyncIo(t, volName, value)
+	volCleanup(t, volName)
+}
+
+func TestPatchVolumeAsyncIoOff(t *testing.T) {
+	volName := test.GenVolName("testVol")
+	value := "off"
+	volCreate(t, volName)
+	//Disable async-io
+	test.PxTestPatchVolumeAsyncIo(t, volName, value)
+	volCleanup(t, volName)
+}
+
+func TestPatchVolumeIoProfile(t *testing.T) {
+	volName := test.GenVolName("testVol")
+	profile := "db"
+	volCreate(t, volName)
+	//Setting IoProfile to "db"
+	test.PxTestPatchVolumeIoProfile(t, volName, profile)
+	volCleanup(t, volName)
+}
+
+func TestPatchVolumeNoDiscard(t *testing.T) {
+	volName := test.GenVolName("testVol")
+	value := "on"
+	volCreate(t, volName)
+	//Enabling  nodiscard
+	test.PxTestPatchVolumeNoDiscard(t, volName, value)
+	volCleanup(t, volName)
+}
+
 // Helper to create a volume
 func volCreate(t *testing.T, volName string) {
 	// Create a volume
