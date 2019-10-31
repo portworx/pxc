@@ -79,11 +79,10 @@ func describeClusterExec(c *cobra.Command, args []string) error {
 		"Cluster Status: %s\n"+
 		"Version: %s\n"+
 		"%s"+
-		"SDK Version %s\n"+
-		"\n",
+		"SDK Version %s\n",
 		clusterInfo.GetCluster().GetName(),
 		clusterInfo.GetCluster().GetId(),
-		clusterInfo.GetCluster().GetStatus(),
+		util.SdkStatusToPrettyString(clusterInfo.GetCluster().GetStatus()),
 		version.GetVersion().GetVersion(),
 		versionDetails,
 		version.GetSdkVersion().GetVersion())
@@ -95,6 +94,7 @@ func describeClusterExec(c *cobra.Command, args []string) error {
 		return util.PxErrorMessage(err, "Failed to get nodes")
 	}
 
+	util.Printf("\n")
 	t := util.NewTabby()
 	t.AddHeader("Hostname", "IP", "SchedulerNodeName", "Used", "Capacity", "Status", "CPU", "Mem Total", "Mem Free", "Containers", "Kernel Version", "OS")
 	for _, nid := range nodesInfo.GetNodeIds() {
@@ -125,7 +125,7 @@ func describeClusterExec(c *cobra.Command, args []string) error {
 			osFlavorStr = n.NodeLabels["OS"]
 		}
 
-		t.AddLine(n.GetHostname(), n.GetMgmtIp(), n.GetSchedulerNodeName(), usedStr, capacityStr, n.GetStatus(),
+		t.AddLine(n.GetHostname(), n.GetMgmtIp(), n.GetSchedulerNodeName(), usedStr, capacityStr, util.SdkStatusToPrettyString(n.GetStatus()),
 			humanize.Ftoa(n.GetCpu()), humanize.Bytes(n.GetMemTotal()), humanize.Bytes(n.GetMemFree()),
 			"N/A", kernelVersionStr, osFlavorStr)
 	}

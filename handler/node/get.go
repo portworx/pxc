@@ -223,13 +223,13 @@ func (p *nodesGetFormatter) getLine(n *api.StorageNode) ([]interface{}, error) {
 		line = []interface{}{
 			n.GetId(), n.GetHostname(), n.GetMgmtIp(),
 			n.GetDataIp(), n.GetSchedulerNodeName(), usedStr, capacityStr,
-			len(n.GetDisks()), len(n.GetPools()), n.GetStatus(),
+			len(n.GetDisks()), len(n.GetPools()), util.SdkStatusToPrettyString(n.GetStatus()),
 		}
 	} else {
 		line = []interface{}{
 			n.GetHostname(), n.GetMgmtIp(),
 			n.GetSchedulerNodeName(), usedStr, capacityStr,
-			n.GetStatus(),
+			util.SdkStatusToPrettyString(n.GetStatus()),
 		}
 	}
 	if p.cliOps.CliInputs().ShowLabels {
