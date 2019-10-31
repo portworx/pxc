@@ -39,15 +39,18 @@ var getPvcCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
 	getPvcCmd = &cobra.Command{
-		Use:     "pvc",
+		Use:     "pvc [NAME]",
 		Aliases: []string{"pvcs"},
 		Short:   "Show Portworx volume information for Kubernetes PVCs",
-		Example: `$ pxc get pvc
-				  This gets information for all pvcs that are Portworx volumes
-				  $ pxc get pvc abc
-				    This gets information for pvc abc
-					$ pxc get pvc abc xyz
-					  This gets information for pvcs abc and xyz`,
+		Example: `
+  # Get information for all pvcs that are Portworx volumes
+  pxc get pvc
+
+  # Get information for pvc abc
+  pxc get pvc abc
+
+  # Get information for pvcs abc and xyz
+  pxc get pvc abc xyz`,
 		RunE: getPvcExec,
 	}
 })

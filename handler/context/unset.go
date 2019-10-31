@@ -28,7 +28,6 @@ var _ = commander.RegisterCommandVar(func() {
 	contextUnsetCmd = &cobra.Command{
 		Use:   "unset",
 		Short: "Unset the current context configuration",
-		Long:  ``,
 		Example: `
   # Unsetting context called mycontext:
   pxc context mycontext`,

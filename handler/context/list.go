@@ -28,7 +28,7 @@ var contextListCmd *cobra.Command
 var _ = commander.RegisterCommandVar(func() {
 	contextListCmd = &cobra.Command{
 		Use:     "list",
-		Aliases: []string{"contexts", "ctx"},
+		Aliases: []string{"contexts"},
 		Short:   "List all context configurations",
 		Long:    `List all available context configurations from config.yaml file`,
 		Example: `

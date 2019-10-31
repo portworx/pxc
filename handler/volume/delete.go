@@ -33,7 +33,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "volume [NAME]",
 		Short: "Delete a volume in Portworx",
 		Example: `
-  # To delete the volume by name muvolume:
+  # Delete the volume by name muvolume
   pxc delete volume myvolume`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {

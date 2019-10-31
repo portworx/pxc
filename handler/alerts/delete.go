@@ -29,13 +29,13 @@ var deleteAlertsCmd *cobra.Command
 var _ = commander.RegisterCommandVar(func() {
 	deleteAlertsCmd = &cobra.Command{
 		Use:     "alerts",
-		Aliases: []string{"alerts"},
+		Aliases: []string{"alert"},
 		Short:   "Delete Portworx alerts",
 		Example: `
-  # To delete portworx related alerts :
+  # Delete portworx related alerts
   pxc delete alerts
 
-  # To delete alert based on particular alert type. Delete all alerts related to "volume" :
+  # Delete alerts based on particular alert type. Delete all alerts related to "volume"
   pxc delete alerts -t "volume"`,
 		RunE: deleteAlertsExec,
 	}

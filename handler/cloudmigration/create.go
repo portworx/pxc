@@ -47,12 +47,11 @@ var _ = commander.RegisterCommandVar(func() {
 		Short: "Start a cloud migration",
 		Long:  `Migrates set of volumes or a particular volume or a group from cluster pair`,
 		Example: `
-  # Migrating all volumes from cluster 9548a6e0-053b-43fb-8d26-42b628d6c405:
+  # Migrate all volumes from cluster using the cluster id
   pxc create cloudmigration --all -c 9548a6e0-053b-43fb-8d26-42b628d6c405
 
-  # Migrating particular volume from clusterpair
-  # Here volid 134771906220836406 is being migrated:
-  pxc create cloudmigration --volume-id 134771906220836406`,
+  # Migrate volume 1234
+  pxc create cloudmigration --volume-id 1234`,
 		RunE: createCloudmigrationExec,
 	}
 })

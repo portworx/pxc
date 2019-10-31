@@ -39,16 +39,18 @@ var describeVolumeCmd *cobra.Command
 var _ = commander.RegisterCommandVar(func() {
 	// describeVolumeCmd represents the describeVolume command
 	describeVolumeCmd = &cobra.Command{
-		Use:     "volume",
+		Use:     "volume [NAME]",
 		Aliases: []string{"volumes"},
 		Short:   "Describe a Portworx volume",
 		Long:    "Show detailed information of Portworx volumes",
 		Example: `
-  # To describe all the volumes:
+  # Describe all the volumes:
   pxc describe volume
-  # To describe specific volume called "abc":
+
+  # Describe specific volume called "abc":
   pxc describe volume abc
-  # To describe list of volumes (abc, xyz)
+
+  # Describe list of volumes (abc, xyz)
   pxc describe volume abc xyz`,
 		RunE: describeVolumesExec,
 	}
