@@ -29,26 +29,27 @@ var logsNodeCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
 	logsNodeCmd = &cobra.Command{
-		Use:   "node",
-		Short: "Print Portworx logs for specified nodes",
+		Use:     "node [NAME]",
+		Aliases: []string{"nodes"},
+		Short:   "Print Portworx logs for specified nodes",
 		Example: `
-        $ pxc logs node --all-nodes
-        Return Portworx logs from all nodes
+  # Return Portworx logs from all nodes
+  pxc logs node --all-nodes
 
-        $ pxc logs node abc
-        Return Portworx logs from  node abc
+  # Return Portworx logs from  node abc
+  pxc logs node abc
 
-        $ pxc logs node -f  abc
-        Begin streaming the Portworx logs from  node abc
+  # Begin streaming the Portworx logs from  node abc
+  pxc logs node -f  abc
 
-        $ pxc logs node --tail=20 abc
-        Apply filters to only the most recent 20 log lines and display the matched lines
+  # Apply filters to only the most recent 20 log lines and display the matched lines
+  pxc logs node --tail=20 abc
 
-        $ pxc logs node abc --filter "error,warning"
-        Display all log lines that has either error or warning on node abc
+  # Display all log lines that has either error or warning on node abc
+  pxc logs node abc --filter "error,warning"
 
-        $ pxc logs node --since=1h node
-        Show all Portworx logs from node abc written in the last hour`,
+  # Show all Portworx logs from node abc written in the last hour
+  pxc logs node --since=1h node`,
 		RunE: logsNodesExec,
 	}
 })

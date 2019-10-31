@@ -36,12 +36,12 @@ var getVolumesCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
 	getVolumesCmd = &cobra.Command{
-		Use:     "volume",
+		Use:     "volume [NAME]",
 		Aliases: []string{"volumes"},
 		Short:   "Get information about Portworx volumes",
 		Example: `
-  # To get informtation about the portworx volumes:
-  pxc get volume`,
+  # Get informtation about the portworx volumes
+  pxc get volume xyz`,
 		RunE: getVolumesExec,
 	}
 })

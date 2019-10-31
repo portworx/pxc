@@ -32,15 +32,18 @@ var describePvcCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
 	describePvcCmd = &cobra.Command{
-		Use:   "pvc",
+		Use:   "pvc [NAME]",
 		Short: "Describe Portworx volume for Kubernetes PVCs",
 		Long:  "Show detailed information of Portworx volume for Kubernetes PVCs",
-		Example: `1. Describe all pvcs that are Portworx volumes:
-	$ pxc describe pvc
-2. Describe specific pvc called pvc:
-	$ pxc describe pvc abc
-3. Describe list of pvcs (abc, xyz):
-	$ pxc describe pvc abc xyz`,
+		Example: `
+  # Describe all pvcs that are Portworx volumes:
+  pxc describe pvc
+
+  # Describe specific pvc called pvc:
+  pxc describe pvc abc
+
+  # Describe list of pvcs (abc, xyz):
+  pxc describe pvc abc xyz`,
 		RunE: describePvcExec,
 	}
 })

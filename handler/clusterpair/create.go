@@ -51,8 +51,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Aliases: []string{"clusterpairs"},
 		Short:   "Pair this cluster with another Portworx cluster",
 		Example: `
-  # Creates a cluster pair from two Portworx cluster
-  # Here pxcluster1(source) and pxcluster2(destination) are two different Portworx cluster:
+  # Pair two clusters
   pxc create clusterpair -s pxcluster1 -d pxcluster2`,
 		Long: `Creates a cluster pair between two Portworx clusters`,
 		RunE: createClusterpairExec,

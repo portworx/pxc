@@ -37,25 +37,25 @@ var getAlertsCmd *cobra.Command
 var _ = commander.RegisterCommandVar(func() {
 	getAlertsCmd = &cobra.Command{
 		Use:     "alerts",
-		Aliases: []string{"alerts"},
+		Aliases: []string{"alert"},
 		Short:   "Get information about Portworx alerts",
 		Example: `
-  # To get portworx related alerts :
+  # Get portworx related alerts
   pxc get alerts
 
-  # To fetch alert based on particular alert id. Fetch all alerts based on "VolumeCreateSuccess" id :
+  # Fetch alerts based on particular alert id. Fetch all alerts based on "VolumeCreateSuccess" id
   pxc get alerts --id "VolumeCreateSuccess"
 
-  # To fetch alerts between a time window :
+  # Fetch alerts between a time window
   pxctl alerts show --start-time "2019-09-19T09:40:26.371Z" --end-time "2019-09-19T09:43:59.371Z"
 
-  # To fetch alerts with min severity level :
+  # Fetch alerts with min severity level
   pxc get alerts --severity "alarm"
 
-  # To fetch alerts based on resource type. Here we fetch all "volume" related alerts :
+  # Fetch alerts based on resource type. Here we fetch all "volume" related alerts
   pxc get alerts -t "volume"
 
-  # To fetch alerts based on resource id. Here we fetch alerts related to "cluster" :
+  # Fetch alerts based on resource id. Here we fetch alerts related to "cluster"
   pxc get alerts --id "1f95a5e7-6a38-41f9-9cb2-8bb4f8ab72c5"`,
 		RunE: getAlertsExec,
 	}

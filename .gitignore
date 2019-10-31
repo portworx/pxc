@@ -2,3 +2,4 @@ pxc
 .*.swp
 *.px
 *.zip
+.code-workspace*
