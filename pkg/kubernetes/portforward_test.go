@@ -13,22 +13,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package config
+package kubernetes
 
-const (
-	SpecifiedContext = "cfgcontext"
-	File             = "cfgfile"
-	PluginEndpoint   = "pluginEndpoint"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-var (
-	config = map[string]string{}
-)
-
-func Get(k string) string {
-	return config[k]
-}
-
-func Set(k, v string) {
-	config[k] = v
+// Manual test. You will need a running kubernetes system for this
+// test to run
+func TestKubectlPortForwarder(t *testing.T) {
+	t.Skip()
+	kubeConfig := "path/to/your/kubeconfig.conf"
+	p := newKubectlPortForwarder(kubeConfig)
+	err := p.Start()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, p.Endpoint())
+	err = p.Stop()
+	assert.NoError(t, err)
 }

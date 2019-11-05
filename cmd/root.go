@@ -16,12 +16,22 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/portworx/pxc/pkg/commander"
+	"github.com/portworx/pxc/pkg/config"
+	"github.com/portworx/pxc/pkg/kubernetes"
 	"github.com/spf13/cobra"
+
+	"github.com/sirupsen/logrus"
 )
 
 // rootCmd represents the base command when called without any subcommands
-var rootCmd *cobra.Command
+var (
+	rootCmd           *cobra.Command
+	kubePortForwarder kubernetes.PortForwarder
+)
 
 func RootAddCommand(c *cobra.Command) {
 	rootCmd.AddCommand(c)
@@ -30,18 +40,66 @@ func RootAddCommand(c *cobra.Command) {
 var _ = commander.RegisterCommandVar(func() {
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd = &cobra.Command{
-		Use:           "pxc",
-		Short:         "Portworx command line tool",
-		SilenceUsage:  true,
-		SilenceErrors: true,
+		Use:                "pxc",
+		Short:              "Portworx command line tool",
+		SilenceUsage:       true,
+		SilenceErrors:      true,
+		PersistentPreRunE:  rootPersistentPreRunE,
+		PersistentPostRunE: rootPersistentPostRunE,
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+")")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+")")
 	rootCmd.PersistentFlags().StringVar(&cfgContext, "context", "", "Force context name for the command")
+	rootCmd.PersistentFlags().Int32Var(&verbosity, "v", 0, "[0-4] Log level verbosity")
 
 	// Global cobra configurations
 	rootCmd.Flags().SortFlags = false
 })
+
+func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
+
+	// Setup verbosity
+	switch verbosity {
+	case 0:
+		logrus.SetLevel(logrus.PanicLevel)
+	case 1:
+		logrus.SetLevel(logrus.FatalLevel)
+	case 2:
+		logrus.SetLevel(logrus.WarnLevel)
+	case 3:
+		logrus.SetLevel(logrus.InfoLevel)
+	default:
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+
+	// Setup port forwarding if running as a kubectl plugin
+	if kubernetes.InKubectlPluginMode() {
+		logrus.Info("Kubectl plugin mode detected")
+		kubeConfig := os.Getenv("KUBECONFIG")
+		if len(kubeConfig) == 0 {
+			return fmt.Errorf("KUBECONFIG must be defined (for now until we add support to do this automically)")
+		}
+		logrus.Infof("Using Kubeconfig: %s", kubeConfig)
+		kubePortForwarder = kubernetes.NewKubectlPortForwarder(kubeConfig)
+		if err := kubePortForwarder.Start(); err != nil {
+			return fmt.Errorf("Failed to setup port forward: %v", err)
+		}
+		config.Set(config.PluginEndpoint, kubePortForwarder.Endpoint())
+	}
+
+	// Set verbosity
+	logrus.Infof("pxc version: %s", PxVersion)
+
+	return nil
+}
+
+func rootPersistentPostRunE(cmd *cobra.Command, args []string) error {
+	if kubePortForwarder != nil {
+		kubePortForwarder.Stop()
+	}
+
+	return nil
+}

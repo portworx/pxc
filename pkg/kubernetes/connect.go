@@ -30,6 +30,9 @@ import (
 // KubeConnectDefault returns a Kubernetes client to the default
 // or named context.
 func KubeConnectDefault() (clientcmd.ClientConfig, *kubernetes.Clientset, error) {
+
+	// TODO: Need to read the information from the command line using the Kubernetes APIs
+	// to create a client set when running in kubectl plugin mode
 	return KubeConnect(config.Get(config.File), config.Get(config.SpecifiedContext))
 }
 

@@ -13,22 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package config
+package kubernetes
 
-const (
-	SpecifiedContext = "cfgcontext"
-	File             = "cfgfile"
-	PluginEndpoint   = "pluginEndpoint"
+import (
+	"os"
+	"strings"
 )
 
-var (
-	config = map[string]string{}
-)
-
-func Get(k string) string {
-	return config[k]
-}
-
-func Set(k, v string) {
-	config[k] = v
+// InKubectlPluginMode returns true if running as a plugin to kubectl
+func InKubectlPluginMode() bool {
+	return strings.Contains(os.Args[0], "kubectl-pxc")
 }

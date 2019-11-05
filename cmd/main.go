@@ -40,6 +40,7 @@ var (
 	cfgDir      string
 	cfgFile     string
 	cfgContext  string
+	verbosity   int32
 	optEndpoint string
 )
 
@@ -82,10 +83,11 @@ func Execute() {
 }
 
 // Main starts the pxc cli
-// Stupid simple initialization
+// Any initialization to pxc should be added to root.PersistentPreRunE
 func Main() error {
+	// Setup flags
 	commander.Setup()
 
-	// Execute px
+	// Execute pxc
 	return rootCmd.Execute()
 }
