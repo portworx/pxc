@@ -8,6 +8,10 @@ and other services to provide users with an integrated tool.
 Please refer to the [Releases](https://github.com/portworx/pxc/releases) page to
 download the latest build.
 
+# Documentation
+
+Please see [documentation](docs/usage/pxc.md)
+
 # Usage
 `pxc` is a tool that communicates with Portworx as well as Container
 Orchestration systems like Kubernetes. It can be run standalone or as a plugin
