@@ -85,7 +85,10 @@ func (p *nodes) Reset() {
 
 func (p *nodes) GetNode(id string) (*api.StorageNode, error) {
 	if len(p.nodes) == 0 {
-		return nil, fmt.Errorf("Please call GetNodes before calling GetNode")
+		err := p.getNodes()
+		if err != nil {
+			return nil, err
+		}
 	}
 	if n, ok := p.nodeMap[id]; ok {
 		return n, nil

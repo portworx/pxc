@@ -25,11 +25,37 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+
+	"github.com/sirupsen/logrus"
+)
+
+var (
+
+	// KubeCliOpts is setup by cmd/root.go
+	KubeCliOpts *genericclioptions.ConfigFlags
 )
 
 // KubeConnectDefault returns a Kubernetes client to the default
 // or named context.
 func KubeConnectDefault() (clientcmd.ClientConfig, *kubernetes.Clientset, error) {
+
+	if InKubectlPluginMode() {
+		logrus.Info("Setting up Kubernetes access in kubectl plugin mode")
+		clientConfig := KubeCliOpts.ToRawKubeConfigLoader()
+
+		r, err := KubeCliOpts.ToRESTConfig()
+		if err != nil {
+			return nil, nil, fmt.Errorf("unable to configure kubernetes client: %v", err)
+		}
+
+		clientSet, err := kubernetes.NewForConfig(r)
+		if err != nil {
+			return nil, nil, fmt.Errorf("unable to connect to Kubernetes: %v", err)
+		}
+		return clientConfig, clientSet, nil
+	}
 
 	// TODO: Need to read the information from the command line using the Kubernetes APIs
 	// to create a client set when running in kubectl plugin mode
@@ -65,7 +91,7 @@ func KubeConnect(cfgFile, context string) (clientcmd.ClientConfig, *kubernetes.C
 		kubeconfig = pxctx.Kubeconfig
 	}
 	if len(kubeconfig) == 0 {
-		return nil, nil, fmt.Errorf("No kubeconfig found in context %s\n", pxctx.Name)
+		return nil, nil, fmt.Errorf("no kubeconfig found in context %s", pxctx.Name)
 	}
 
 	// Get the client config
@@ -74,12 +100,12 @@ func KubeConnect(cfgFile, context string) (clientcmd.ClientConfig, *kubernetes.C
 		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: ""}})
 	r, err := cc.ClientConfig()
 	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to configure kubernetes client: %v\n", err)
+		return nil, nil, fmt.Errorf("unable to configure kubernetes client: %v", err)
 	}
 	// Get a client to the Kuberntes server
 	clientset, err := kubernetes.NewForConfig(r)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to connect to Kubernetes: %v\n", err)
+		return nil, nil, fmt.Errorf("unable to connect to Kubernetes: %v", err)
 	}
 
 	return cc, clientset, nil

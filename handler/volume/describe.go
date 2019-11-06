@@ -106,6 +106,7 @@ func NewVolumeDescribeFormatter(cliOps cliops.CliOps) *VolumeDescribeFormatter {
 	d := &VolumeDescribeFormatter{
 		cliOps:  cliOps,
 		volumes: portworx.NewVolumes(cliOps.PxOps(), volSpec),
+		nodes:   portworx.NewNodes(cliOps.PxOps(), &portworx.NodeSpec{}),
 		pods:    portworx.NewPods(cliOps.COps(), &portworx.PodSpec{}),
 	}
 	d.FormatType = cliOps.CliInputs().FormatType
@@ -194,6 +195,11 @@ func (p *VolumeDescribeFormatter) addVolumeAccessInfo(
 	groups := spec.GetOwnership().GetAcls().GetGroups()
 	// Get Collaborators
 	collaborators := spec.GetOwnership().GetAcls().GetCollaborators()
+
+	// If there is no ownership, then just return
+	if spec.GetOwnership() == nil {
+		return
+	}
 
 	t.AddLine("Ownership:")
 	if len(owner) != 0 {
