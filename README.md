@@ -23,6 +23,9 @@ $ kubectl pxc get pvc
 $ kubectl pxc get pvc --kubeconfig=/path/to/kubeconfig.conf
 ```
 
+If you are running Portworx installed on a Kubernetes Cloud like GKE, EKS, etc,
+please use this model.
+
 `pxc` will automatically discover how to communicate with Portworx. No need for
 any prior setup.
 
@@ -39,12 +42,6 @@ $ pxc context create mycluster --endpoint=<ip of cluster>:9020 --kubeconfig=/pat
 ```
 
 > NOTE: The default gRPC SDK port for Portworx is 9020
-
-#### Connecting to Portworx running on a Kuberentes Cloud
-If you are running Portworx installed on a Kubernetes Cloud like GKE, EKS, etc,
-you may need to use the workaround in issue
-[#40](https://github.com/portworx/pxc/issues/40) to access the Portworx gRPC
-endpoint through the Kubernetes API.
 
 #### What if you don't have a Portworx cluster?
 `pxc` uses the [OpenStorage SDK](https://libopenstorage.github.io) to communicate
