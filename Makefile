@@ -61,6 +61,10 @@ dist: $(PACKAGE)
 test:
 	./hack/test.sh
 
+verify: all test
+	go fmt $(go list ./... | grep -v vendor) | wc -l | grep 0
+	go vet $(go list ./... | grep -v vendor)
+
 $(PACKAGE): all
 	@echo Packaging client Binaries...
 	@mkdir -p dist

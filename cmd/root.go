@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/sirupsen/logrus"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -47,13 +48,21 @@ var _ = commander.RegisterCommandVar(func() {
 		PersistentPreRunE:  rootPersistentPreRunE,
 		PersistentPostRunE: rootPersistentPostRunE,
 	}
+
+	kubernetes.KubeCliOpts = genericclioptions.NewConfigFlags(true)
 })
 
 var _ = commander.RegisterCommandInit(func() {
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+")")
-	rootCmd.PersistentFlags().StringVar(&cfgContext, "context", "", "Force context name for the command")
 	rootCmd.PersistentFlags().Int32Var(&verbosity, "v", 0, "[0-4] Log level verbosity")
+
+	// Add the kubernetes flags
+	if kubernetes.InKubectlPluginMode() {
+		kubernetes.KubeCliOpts.AddFlags(rootCmd.PersistentFlags())
+	} else {
+		rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+")")
+		rootCmd.PersistentFlags().StringVar(&cfgContext, "context", "", "Force context name for the command")
+	}
 
 	// Global cobra configurations
 	rootCmd.Flags().SortFlags = false
@@ -78,9 +87,12 @@ func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 	// Setup port forwarding if running as a kubectl plugin
 	if kubernetes.InKubectlPluginMode() {
 		logrus.Info("Kubectl plugin mode detected")
-		kubeConfig := os.Getenv("KUBECONFIG")
+		kubeConfig := *kubernetes.KubeCliOpts.KubeConfig
 		if len(kubeConfig) == 0 {
-			return fmt.Errorf("KUBECONFIG must be defined (for now until we add support to do this automically)")
+			kubeConfig = os.Getenv("KUBECONFIG")
+		}
+		if len(kubeConfig) == 0 {
+			return fmt.Errorf("KUBECONFIG or --kubeconfig must be defined (for now until we add support to do this automically)")
 		}
 		logrus.Infof("Using Kubeconfig: %s", kubeConfig)
 		kubePortForwarder = kubernetes.NewKubectlPortForwarder(kubeConfig)
