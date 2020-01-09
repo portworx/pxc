@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/config"
@@ -49,29 +48,28 @@ var _ = commander.RegisterCommandVar(func() {
 		PersistentPostRunE: rootPersistentPostRunE,
 	}
 
+	// Initialize persistent flag objects
 	kubernetes.KubeCliOpts = genericclioptions.NewConfigFlags(true)
+	config.CliOpts = config.NewConfigFlags()
 })
 
 var _ = commander.RegisterCommandInit(func() {
 
-	rootCmd.PersistentFlags().Int32Var(&verbosity, "v", 0, "[0-4] Log level verbosity")
-
-	// Add the kubernetes flags
+	// Add persistent flags
 	if kubernetes.InKubectlPluginMode() {
+		// As kubectl plugin mode
 		kubernetes.KubeCliOpts.AddFlags(rootCmd.PersistentFlags())
+		config.CliOpts.AddFlagsPluginMode(rootCmd.PersistentFlags())
 	} else {
-		rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Config file (default is $HOME/"+pxDefaultDir+"/"+pxDefaultConfigName+")")
-		rootCmd.PersistentFlags().StringVar(&cfgContext, "context", "", "Force context name for the command")
+		// Not in plugin mode
+		config.CliOpts.AddFlags(rootCmd.PersistentFlags())
 	}
-
-	// Global cobra configurations
-	rootCmd.Flags().SortFlags = false
 })
 
 func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 
 	// Setup verbosity
-	switch verbosity {
+	switch config.CliOpts.Verbosity {
 	case 0:
 		logrus.SetLevel(logrus.PanicLevel)
 	case 1:
@@ -84,26 +82,18 @@ func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
+	// Set verbosity
+	logrus.Infof("pxc version: %s", PxVersion)
+
 	// Setup port forwarding if running as a kubectl plugin
 	if kubernetes.InKubectlPluginMode() {
 		logrus.Info("Kubectl plugin mode detected")
-		kubeConfig := *kubernetes.KubeCliOpts.KubeConfig
-		if len(kubeConfig) == 0 {
-			kubeConfig = os.Getenv("KUBECONFIG")
-		}
-		if len(kubeConfig) == 0 {
-			return fmt.Errorf("KUBECONFIG or --kubeconfig must be defined (for now until we add support to do this automically)")
-		}
-		logrus.Infof("Using Kubeconfig: %s", kubeConfig)
-		kubePortForwarder = kubernetes.NewKubectlPortForwarder(kubeConfig)
+		kubePortForwarder = kubernetes.NewKubectlPortForwarder(*kubernetes.KubeCliOpts.KubeConfig)
 		if err := kubePortForwarder.Start(); err != nil {
 			return fmt.Errorf("Failed to setup port forward: %v", err)
 		}
 		config.Set(config.PluginEndpoint, kubePortForwarder.Endpoint())
 	}
-
-	// Set verbosity
-	logrus.Infof("pxc version: %s", PxVersion)
 
 	return nil
 }

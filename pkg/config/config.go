@@ -15,14 +15,38 @@ limitations under the License.
 */
 package config
 
+import (
+	"github.com/spf13/pflag"
+)
+
 const (
 	SpecifiedContext = "cfgcontext"
 	File             = "cfgfile"
-	PluginEndpoint   = "pluginEndpoint"
+	PluginEndpoint
+	PxDefaultDir        = ".pxc"
+	PxDefaultConfigName = "config.yml"
+
+	flagPrefix          = "pxc."
+	flagConfigFile      = flagPrefix + "config"
+	flagContext         = flagPrefix + "context"
+	flagSecretNamespace = flagPrefix + "secret-namespace"
+	flagSecretName      = flagPrefix + "secret-name"
+	flagToken           = flagPrefix + "token"
+	flagVerbosity       = flagPrefix + "v"
 )
 
+type ConfigFlags struct {
+	ConfigFile      string
+	Context         string
+	SecretNamespace string
+	SecretName      string
+	Token           string
+	Verbosity       int32
+}
+
 var (
-	config = map[string]string{}
+	config  = map[string]string{}
+	CliOpts *ConfigFlags
 )
 
 func Get(k string) string {
@@ -31,4 +55,27 @@ func Get(k string) string {
 
 func Set(k, v string) {
 	config[k] = v
+}
+
+func NewConfigFlags() *ConfigFlags {
+	return &ConfigFlags{}
+}
+
+// AddFlags adds the appropriate global flags
+func (c *ConfigFlags) AddFlags(flags *pflag.FlagSet) {
+	flags.StringVar(&c.ConfigFile, flagConfigFile, c.ConfigFile, "Config file (default is $HOME/"+PxDefaultDir+"/"+PxDefaultConfigName+")")
+	flags.StringVar(&c.Context, flagContext, c.Context, "Force context name for the command")
+	c.addFlagsCommon(flags)
+}
+
+// AddFlagsPluginMode adds the appropriate global flags when running as a kubectl plugin
+func (c *ConfigFlags) AddFlagsPluginMode(flags *pflag.FlagSet) {
+	flags.StringVar(&c.SecretNamespace, flagSecretNamespace, c.SecretNamespace, "Kubernetes namespace where secret contains token")
+	flags.StringVar(&c.SecretName, flagSecretName, c.SecretName, "Kubernetes secret name containing authentication token")
+	flags.StringVar(&c.Token, flagToken, c.Token, "Portworx authentication token")
+	c.addFlagsCommon(flags)
+}
+
+func (c *ConfigFlags) addFlagsCommon(flags *pflag.FlagSet) {
+	flags.Int32Var(&c.Verbosity, flagVerbosity, c.Verbosity, "[0-4] Log level verbosity")
 }

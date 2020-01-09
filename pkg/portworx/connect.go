@@ -18,6 +18,7 @@ package portworx
 import (
 	"context"
 	"crypto/x509"
+	"fmt"
 
 	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/contextconfig"
@@ -28,11 +29,14 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/sirupsen/logrus"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // PxConnectDefault returns a Portworx client to the default or
 // named context
 func PxConnectDefault() (context.Context, *grpc.ClientConn, error) {
+
 	if kubernetes.InKubectlPluginMode() {
 		return PxConnectAsPlugin()
 	}
@@ -65,8 +69,22 @@ func PxConnectAsPlugin() (context.Context, *grpc.ClientConn, error) {
 		return nil, nil, err
 	}
 
+	// Check if the token is in a secret
+	token := config.CliOpts.Token
+	if len(config.CliOpts.SecretNamespace) != 0 && len(config.CliOpts.SecretName) != 0 {
+		token, err = PxGetTokenFromSecret(config.CliOpts.SecretName, config.CliOpts.SecretNamespace)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	ctx := context.Background()
+	if len(token) != 0 {
+		ctx = pxgrpc.AddMetadataToContext(ctx, "authorization", "bearer "+token)
+	}
+
 	logrus.Infof("Connected through API server to %s\n", endpoint)
-	return context.Background(), conn, nil
+	return ctx, conn, nil
 }
 
 // TODO: Add Support to connect to a context name
@@ -114,7 +132,10 @@ func PxConnectCurrent(cfgFile string) (context.Context, *grpc.ClientConn, error)
 	}
 
 	// Add authentication metadata
-	ctx := pxgrpc.AddMetadataToContext(context.Background(), "Authorization", "bearer "+pxctx.Token)
+	ctx := context.Background()
+	if len(pxctx.Token) != 0 {
+		ctx = pxgrpc.AddMetadataToContext(ctx, "authorization", "bearer "+pxctx.Token)
+	}
 
 	return ctx, conn, nil
 }
@@ -162,7 +183,7 @@ func PxConnectNamed(cfgFile string, name string) (context.Context, *grpc.ClientC
 
 	// Add authentication metadata
 	ctx := context.Background()
-	if pxctx.Token != "" {
+	if len(pxctx.Token) != 0 {
 		ctx = pxgrpc.AddMetadataToContext(ctx, "Authorization", "bearer "+pxctx.Token)
 	}
 	return ctx, conn, nil
@@ -183,4 +204,30 @@ func PxAppendCaCertcontext(pxctx *contextconfig.ClientContext, userCa bool) ([]g
 	dialOptions := []grpc.DialOption{grpc.WithTransportCredentials(
 		credentials.NewClientTLSFromCert(capool, ""))}
 	return dialOptions, nil
+}
+
+func PxGetTokenFromSecret(secretName, secretNamespace string) (string, error) {
+	_, clientSet, err := kubernetes.KubeConnectDefault()
+	if err != nil {
+		logrus.Errorf("Failed to get kube client: %v", err)
+		return "", err
+	}
+
+	secretsClient := clientSet.CoreV1().Secrets(secretNamespace)
+	secret, err := secretsClient.Get(secretName, metav1.GetOptions{})
+	if err != nil {
+		logrus.Errorf("Failed to fetch secret: %v", err)
+		return "", err
+	}
+
+	var (
+		tokenRaw []byte
+		ok       bool
+	)
+	if tokenRaw, ok = secret.Data["auth-token"]; !ok {
+		return "", fmt.Errorf("Token not found in secret. Token is expected to be under 'auth-token' in the secret")
+	}
+	logrus.Infof("TokenRaw retrieved from secret %s/%s", secretNamespace, secretName)
+
+	return string(tokenRaw), nil
 }
