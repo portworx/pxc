@@ -90,9 +90,6 @@ func KubeConnect(cfgFile, context string) (clientcmd.ClientConfig, *kubernetes.C
 	} else {
 		kubeconfig = pxctx.Kubeconfig
 	}
-	if len(kubeconfig) == 0 {
-		return nil, nil, fmt.Errorf("no kubeconfig found in context %s", pxctx.Name)
-	}
 
 	// Get the client config
 	cc := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(

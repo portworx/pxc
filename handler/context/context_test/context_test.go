@@ -17,6 +17,7 @@ limitations under the License.
 package context_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/portworx/pxc/handler/test"
@@ -37,9 +38,9 @@ func TestMultipleClustersContextsFromCli(t *testing.T) {
 	assert.True(t, test.PxTestHasVolume(vol))
 
 	// Fail to get that information on the target
-	lines, _, err := test.ExecuteCli("px --context=target get volumes")
+	lines, _, err := test.ExecuteCli("pxc --pxc.context=target get volumes")
 	assert.NoError(t, err)
-	assert.False(t, util.ListContainsSubString(lines, vol))
+	assert.False(t, util.ListContainsSubString(lines, vol), fmt.Sprintf("%+v", lines))
 
 	// Delete volume
 	test.PxTestDeleteVolume(t, vol)

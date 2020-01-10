@@ -64,7 +64,8 @@ func initConfig() {
 	}
 
 	// Save configurations
-	config.Set(config.SpecifiedContext, cfgContext)
+	config.Set(config.SpecifiedContext, config.CliOpts.Context)
+	// TODO -- change to use config.CliOpts
 	config.Set(config.File, cfgFile)
 }
 
@@ -78,6 +79,12 @@ func GetConfigFile() string {
 func Execute() {
 	if err := Main(); err != nil {
 		util.Eprintf("%v\n", err)
+
+		// Cobra will quit immediately and not run the PostRunE function on error
+		// so we need to run it here.
+		if rootCmd.PersistentPostRunE != nil {
+			rootCmd.PersistentPostRunE(nil, []string{})
+		}
 		os.Exit(1)
 	}
 }
