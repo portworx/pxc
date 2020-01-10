@@ -25,9 +25,8 @@ import (
 )
 
 const (
-	SpecifiedContext = "cfgcontext"
-	File             = "cfgfile"
-	PluginEndpoint
+	SpecifiedContext    = "cfgcontext"
+	File                = "cfgfile"
 	PxDefaultDir        = ".pxc"
 	PxDefaultConfigName = "config.yml"
 

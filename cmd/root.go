@@ -88,7 +88,7 @@ func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 		if err := kubePortForwarder.Start(); err != nil {
 			return fmt.Errorf("Failed to setup port forward: %v", err)
 		}
-		config.Set(config.PluginEndpoint, kubePortForwarder.Endpoint())
+		config.CM().GetCurrentCluster().Endpoint = kubePortForwarder.Endpoint()
 	}
 
 	return nil
