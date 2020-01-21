@@ -35,9 +35,13 @@ var _ = commander.RegisterCommandVar(func() {
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	RootAddCommand(contextCmd)
+	if !util.InKubectlPluginMode() {
+		RootAddCommand(contextCmd)
+	}
 })
 
 func ContextAddCommand(cmd *cobra.Command) {
-	contextCmd.AddCommand(cmd)
+	if !util.InKubectlPluginMode() {
+		contextCmd.AddCommand(cmd)
+	}
 }

@@ -17,9 +17,7 @@ package cmd
 
 import (
 	"os"
-	"path"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/util"
@@ -27,21 +25,10 @@ import (
 )
 
 const (
-	pxDefaultDir        = ".pxc"
-	pxDefaultConfigName = "config.yml"
-
 	Ki = 1024
 	Mi = 1024 * Ki
 	Gi = 1024 * Mi
 	Ti = 1024 * Gi
-)
-
-var (
-	cfgDir      string
-	cfgFile     string
-	cfgContext  string
-	verbosity   int32
-	optEndpoint string
 )
 
 func init() {
@@ -50,23 +37,10 @@ func init() {
 
 // initConfig reads in config file
 func initConfig() {
-	// If the cfgFile has not been setup in the arguments, then
-	// read it from the HOME directory
-	cfgFile = os.Getenv("PXCONFIG")
-	if len(cfgFile) == 0 {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			util.Eprintf("Error: %v\n", err)
-			os.Exit(1)
-		}
-		cfgFile = path.Join(home, pxDefaultDir, pxDefaultConfigName)
-	}
-
 	// Save configurations
-	config.Set(config.SpecifiedContext, config.CliOpts.Context)
-	// TODO -- change to use config.CliOpts
-	config.Set(config.File, cfgFile)
+	config.Set(config.SpecifiedContext, config.CM().GetFlags().Context)
+	// TODO -- change to use CM()
+	config.Set(config.File, config.CM().GetConfigFile())
 }
 
 // GetConfigFile returns the current config file

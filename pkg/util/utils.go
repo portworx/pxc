@@ -201,3 +201,8 @@ func GetAclFromString(s string) (string, api.Ownership_AccessType, error) {
 	}
 	return parts[0], access, nil
 }
+
+// InKubectlPluginMode returns true if running as a plugin to kubectl
+func InKubectlPluginMode() bool {
+	return strings.Contains(os.Args[0], "kubectl-pxc")
+}

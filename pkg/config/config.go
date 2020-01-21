@@ -15,39 +15,55 @@ limitations under the License.
 */
 package config
 
-import (
-	"github.com/spf13/pflag"
+var (
+	// TODO: This may be removed
+	config = map[string]string{}
 )
 
-const (
-	SpecifiedContext = "cfgcontext"
-	File             = "cfgfile"
-	PluginEndpoint
-	PxDefaultDir        = ".pxc"
-	PxDefaultConfigName = "config.yml"
-
-	flagPrefix          = "pxc."
-	flagConfigFile      = flagPrefix + "config"
-	flagContext         = flagPrefix + "context"
-	flagSecretNamespace = flagPrefix + "secret-namespace"
-	flagSecretName      = flagPrefix + "secret-name"
-	flagToken           = flagPrefix + "token"
-	flagVerbosity       = flagPrefix + "v"
-)
-
-type ConfigFlags struct {
-	ConfigFile      string
-	Context         string
-	SecretNamespace string
-	SecretName      string
-	Token           string
-	Verbosity       int32
+// Preferences provides any pxc specific configuration
+type Preferences struct {
+	// Add here any pxc specific options
 }
 
-var (
-	config  = map[string]string{}
-	CliOpts *ConfigFlags
-)
+// Context provides information on who is trying to connect to a specific cluster
+type Context struct {
+	AuthInfo string `json:"user,omitempty" yaml:"user,omitempty"`
+	Cluster  string `json:"cluster,omitempty" yaml:"cluster,omitempty"`
+}
+
+// Cluster provides information on how to connect to Portworx
+type Cluster struct {
+	Name       string `json:"name,omitempty" yaml:"name,omitempty"`
+	CACert     string `json:"cacert,omitempty" yaml:"cacert,omitempty"`
+	CACertData []byte `json:"cacert-data,omitempty" yaml:"cacert-data,omitempty"`
+	Endpoint   string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+	Secure     bool   `json:"secure,omitempty" yaml:"secure,omitempty"`
+	Kubeconfig string `json:"kubeconfig,omitempty" yaml:"kubeconfig,omitempty"`
+}
+
+// KubernetesAuthInfo provides information on where to access the token in Kubernetes
+type KubernetesAuthInfo struct {
+	SecretName      string `json:"secretName,omitempty" yaml:"secretName,omitempty"`
+	SecretNamespace string `json:"secretNamespace,omitempty" yaml:"secretNamespace,omitempty"`
+}
+
+// AuthInfo provides authentication information about the user
+type AuthInfo struct {
+	Name               string              `json:"name,omitempty" yaml:"name,omitempty"`
+	Token              string              `json:"token,omitempty" yaml:"token,omitempty"`
+	KubernetesAuthInfo *KubernetesAuthInfo `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty"`
+}
+
+// Config is a a model to store information about the authentication and connection
+// to a Portworx system.
+// The design is to enable an easy extension of a Kubernetes configuration.
+type Config struct {
+	Preferences    Preferences          `json:"global" yaml:"global"`
+	Clusters       map[string]*Cluster  `json:"clusters,omitempty" yaml:"clusters,omitempty"`
+	AuthInfos      map[string]*AuthInfo `json:"users,omitempty" yaml:"users,omitempty"`
+	Contexts       map[string]*Context  `json:"contexts,omitempty" yaml:"contexts,omitempty"`
+	CurrentContext string               `json:"current-context,omitempty" yaml:"current-context,omitempty"`
+}
 
 func Get(k string) string {
 	return config[k]
@@ -55,27 +71,4 @@ func Get(k string) string {
 
 func Set(k, v string) {
 	config[k] = v
-}
-
-func NewConfigFlags() *ConfigFlags {
-	return &ConfigFlags{}
-}
-
-// AddFlags adds the appropriate global flags
-func (c *ConfigFlags) AddFlags(flags *pflag.FlagSet) {
-	flags.StringVar(&c.ConfigFile, flagConfigFile, c.ConfigFile, "Config file (default is $HOME/"+PxDefaultDir+"/"+PxDefaultConfigName+")")
-	flags.StringVar(&c.Context, flagContext, c.Context, "Force context name for the command")
-	c.addFlagsCommon(flags)
-}
-
-// AddFlagsPluginMode adds the appropriate global flags when running as a kubectl plugin
-func (c *ConfigFlags) AddFlagsPluginMode(flags *pflag.FlagSet) {
-	flags.StringVar(&c.SecretNamespace, flagSecretNamespace, c.SecretNamespace, "Kubernetes namespace where secret contains token")
-	flags.StringVar(&c.SecretName, flagSecretName, c.SecretName, "Kubernetes secret name containing authentication token")
-	flags.StringVar(&c.Token, flagToken, c.Token, "Portworx authentication token")
-	c.addFlagsCommon(flags)
-}
-
-func (c *ConfigFlags) addFlagsCommon(flags *pflag.FlagSet) {
-	flags.Int32Var(&c.Verbosity, flagVerbosity, c.Verbosity, "[0-4] Log level verbosity")
 }

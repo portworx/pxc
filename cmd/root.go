@@ -21,10 +21,10 @@ import (
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/kubernetes"
+	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 
 	"github.com/sirupsen/logrus"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -47,29 +47,25 @@ var _ = commander.RegisterCommandVar(func() {
 		PersistentPreRunE:  rootPersistentPreRunE,
 		PersistentPostRunE: rootPersistentPostRunE,
 	}
-
-	// Initialize persistent flag objects
-	kubernetes.KubeCliOpts = genericclioptions.NewConfigFlags(true)
-	config.CliOpts = config.NewConfigFlags()
 })
 
 var _ = commander.RegisterCommandInit(func() {
 
 	// Add persistent flags
-	if kubernetes.InKubectlPluginMode() {
+	if util.InKubectlPluginMode() {
 		// As kubectl plugin mode
-		kubernetes.KubeCliOpts.AddFlags(rootCmd.PersistentFlags())
-		config.CliOpts.AddFlagsPluginMode(rootCmd.PersistentFlags())
+		config.KM().AddFlags(rootCmd.PersistentFlags())
+		config.CM().GetFlags().AddFlagsPluginMode(rootCmd.PersistentFlags())
 	} else {
 		// Not in plugin mode
-		config.CliOpts.AddFlags(rootCmd.PersistentFlags())
+		config.CM().GetFlags().AddFlags(rootCmd.PersistentFlags())
 	}
 })
 
 func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 
 	// Setup verbosity
-	switch config.CliOpts.Verbosity {
+	switch config.CM().GetFlags().Verbosity {
 	case 0:
 		logrus.SetLevel(logrus.PanicLevel)
 	case 1:
@@ -86,9 +82,9 @@ func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 	logrus.Infof("pxc version: %s", PxVersion)
 
 	// Setup port forwarding if running as a kubectl plugin
-	if kubernetes.InKubectlPluginMode() {
+	if util.InKubectlPluginMode() {
 		logrus.Info("Kubectl plugin mode detected")
-		kubePortForwarder = kubernetes.NewKubectlPortForwarder(*kubernetes.KubeCliOpts.KubeConfig)
+		kubePortForwarder = kubernetes.NewKubectlPortForwarder(*config.KM().KubeConfig)
 		if err := kubePortForwarder.Start(); err != nil {
 			return fmt.Errorf("Failed to setup port forward: %v", err)
 		}

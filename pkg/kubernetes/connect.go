@@ -21,31 +21,24 @@ import (
 
 	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/contextconfig"
+	"github.com/portworx/pxc/pkg/util"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
-	"k8s.io/cli-runtime/pkg/genericclioptions"
-
 	"github.com/sirupsen/logrus"
-)
-
-var (
-
-	// KubeCliOpts is setup by cmd/root.go
-	KubeCliOpts *genericclioptions.ConfigFlags
 )
 
 // KubeConnectDefault returns a Kubernetes client to the default
 // or named context.
 func KubeConnectDefault() (clientcmd.ClientConfig, *kubernetes.Clientset, error) {
 
-	if InKubectlPluginMode() {
+	if util.InKubectlPluginMode() {
 		logrus.Info("Setting up Kubernetes access in kubectl plugin mode")
-		clientConfig := KubeCliOpts.ToRawKubeConfigLoader()
+		clientConfig := config.KM().ToRawKubeConfigLoader()
 
-		r, err := KubeCliOpts.ToRESTConfig()
+		r, err := config.KM().ToRESTConfig()
 		if err != nil {
 			return nil, nil, fmt.Errorf("unable to configure kubernetes client: %v", err)
 		}
