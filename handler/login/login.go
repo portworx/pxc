@@ -16,6 +16,7 @@ limitations under the License.
 package login
 
 import (
+	"fmt"
 	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/config"
@@ -46,24 +47,46 @@ from the config file without having the user provide it each time.`,
 				return err
 			}
 
+			save := false
 			kconfig, err := cc.RawConfig()
 			currentContext := kconfig.Contexts[kconfig.CurrentContext]
+			configFlags := config.CM().GetFlags()
 
-			config.CM().Config.AuthInfos[currentContext.AuthInfo] = &config.AuthInfo{
-				Name:  currentContext.AuthInfo,
-				Token: config.CM().GetFlags().Token,
-				KubernetesAuthInfo: &config.KubernetesAuthInfo{
-					SecretName:      config.CM().GetFlags().SecretName,
-					SecretNamespace: config.CM().GetFlags().SecretNamespace,
-				},
+			// Initialize authInfo object
+			authInfo := &config.AuthInfo{
+				Name: currentContext.AuthInfo,
 			}
 
+			// Check for token
+			if len(configFlags.Token) != 0 {
+				save = true
+				authInfo.Token = configFlags.Token
+				// TODO: Validate if the token is expired
+			}
+
+			// Check for Kubernetes secret and secret namespace
+			if len(configFlags.SecretNamespace) != 0 && len(configFlags.SecretName) != 0 {
+				save = true
+				authInfo.KubernetesAuthInfo = &config.KubernetesAuthInfo{
+					SecretName:      configFlags.SecretName,
+					SecretNamespace: configFlags.SecretNamespace,
+				}
+			} else if len(configFlags.SecretNamespace) == 0 && len(configFlags.SecretName) != 0 {
+				return fmt.Errorf("Must supply secret namespace with secret name")
+			} else if len(configFlags.SecretNamespace) != 0 && len(configFlags.SecretName) == 0 {
+				return fmt.Errorf("Must supply secret name with secret namespace")
+			}
+
+			if !save {
+				return fmt.Errorf("Must supply authentication information")
+			}
+
+			config.CM().Config.AuthInfos[currentContext.AuthInfo] = authInfo
 			err = config.CM().Write()
 			if err != nil {
-				util.Eprintf("Failed to save login information to %s: %v\n",
+				return fmt.Errorf("Failed to save login information to %s: %v\n",
 					config.CM().GetConfigFile(),
 					err)
-				return err
 			}
 
 			util.Printf("Login information saved to %s\n", config.CM().GetConfigFile())
