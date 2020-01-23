@@ -21,6 +21,7 @@ import (
 	_ "github.com/portworx/pxc/handler/cluster"
 	_ "github.com/portworx/pxc/handler/clusterpair"
 	_ "github.com/portworx/pxc/handler/context"
+	_ "github.com/portworx/pxc/handler/login"
 	_ "github.com/portworx/pxc/handler/logs"
 	_ "github.com/portworx/pxc/handler/node"
 	_ "github.com/portworx/pxc/handler/pvc"

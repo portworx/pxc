@@ -24,6 +24,7 @@ import (
 	"github.com/portworx/pxc/pkg/contextconfig"
 	pxgrpc "github.com/portworx/pxc/pkg/grpc"
 	"github.com/portworx/pxc/pkg/kubernetes"
+	"github.com/portworx/pxc/pkg/util"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -37,7 +38,7 @@ import (
 // named context
 func PxConnectDefault() (context.Context, *grpc.ClientConn, error) {
 
-	if kubernetes.InKubectlPluginMode() {
+	if util.InKubectlPluginMode() {
 		return PxConnectAsPlugin()
 	}
 
@@ -70,9 +71,11 @@ func PxConnectAsPlugin() (context.Context, *grpc.ClientConn, error) {
 	}
 
 	// Check if the token is in a secret
-	token := config.CliOpts.Token
-	if len(config.CliOpts.SecretNamespace) != 0 && len(config.CliOpts.SecretName) != 0 {
-		token, err = PxGetTokenFromSecret(config.CliOpts.SecretName, config.CliOpts.SecretNamespace)
+	authInfo := config.CM().GetCurrentAuthInfo()
+	token := authInfo.Token
+	if len(authInfo.KubernetesAuthInfo.SecretName) != 0 &&
+		len(authInfo.KubernetesAuthInfo.SecretNamespace) != 0 {
+		token, err = PxGetTokenFromSecret(authInfo.KubernetesAuthInfo.SecretName, authInfo.KubernetesAuthInfo.SecretNamespace)
 		if err != nil {
 			return nil, nil, err
 		}
