@@ -64,14 +64,17 @@ func PxConnectAsPlugin() (context.Context, *grpc.ClientConn, error) {
 	// If secure: true set in config.yaml file, use TLS
 	dialOptions = append(dialOptions, grpc.WithInsecure())
 
-	endpoint := config.Get(config.PluginEndpoint)
-	conn, err := pxgrpc.Connect(endpoint, dialOptions)
+	// Get config
+	clusterInfo := config.CM().GetCurrentCluster()
+	authInfo := config.CM().GetCurrentAuthInfo()
+
+	// Connect to server
+	conn, err := pxgrpc.Connect(clusterInfo.Endpoint, dialOptions)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Check if the token is in a secret
-	authInfo := config.CM().GetCurrentAuthInfo()
 	token := authInfo.Token
 	if len(authInfo.KubernetesAuthInfo.SecretName) != 0 &&
 		len(authInfo.KubernetesAuthInfo.SecretNamespace) != 0 {
@@ -86,7 +89,7 @@ func PxConnectAsPlugin() (context.Context, *grpc.ClientConn, error) {
 		ctx = pxgrpc.AddMetadataToContext(ctx, "authorization", "bearer "+token)
 	}
 
-	logrus.Infof("Connected through API server to %s\n", endpoint)
+	logrus.Infof("Connected through API server to %s\n", clusterInfo.Endpoint)
 	return ctx, conn, nil
 }
 

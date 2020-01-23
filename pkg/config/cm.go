@@ -143,12 +143,16 @@ func (cm *ConfigManager) override() {
 			}
 		}
 
-		if cm.Config.AuthInfos[cm.Config.CurrentContext] == nil {
-			cm.Config.AuthInfos[cm.Config.CurrentContext] = &AuthInfo{}
-		}
-		if cm.Config.Clusters[cm.Config.CurrentContext] == nil {
-			cm.Config.Clusters[cm.Config.CurrentContext] = &Cluster{}
-		}
+	}
+
+	currentAuth := cm.Config.Contexts[cm.Config.CurrentContext].AuthInfo
+	currentCluster := cm.Config.Contexts[cm.Config.CurrentContext].Cluster
+
+	if cm.Config.AuthInfos[currentAuth] == nil {
+		cm.Config.AuthInfos[currentAuth] = &AuthInfo{}
+	}
+	if cm.Config.Clusters[currentCluster] == nil {
+		cm.Config.Clusters[currentCluster] = &Cluster{}
 	}
 
 	// Get access to the current auth information
