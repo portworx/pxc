@@ -169,6 +169,9 @@ func (cm *ConfigManager) override() {
 	if cm.Config.Clusters[currentCluster] == nil {
 		cm.Config.Clusters[currentCluster] = &Cluster{}
 	}
+	if cm.Config.AuthInfos[currentAuth].KubernetesAuthInfo == nil {
+		cm.Config.AuthInfos[currentAuth].KubernetesAuthInfo = &KubernetesAuthInfo{}
+	}
 
 	// Get access to the current auth information
 	authInfo := cm.GetCurrentAuthInfo()
