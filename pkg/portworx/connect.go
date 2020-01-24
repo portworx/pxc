@@ -65,11 +65,11 @@ func PxConnectAsPlugin() (context.Context, *grpc.ClientConn, error) {
 	dialOptions = append(dialOptions, grpc.WithInsecure())
 
 	// Get config
-	clusterInfo := config.CM().GetCurrentCluster()
+	endpoint := config.CM().GetEndpoint()
 	authInfo := config.CM().GetCurrentAuthInfo()
 
 	// Connect to server
-	conn, err := pxgrpc.Connect(clusterInfo.Endpoint, dialOptions)
+	conn, err := pxgrpc.Connect(endpoint, dialOptions)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -89,7 +89,7 @@ func PxConnectAsPlugin() (context.Context, *grpc.ClientConn, error) {
 		ctx = pxgrpc.AddMetadataToContext(ctx, "authorization", "bearer "+token)
 	}
 
-	logrus.Infof("Connected through API server to %s\n", clusterInfo.Endpoint)
+	logrus.Infof("Connected through API server to %s\n", endpoint)
 	return ctx, conn, nil
 }
 

@@ -29,9 +29,10 @@ import (
 )
 
 type ConfigManager struct {
-	Path   string
-	Config *Config
-	Flags  *ConfigFlags
+	Path           string
+	Config         *Config
+	Flags          *ConfigFlags
+	tunnelEndpoint string
 }
 
 var (
@@ -88,6 +89,20 @@ func (cm *ConfigManager) GetFlags() *ConfigFlags {
 // GetConfigFile returns the current config file used
 func (cm *ConfigManager) GetConfigFile() string {
 	return cm.Flags.GetConfigFile()
+}
+
+// SetTunnelEndpoint sets the local endpoint when a tunnel is used
+func (cm *ConfigManager) SetTunnelEndpoint(tunnelEndpoint string) {
+	cm.tunnelEndpoint = tunnelEndpoint
+}
+
+// GetEndpoint returns either the saved endpoint in the config file or the
+// tunneled local endpoint
+func (cm *ConfigManager) GetEndpoint() string {
+	if len(cm.tunnelEndpoint) != 0 {
+		return cm.tunnelEndpoint
+	}
+	return cm.GetCurrentCluster().Endpoint
 }
 
 // GetCurrentCluster returns configuration information about the current cluster
