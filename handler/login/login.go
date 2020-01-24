@@ -82,6 +82,11 @@ from the config file without having the user provide it each time.`,
 			}
 
 			config.CM().Config.AuthInfos[currentContext.AuthInfo] = authInfo
+
+			clusterInfo := config.CM().GetCurrentCluster()
+			clusterInfo.Name = currentContext.Cluster
+			clusterInfo.Kubeconfig = kconfig.Clusters[currentContext.Cluster].LocationOfOrigin
+
 			err = config.CM().Write()
 			if err != nil {
 				return fmt.Errorf("Failed to save login information to %s: %v\n",
