@@ -83,7 +83,7 @@ func pythonScriptExec(cmd *cobra.Command, args []string) error {
 	logrus.Infof("args: %+v", args)
 	scriptCmd := exec.Command("python3", args...)
 	scriptCmd.Env = append(os.Environ(),
-		EvEndpoint+"="+clusterInfo.Endpoint,
+		EvEndpoint+"="+config.CM().GetEndpoint(),
 		EvCAFile+"="+clusterInfo.CACert,
 	)
 
