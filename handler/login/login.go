@@ -17,11 +17,12 @@ package login
 
 import (
 	"fmt"
+
 	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/config"
-	"github.com/portworx/pxc/pkg/kubernetes"
 	"github.com/portworx/pxc/pkg/util"
+
 	"github.com/spf13/cobra"
 )
 
@@ -38,65 +39,10 @@ var _ = commander.RegisterCommandVar(func() {
 
   # Login to portworx using a specified token
   pxc login --pxc.token=ey..`,
-		Long: `Saves your Portworx authentication information in the pxc
-config file. This will enable pxc to fetch the authentication information
-from the config file without having the user provide it each time.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cc, _, err := kubernetes.KubeConnectDefault()
-			if err != nil {
-				return err
-			}
-
-			save := false
-			kconfig, err := cc.RawConfig()
-			currentContext := kconfig.Contexts[kconfig.CurrentContext]
-			configFlags := config.CM().GetFlags()
-
-			// Initialize authInfo object
-			authInfo := &config.AuthInfo{
-				Name: currentContext.AuthInfo,
-			}
-
-			// Check for token
-			if len(configFlags.Token) != 0 {
-				save = true
-				authInfo.Token = configFlags.Token
-				// TODO: Validate if the token is expired
-			}
-
-			// Check for Kubernetes secret and secret namespace
-			if len(configFlags.SecretNamespace) != 0 && len(configFlags.SecretName) != 0 {
-				save = true
-				authInfo.KubernetesAuthInfo = &config.KubernetesAuthInfo{
-					SecretName:      configFlags.SecretName,
-					SecretNamespace: configFlags.SecretNamespace,
-				}
-			} else if len(configFlags.SecretNamespace) == 0 && len(configFlags.SecretName) != 0 {
-				return fmt.Errorf("Must supply secret namespace with secret name")
-			} else if len(configFlags.SecretNamespace) != 0 && len(configFlags.SecretName) == 0 {
-				return fmt.Errorf("Must supply secret name with secret namespace")
-			}
-
-			if !save {
-				return fmt.Errorf("Must supply authentication information")
-			}
-
-			config.CM().Config.AuthInfos[currentContext.AuthInfo] = authInfo
-
-			clusterInfo := config.CM().GetCurrentCluster()
-			clusterInfo.Name = currentContext.Cluster
-			clusterInfo.Kubeconfig = kconfig.Clusters[currentContext.Cluster].LocationOfOrigin
-
-			err = config.CM().Write()
-			if err != nil {
-				return fmt.Errorf("Failed to save login information to %s: %v\n",
-					config.CM().GetConfigFile(),
-					err)
-			}
-
-			util.Printf("Login information saved to %s\n", config.CM().GetConfigFile())
-			return nil
-		},
+		Long: `Saves your Portworx authentication information for the current
+user in the kubeconfig file. This will enable pxc to fetch the authentication
+information from the config file without having the user provide it each time.`,
+		RunE: loginExec,
 	}
 })
 
@@ -105,3 +51,71 @@ var _ = commander.RegisterCommandInit(func() {
 		cmd.RootAddCommand(loginCmd)
 	}
 })
+
+func LoginAddCommand(cmd *cobra.Command) {
+	loginCmd.AddCommand(cmd)
+}
+
+func loginExec(cmd *cobra.Command, args []string) error {
+	cc := config.KM().ToRawKubeConfigLoader()
+	save := false
+
+	// This is the raw kubeconfig which may have been overridden by CLI args
+	kconfig, err := cc.RawConfig()
+	if err != nil {
+		return err
+	}
+
+	// Get the current context
+	currentContextName, err := config.GetKubernetesCurrentContext()
+	if err != nil {
+		return err
+	}
+
+	currentContext := kconfig.Contexts[currentContextName]
+	configFlags := config.CM().GetFlags()
+
+	// Initialize authInfo object
+	authInfo := &config.AuthInfo{
+		Name: currentContext.AuthInfo,
+	}
+
+	// Check for token
+	if len(configFlags.Token) != 0 {
+		save = true
+		authInfo.Token = configFlags.Token
+		// TODO: Validate if the token is expired
+	}
+
+	// Check for Kubernetes secret and secret namespace
+	if len(configFlags.SecretNamespace) != 0 && len(configFlags.SecretName) != 0 {
+		save = true
+		authInfo.KubernetesAuthInfo = &config.KubernetesAuthInfo{
+			SecretName:      configFlags.SecretName,
+			SecretNamespace: configFlags.SecretNamespace,
+		}
+	} else if len(configFlags.SecretNamespace) == 0 && len(configFlags.SecretName) != 0 {
+		return fmt.Errorf("Must supply secret namespace with secret name")
+	} else if len(configFlags.SecretNamespace) != 0 && len(configFlags.SecretName) == 0 {
+		return fmt.Errorf("Must supply secret name with secret namespace")
+	}
+
+	// Check if any information necessary was passed
+	if !save {
+		return fmt.Errorf("Must supply authentication information")
+	}
+
+	// Get the location of the kubeconfig for this specific authInfo. This is necessary
+	// because KUBECONFIG can have many kubeconfigs, example: KUBECONFIG=kube1.conf:kube2.conf
+	location := kconfig.AuthInfos[currentContext.AuthInfo].LocationOfOrigin
+
+	// Storage the information to the appropriate kubeconfig
+	if err := config.SaveAuthInfoForKubeUser(currentContext.AuthInfo, location, authInfo); err != nil {
+		return err
+	}
+
+	util.Printf("Portworx login information saved in %s for Kubernetes user context %s\n",
+		location,
+		currentContext.AuthInfo)
+	return nil
+}

@@ -1,5 +1,5 @@
 /*
-Copyright © 2019 Portworx
+Copyright © 2020 Portworx
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,6 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 package config
+
+const (
+	AuthKeyToken                     = "token"
+	AuthKeyName                      = "name"
+	AuthKeyKubernetesSecret          = "kube-secret-name"
+	AuthKeyKubernetesSecretNamespace = "kube-secret-namespace"
+)
 
 var (
 	// TODO: This may be removed
@@ -71,4 +78,45 @@ func Get(k string) string {
 
 func Set(k, v string) {
 	config[k] = v
+}
+
+// NewAuthInfo returns an empty pxc Authinfo
+func NewAuthInfo() *AuthInfo {
+	return &AuthInfo{
+		KubernetesAuthInfo: &KubernetesAuthInfo{},
+	}
+}
+
+// NewAuthInfoFromMap returns a new pxc AuthInfo from a map. Normally used to
+// create an object from the information saved in Kubeconfig
+func NewAuthInfoFromMap(m map[string]string) *AuthInfo {
+	a := NewAuthInfo()
+	a.fromMap(m)
+	return a
+}
+
+func (a *AuthInfo) toMap() map[string]string {
+	m := map[string]string{
+		AuthKeyName: a.Name,
+	}
+	if len(a.Token) != 0 {
+		m[AuthKeyToken] = a.Token
+	}
+
+	if a.KubernetesAuthInfo != nil {
+		if len(a.KubernetesAuthInfo.SecretName) != 0 {
+			m[AuthKeyKubernetesSecret] = a.KubernetesAuthInfo.SecretName
+		}
+		if len(a.KubernetesAuthInfo.SecretNamespace) != 0 {
+			m[AuthKeyKubernetesSecretNamespace] = a.KubernetesAuthInfo.SecretNamespace
+		}
+	}
+	return m
+}
+
+func (a *AuthInfo) fromMap(config map[string]string) {
+	a.Token = config[AuthKeyToken]
+	a.Name = config[AuthKeyName]
+	a.KubernetesAuthInfo.SecretName = config[AuthKeyKubernetesSecret]
+	a.KubernetesAuthInfo.SecretNamespace = config[AuthKeyKubernetesSecretNamespace]
 }

@@ -41,7 +41,7 @@ var _ = commander.RegisterCommandVar(func() {
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd = &cobra.Command{
 		Use:                "pxc",
-		Short:              "Portworx command line tool",
+		Short:              "Portworx client",
 		SilenceUsage:       true,
 		SilenceErrors:      true,
 		PersistentPreRunE:  rootPersistentPreRunE,
@@ -67,15 +67,18 @@ func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 	// Setup verbosity
 	switch config.CM().GetFlags().Verbosity {
 	case 0:
-		logrus.SetLevel(logrus.PanicLevel)
-	case 1:
 		logrus.SetLevel(logrus.FatalLevel)
-	case 2:
+	case 1:
 		logrus.SetLevel(logrus.WarnLevel)
-	case 3:
+	case 2:
 		logrus.SetLevel(logrus.InfoLevel)
 	default:
 		logrus.SetLevel(logrus.DebugLevel)
+	}
+
+	// Load configuration information from disk if any
+	if err := config.CM().Load(); err != nil {
+		return err
 	}
 
 	// Set verbosity
@@ -84,6 +87,7 @@ func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 	// Setup port forwarding if running as a kubectl plugin
 	if util.InKubectlPluginMode() {
 		logrus.Info("Kubectl plugin mode detected")
+		logrus.Infof("Port forwarder using kubeconfig %s", *config.KM().KubeConfig)
 		kubePortForwarder = kubernetes.NewKubectlPortForwarder(*config.KM().KubeConfig)
 		if err := kubePortForwarder.Start(); err != nil {
 			return fmt.Errorf("Failed to setup port forward: %v", err)
