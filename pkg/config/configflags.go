@@ -90,5 +90,5 @@ func (c *ConfigFlags) AddFlagsPluginMode(flags *pflag.FlagSet) {
 
 func (c *ConfigFlags) addFlagsCommon(flags *pflag.FlagSet) {
 	flags.StringVar(&c.ConfigFile, flagConfigFile, c.ConfigFile, "Config file (default is $HOME/"+PxDefaultDir+"/"+PxDefaultConfigName+")")
-	flags.Int32Var(&c.Verbosity, flagVerbosity, c.Verbosity, "[0-4] Log level verbosity")
+	flags.Int32Var(&c.Verbosity, flagVerbosity, c.Verbosity, "[0-3] Log level verbosity")
 }

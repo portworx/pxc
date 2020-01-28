@@ -20,34 +20,27 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/portworx/pxc/pkg/util"
 
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+)
+
+const (
+	KubeconfigUserPrefix = "pxc@"
 )
 
 type ConfigManager struct {
-	Path           string
 	Config         *Config
 	Flags          *ConfigFlags
 	tunnelEndpoint string
 }
 
 var (
-	cm          *ConfigManager
-	kubeCliOpts *genericclioptions.ConfigFlags
+	cm *ConfigManager
 )
-
-// KM returns the configuration flags and settings for Kubernetes when running
-// in plugin mode
-func KM() *genericclioptions.ConfigFlags {
-	if kubeCliOpts == nil {
-		kubeCliOpts = genericclioptions.NewConfigFlags(true)
-	}
-	return kubeCliOpts
-}
 
 // CM returns the instance to the config manager
 func CM() *ConfigManager {
@@ -72,16 +65,20 @@ func newConfigManager() *ConfigManager {
 		Flags:  newConfigFlags(),
 	}
 
-	// Load from config file if any
-	configManager.load()
-
-	// Override with flags
-	configManager.override()
-
 	return configManager
 }
 
-// GetFlags returns all the persistent flags
+func (cm *ConfigManager) Load() error {
+	// Load from config file if any
+	cm.load()
+
+	// Override with flags
+	cm.override()
+
+	return nil
+}
+
+// GetFlags returns all the pxc persistent flags
 func (cm *ConfigManager) GetFlags() *ConfigFlags {
 	return cm.Flags
 }
@@ -115,6 +112,7 @@ func (cm *ConfigManager) GetCurrentAuthInfo() *AuthInfo {
 	return cm.Config.AuthInfos[cm.Config.Contexts[cm.Config.CurrentContext].AuthInfo]
 }
 
+// Write saves the pxc config file
 func (cm *ConfigManager) Write() error {
 	if len(cm.GetConfigFile()) == 0 {
 		panic("cm.GetConfigFile() is 0")
@@ -137,16 +135,32 @@ func (cm *ConfigManager) override() {
 
 	// See if we need to set current context from Kubernetes
 	if util.InKubectlPluginMode() {
+		// Get the current context, either from the file or from the args to the CLI
+		contextName, err := GetKubernetesCurrentContext()
+		if err != nil {
+			logrus.Fatal(err)
+		}
+
 		clientConfig := KM().ToRawKubeConfigLoader()
 		kConfig, err := clientConfig.RawConfig()
 		if err != nil {
 			logrus.Fatalf("unable to read kubernetes configuration: %v", err)
 		}
 
-		cm.Config.CurrentContext = kConfig.CurrentContext
-		cm.Config.Contexts[kConfig.CurrentContext] = &Context{
-			AuthInfo: kConfig.Contexts[kConfig.CurrentContext].AuthInfo,
-			Cluster:  kConfig.Contexts[kConfig.CurrentContext].Cluster,
+		// Initialize the context
+		cm.Config.CurrentContext = contextName
+		cm.Config.Contexts[contextName] = &Context{
+			AuthInfo: kConfig.Contexts[contextName].AuthInfo,
+			Cluster:  kConfig.Contexts[contextName].Cluster,
+		}
+
+		// Load all the pxc authentication information from the kubeconfig file
+		for k, v := range kConfig.AuthInfos {
+			logrus.Debugf("Checking %s from %s kubeconfig", k, v.LocationOfOrigin)
+			if strings.HasPrefix(k, KubeconfigUserPrefix) && v.AuthProvider != nil {
+				logrus.Debugf("Loading %s from %s kubeconfig", k, v.LocationOfOrigin)
+				cm.Config.AuthInfos[v.AuthProvider.Name] = NewAuthInfoFromMap(v.AuthProvider.Config)
+			}
 		}
 	} else {
 		// Not in plugin mode
@@ -157,7 +171,6 @@ func (cm *ConfigManager) override() {
 				Cluster:  "default",
 			}
 		}
-
 	}
 
 	currentAuth := cm.Config.Contexts[cm.Config.CurrentContext].AuthInfo
