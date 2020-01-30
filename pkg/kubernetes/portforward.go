@@ -20,6 +20,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/portworx/pxc/pkg/config"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,6 +37,32 @@ type KubectlPortForwarder struct {
 	kubeconfig string
 	endpoint   string
 	cmd        *exec.Cmd
+}
+
+var (
+	kubePortForwarder *KubectlPortForwarder
+)
+
+// StartTunnel starts the global tunnel to the Portworx endpoint through the Kubernetes service
+func StartTunnel() error {
+	if kubePortForwarder == nil {
+		logrus.Info("Kubectl plugin mode detected")
+		logrus.Infof("Port forwarder using kubeconfig %s", *config.KM().KubeConfig)
+		kubePortForwarder = newKubectlPortForwarder(*config.KM().KubeConfig)
+		if err := kubePortForwarder.Start(); err != nil {
+			return fmt.Errorf("Failed to setup port forward: %v", err)
+		}
+		config.CM().SetTunnelEndpoint(kubePortForwarder.Endpoint())
+	}
+
+	return nil
+}
+
+// StopTunnel stops the global tunnel to the Portworx endpoint through the Kubernetes service
+func StopTunnel() {
+	if kubePortForwarder != nil {
+		kubePortForwarder.Stop()
+	}
 }
 
 // NewKubectlPortForwarder forwards a local port to the Portworx gRPC SDK endpoint
@@ -58,7 +86,14 @@ func (p *KubectlPortForwarder) Start() error {
 	if len(p.kubeconfig) != 0 {
 		args = "--kubeconfig=" + p.kubeconfig + " "
 	}
-	args = args + "-n kube-system port-forward svc/portworx-api :9020"
+	currentCluster := config.CM().GetCurrentCluster()
+	logrus.Debugf("port-forward: CurrentCluster: %v", *currentCluster)
+	args = args + fmt.Sprintf("-n %s port-forward svc/%s :%s",
+		currentCluster.TunnelServiceNamespace,
+		currentCluster.TunnelServiceName,
+		currentCluster.TunnelServicePort)
+	logrus.Debugf("port-forward: args [%s]", args)
+
 	cmd := exec.Command("kubectl", strings.Split(args, " ")...)
 
 	// Setup to read port
@@ -81,7 +116,10 @@ func (p *KubectlPortForwarder) Start() error {
 	n, err := stdout.Read(buf[:])
 	if err != nil || n < 0 {
 		logrus.Warningf("Error: read[%d] from buffer: %v", n, err)
-		return fmt.Errorf("Failed to setup connection to Portworx cluster")
+		return fmt.Errorf("Failed to setup connection to Portworx cluster to svc %s/%s port %s",
+			currentCluster.TunnelServiceNamespace,
+			currentCluster.TunnelServiceName,
+			currentCluster.TunnelServicePort)
 	}
 	sbuf := string(buf[:n])
 	index := strings.Index(sbuf, "127.0.0.1:")

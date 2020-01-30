@@ -78,6 +78,45 @@ func SaveAuthInfoForKubeUser(user, locationOfOrigin string, a *AuthInfo) error {
 	return ModifyKubeconfig(oldConfig)
 }
 
+// SaveClusterInKubeconfig stores pxc cluster configuration information in Kubeconfig
+func SaveClusterInKubeconfig(clusterName, location string, c *Cluster) error {
+	pxcName := KubeconfigUserPrefix + clusterName
+	oldConfig, err := GetStartingKubeconfig()
+	if err != nil {
+		return err
+	}
+
+	if v := oldConfig.Clusters[pxcName]; v == nil {
+		oldConfig.Clusters[pxcName] = clientcmdapi.NewCluster()
+	}
+
+	encodedString, err := c.toEncodedString()
+	if err != nil {
+		return err
+	}
+
+	oldConfig.Clusters[pxcName].Server = "REDACTED"
+	oldConfig.Clusters[pxcName].CertificateAuthorityData = []byte(encodedString)
+
+	return ModifyKubeconfig(oldConfig)
+}
+
+//
+func DeleteClusterInKubeconfig(clusterName string) error {
+	pxcName := KubeconfigUserPrefix + clusterName
+	oldConfig, err := GetStartingKubeconfig()
+	if err != nil {
+		return err
+	}
+
+	if v := oldConfig.Clusters[pxcName]; v == nil {
+		return nil
+	}
+
+	delete(oldConfig.Clusters, pxcName)
+	return ModifyKubeconfig(oldConfig)
+}
+
 // GetKubernetesCurrentContext returns the context currently selected by either the config
 // file or from the command line
 func GetKubernetesCurrentContext() (string, error) {
