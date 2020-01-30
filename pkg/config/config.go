@@ -15,11 +15,20 @@ limitations under the License.
 */
 package config
 
+import (
+	"encoding/base64"
+	"encoding/json"
+)
+
 const (
 	AuthKeyToken                     = "token"
 	AuthKeyName                      = "name"
 	AuthKeyKubernetesSecret          = "kube-secret-name"
 	AuthKeyKubernetesSecretNamespace = "kube-secret-namespace"
+
+	DefaultClusterTunnelServiceNamespace = "kube-system"
+	DefaultClusterTunnelServiceName      = "portworx-api"
+	DefaultClusterTunnelServicePort      = "9020"
 )
 
 var (
@@ -45,7 +54,10 @@ type Cluster struct {
 	CACertData []byte `json:"cacert-data,omitempty" yaml:"cacert-data,omitempty"`
 	Endpoint   string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
 	Secure     bool   `json:"secure,omitempty" yaml:"secure,omitempty"`
-	Kubeconfig string `json:"kubeconfig,omitempty" yaml:"kubeconfig,omitempty"`
+
+	TunnelServiceNamespace string `json:"tunnelServiceNamespace,omitempty" yaml:"tunnelServiceNamespace,omitempty"`
+	TunnelServiceName      string `json:"tunnelServiceName,omitempty" yaml:"tunnelServiceName,omitempty"`
+	TunnelServicePort      string `json:"tunnelServicePort,omitempty" yaml:"tunnelServicePort,omitempty"`
 }
 
 // KubernetesAuthInfo provides information on where to access the token in Kubernetes
@@ -78,6 +90,47 @@ func Get(k string) string {
 
 func Set(k, v string) {
 	config[k] = v
+}
+
+func NewCluster() *Cluster {
+	return &Cluster{}
+}
+
+func NewDefaultCluster() *Cluster {
+	return &Cluster{
+		TunnelServiceNamespace: DefaultClusterTunnelServiceNamespace,
+		TunnelServiceName:      DefaultClusterTunnelServiceName,
+		TunnelServicePort:      DefaultClusterTunnelServicePort,
+	}
+}
+
+func NewClusterFromEncodedString(encodedString string) (*Cluster, error) {
+	// decode base64
+	decoded, err := base64.StdEncoding.DecodeString(encodedString)
+	if err != nil {
+		return nil, err
+	}
+
+	// unmarshal the json
+	var c Cluster
+	err = json.Unmarshal(decoded, &c)
+	if err != nil {
+		return nil, err
+	}
+
+	return &c, nil
+}
+
+func (c *Cluster) toEncodedString() (string, error) {
+	// Encode to json
+	b, err := json.Marshal(c)
+	if err != nil {
+		return "", err
+	}
+
+	// base64 encode
+	es := base64.StdEncoding.EncodeToString(b)
+	return es, nil
 }
 
 // NewAuthInfo returns an empty pxc Authinfo

@@ -156,10 +156,22 @@ func (cm *ConfigManager) override() {
 
 		// Load all the pxc authentication information from the kubeconfig file
 		for k, v := range kConfig.AuthInfos {
-			logrus.Debugf("Checking %s from %s kubeconfig", k, v.LocationOfOrigin)
 			if strings.HasPrefix(k, KubeconfigUserPrefix) && v.AuthProvider != nil {
-				logrus.Debugf("Loading %s from %s kubeconfig", k, v.LocationOfOrigin)
+				logrus.Debugf("Loading user %s from %s", k, v.LocationOfOrigin)
 				cm.Config.AuthInfos[v.AuthProvider.Name] = NewAuthInfoFromMap(v.AuthProvider.Config)
+			}
+		}
+
+		// Load all the pxc cluster information from the kubeconfig file
+		for k, c := range kConfig.Clusters {
+			if strings.HasPrefix(k, KubeconfigUserPrefix) {
+				pxcClusterInfo, err := NewClusterFromEncodedString(string(c.CertificateAuthorityData))
+				if err == nil {
+					logrus.Debugf("Loading cluster %s from %s", k, c.LocationOfOrigin)
+					cm.Config.Clusters[pxcClusterInfo.Name] = pxcClusterInfo
+				} else {
+					logrus.Debugf("Unable to load cluster %s from %s", k, c.LocationOfOrigin)
+				}
 			}
 		}
 	} else {
@@ -177,10 +189,10 @@ func (cm *ConfigManager) override() {
 	currentCluster := cm.Config.Contexts[cm.Config.CurrentContext].Cluster
 
 	if cm.Config.AuthInfos[currentAuth] == nil {
-		cm.Config.AuthInfos[currentAuth] = &AuthInfo{}
+		cm.Config.AuthInfos[currentAuth] = NewAuthInfo()
 	}
 	if cm.Config.Clusters[currentCluster] == nil {
-		cm.Config.Clusters[currentCluster] = &Cluster{}
+		cm.Config.Clusters[currentCluster] = NewDefaultCluster()
 	}
 	if cm.Config.AuthInfos[currentAuth].KubernetesAuthInfo == nil {
 		cm.Config.AuthInfos[currentAuth].KubernetesAuthInfo = &KubernetesAuthInfo{}

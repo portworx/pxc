@@ -16,8 +16,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/kubernetes"
@@ -29,8 +27,8 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var (
-	rootCmd           *cobra.Command
-	kubePortForwarder kubernetes.PortForwarder
+	rootCmd *cobra.Command
+	//kubePortForwarder kubernetes.PortForwarder
 )
 
 func RootAddCommand(c *cobra.Command) {
@@ -84,24 +82,12 @@ func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 	// Set verbosity
 	logrus.Infof("pxc version: %s", PxVersion)
 
-	// Setup port forwarding if running as a kubectl plugin
-	if util.InKubectlPluginMode() {
-		logrus.Info("Kubectl plugin mode detected")
-		logrus.Infof("Port forwarder using kubeconfig %s", *config.KM().KubeConfig)
-		kubePortForwarder = kubernetes.NewKubectlPortForwarder(*config.KM().KubeConfig)
-		if err := kubePortForwarder.Start(); err != nil {
-			return fmt.Errorf("Failed to setup port forward: %v", err)
-		}
-		config.CM().SetTunnelEndpoint(kubePortForwarder.Endpoint())
-	}
-
 	return nil
 }
 
 func rootPersistentPostRunE(cmd *cobra.Command, args []string) error {
-	if kubePortForwarder != nil {
-		kubePortForwarder.Stop()
-	}
+	// Close the global tunnel if any
+	kubernetes.StopTunnel()
 
 	return nil
 }

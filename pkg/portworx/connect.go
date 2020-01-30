@@ -61,6 +61,12 @@ func PxConnectAsPlugin() (context.Context, *grpc.ClientConn, error) {
 		dialOptions []grpc.DialOption
 	)
 
+	// Start global tunnel if not up already
+	err := kubernetes.StartTunnel()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// If secure: true set in config.yaml file, use TLS
 	dialOptions = append(dialOptions, grpc.WithInsecure())
 

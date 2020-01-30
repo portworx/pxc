@@ -20,6 +20,7 @@ import (
 	_ "github.com/portworx/pxc/handler/cloudmigration"
 	_ "github.com/portworx/pxc/handler/cluster"
 	_ "github.com/portworx/pxc/handler/clusterpair"
+	_ "github.com/portworx/pxc/handler/config"
 	_ "github.com/portworx/pxc/handler/context"
 	_ "github.com/portworx/pxc/handler/login"
 	_ "github.com/portworx/pxc/handler/logs"
