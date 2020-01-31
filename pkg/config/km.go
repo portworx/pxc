@@ -66,9 +66,7 @@ func SaveAuthInfoForKubeUser(user, locationOfOrigin string, a *AuthInfo) error {
 	// Store the pxc auth
 	oldConfig.AuthInfos[pxcName].LocationOfOrigin = locationOfOrigin
 	oldConfig.AuthInfos[pxcName].AuthProvider = &clientcmdapi.AuthProviderConfig{
-		// Important to save the actual user here so that we do not have to decode
-		// the name from `pxcName`
-		Name: user,
+		Name: "portworx",
 
 		// Change the pxc AuthInfo to a map
 		Config: a.toMap(),
