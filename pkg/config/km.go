@@ -93,7 +93,8 @@ func SaveClusterInKubeconfig(clusterName, location string, c *Cluster) error {
 		return err
 	}
 
-	oldConfig.Clusters[pxcName].Server = "REDACTED"
+	oldConfig.Clusters[pxcName].LocationOfOrigin = location
+	oldConfig.Clusters[pxcName].Server = "portworx-server"
 	oldConfig.Clusters[pxcName].CertificateAuthorityData = []byte(encodedString)
 
 	return ModifyKubeconfig(oldConfig)
