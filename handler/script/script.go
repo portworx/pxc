@@ -23,6 +23,7 @@ import (
 	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/config"
+	"github.com/portworx/pxc/pkg/kubernetes"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -77,8 +78,21 @@ func runScriptExec(cmd *cobra.Command, args []string) error {
 }
 
 func pythonScriptExec(cmd *cobra.Command, args []string) error {
+
+	// Setup a connetion to Portworx
 	clusterInfo := config.CM().GetCurrentCluster()
 	authInfo := config.CM().GetCurrentAuthInfo()
+
+	// Check if we need to tunnel
+	if len(config.CM().GetEndpoint()) == 0 &&
+		util.InKubectlPluginMode() {
+		err := kubernetes.StartTunnel()
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("Must provide an endpoint to Portworx server")
+	}
 
 	logrus.Infof("args: %+v", args)
 	scriptCmd := exec.Command("python3", args...)
