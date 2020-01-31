@@ -1,8 +1,7 @@
-CLINAME := pxc
+CLINAME := kubectl-pxc
 SHA := $(shell git rev-parse --short HEAD)
 BRANCH := $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
 VER := $(shell git describe --tags)
-#VER := 0.0.0-$(SHA)
 ARCH := $(shell go env GOARCH)
 GOOS := $(shell go env GOOS)
 DIR=.
@@ -24,7 +23,8 @@ else
 PKG_NAME = $(CLINAME).exe
 endif
 
-PACKAGE := $(CLINAME)-$(VERSION).$(GOOS).$(ARCH).zip
+ZIPPACKAGE := $(CLINAME)-$(VERSION).$(GOOS).$(ARCH).zip
+TGZPACKAGE := $(CLINAME)-$(VERSION).$(GOOS).$(ARCH).tar.gz
 
 all: pxc
 
@@ -41,7 +41,7 @@ lint:
 	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
 
 pxc:
-	go build $(LDFLAGS)
+	go build -o $(PKG_NAME) $(LDFLAGS)
 
 release: darwin_amd64_dist \
 	windows_amd64_dist \
@@ -51,12 +51,14 @@ darwin_amd64_dist:
 	GOOS=darwin GOARCH=amd64 $(MAKE) dist
 
 windows_amd64_dist:
-	GOOS=windows GOARCH=amd64 $(MAKE) dist
+	GOOS=windows GOARCH=amd64 $(MAKE) distzip
 
 linux_amd64_dist:
 	GOOS=linux GOARCH=amd64 $(MAKE) dist
 
-dist: $(PACKAGE)
+distzip: $(ZIPPACKAGE)
+
+dist: $(TGZPACKAGE)
 
 test:
 	./hack/test.sh
@@ -65,11 +67,19 @@ verify: all test
 	go fmt $(go list ./... | grep -v vendor) | wc -l | grep 0
 	go vet $(go list ./... | grep -v vendor)
 
-$(PACKAGE): all
-	@echo Packaging client Binaries...
+$(ZIPPACKAGE): all
+	@echo Packaging pxc ...
 	@mkdir -p dist
 	@zip dist/$@ $(PKG_NAME)
 	@rm -f $(PKG_NAME)
+
+$(TGZPACKAGE): all
+	@echo Packaging Binaries...
+	@mkdir -p tmp/$(PKG_NAME)
+	@cp $(PKG_NAME) tmp/$(PKG_NAME)/
+	@mkdir -p $(DIR)/dist/
+	tar -czf $(DIR)/dist/$@ -C tmp $(PKG_NAME)
+	@rm -rf tmp
 
 clean:
 	rm -f $(PKG_NAME)
