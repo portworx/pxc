@@ -158,7 +158,8 @@ func (cm *ConfigManager) override() {
 		for k, v := range kConfig.AuthInfos {
 			if strings.HasPrefix(k, KubeconfigUserPrefix) && v.AuthProvider != nil {
 				logrus.Debugf("Loading user %s from %s", k, v.LocationOfOrigin)
-				cm.Config.AuthInfos[v.AuthProvider.Name] = NewAuthInfoFromMap(v.AuthProvider.Config)
+				pxcAuthInfo := NewAuthInfoFromMap(v.AuthProvider.Config)
+				cm.Config.AuthInfos[pxcAuthInfo.Name] = pxcAuthInfo
 			}
 		}
 

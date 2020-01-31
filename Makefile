@@ -28,8 +28,9 @@ TGZPACKAGE := $(CLINAME)-$(VERSION).$(GOOS).$(ARCH).tar.gz
 
 all: pxc
 
-install:
-	go install
+install: all
+	cp $(PKG_NAME) $(GOPATH)/bin
+
 
 imports:
 	goimports -w ./cmd
