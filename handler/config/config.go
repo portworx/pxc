@@ -30,7 +30,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "config",
 		Short: "Setup pxc configuration",
 		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see pxc config --help for more commands")
+			util.Printf("Please see pxc config --help for more commands\n")
 		},
 	}
 })

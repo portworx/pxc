@@ -32,7 +32,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "get",
 		Short: "Get information from Portworx",
 		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see pxc get --help for more information")
+			util.Printf("Please see pxc get --help for more information\n")
 		},
 	}
 })

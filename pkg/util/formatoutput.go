@@ -67,7 +67,7 @@ func PrintFormatted(in FormatOutput) error {
 	if err != nil {
 		return err
 	}
-	Printf("%s", str)
+	Printf("%s\n", str)
 	return nil
 }
 
