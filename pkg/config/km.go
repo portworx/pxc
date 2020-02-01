@@ -48,6 +48,37 @@ func ModifyKubeconfig(newConfig *clientcmdapi.Config) error {
 	return clientcmd.ModifyConfig(KM().ToRawKubeConfigLoader().ConfigAccess(), *newConfig, true)
 }
 
+// KubectlFlagsToCliArgs rebuilds the flags as cli args
+func KubectlFlagsToCliArgs() string {
+	var args string
+
+	if len(*KM().KubeConfig) != 0 {
+		args = "--kubeconfig=" + *KM().KubeConfig + " "
+	}
+	if len(*KM().Context) != 0 {
+		args += "--context=" + *KM().Context + " "
+	}
+	if len(*KM().BearerToken) != 0 {
+		args += "--token=" + *KM().BearerToken + " "
+	}
+	if len(*KM().APIServer) != 0 {
+		args += "--server=" + *KM().APIServer + " "
+	}
+	if len(*KM().CAFile) != 0 {
+		args += "--certificate-authority=" + *KM().CAFile + " "
+	}
+	if len(*KM().AuthInfoName) != 0 {
+		args += "--user=" + *KM().AuthInfoName + " "
+	}
+	if len(*KM().CertFile) != 0 {
+		args += "--client-certificate=" + *KM().CertFile + " "
+	}
+	if len(*KM().KeyFile) != 0 {
+		args += "--client-key=" + *KM().KeyFile + " "
+	}
+	return args
+}
+
 // SaveAuthInfoForKubeUser saves the pxc configuration in the kubeconfig file as a new user entry.
 // Supply locationOfOrigin so that the Kubernetes saves the object with the appropriate user. LocationOfOrigin
 // is found in each of the user objects in the kubernetes Config object.
