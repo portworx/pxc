@@ -27,7 +27,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "describe",
 		Short: "Show detailed information of Portworx resources",
 		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see pxc describe --help for more information")
+			util.Printf("Please see pxc describe --help for more information\n")
 		},
 	}
 })

@@ -29,7 +29,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "context",
 		Short: "Manage connections to Portworx and other systems",
 		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see pxc context --help for more commands")
+			util.Printf("Please see pxc context --help for more commands\n")
 		},
 	}
 })

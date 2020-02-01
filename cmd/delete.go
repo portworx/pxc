@@ -27,7 +27,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Use:   "delete",
 		Short: "Delete an object in Portworx",
 		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see pxc delete --help for more information")
+			util.Printf("Please see pxc delete --help for more information\n")
 		},
 	}
 })
