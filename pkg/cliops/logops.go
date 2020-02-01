@@ -35,14 +35,14 @@ func AddCommonLogOptions(lc *cobra.Command) {
 	lc.Flags().BoolP("follow", "f", false, "Specify if the logs should be streamed.")
 	lc.Flags().Bool("timestamps", false, "Include timestamps on each line in the log output")
 	lc.Flags().Bool("show-pod-info", false, "Include pod info on each line in the log output")
-	lc.Flags().BoolP("previous", "p", false, "If true, print the logs for the previous instance of the container in a pod if it exists.")
+	lc.Flags().Bool("previous", false, "If true, print the logs for the previous instance of the container in a pod if it exists.")
 	lc.Flags().Bool("ignore-errors", false, "If watching / following Portworx logs, allow for any errors that occur to be non-fatal")
 	lc.Flags().Int("max-log-requests", 5, "Specify maximum number of concurrent logs to follow. Defaults to 5.")
 	lc.Flags().Int64("limit-bytes", 0, "Maximum bytes of logs to return. Defaults to no limit.")
 	lc.Flags().Int64("tail", kubernetes.NO_TAIL_LINES, "Lines of recent log file to work on. Defaults to -1, showing all log lines. All filters will be applied on top of these lines")
 	lc.Flags().String("since-time", "", "Only return logs after a specific date (RFC3339). Defaults to all logs. Only one of since-time / since may be used.")
 	lc.Flags().Duration("since", 0, "Only return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used.")
-	lc.Flags().StringP("px-namespace", "n", "kube-system", "Kubernetes namespace in which Portworx is installed")
+	lc.Flags().String("px-namespace", "kube-system", "Kubernetes namespace in which Portworx is installed")
 	lc.Flags().String("filter", "", "Comma seperated list of strings to search for. Log line will be printed if any one of the strings match. Note that if --tail is specified the filter is applied on only those many lines.")
 }
 
