@@ -80,12 +80,7 @@ func newKubectlPortForwarder(kubeconfig string) *KubectlPortForwarder {
 
 // Start creates the portforward using kubectl
 func (p *KubectlPortForwarder) Start() error {
-	// start kubectl port forward
-	// TODO: What if they do not have access to the service?
-	var args string
-	if len(p.kubeconfig) != 0 {
-		args = "--kubeconfig=" + p.kubeconfig + " "
-	}
+	args := config.KubectlFlagsToCliArgs()
 	currentCluster := config.CM().GetCurrentCluster()
 	logrus.Debugf("port-forward: CurrentCluster: %v", *currentCluster)
 	args = args + fmt.Sprintf("-n %s port-forward svc/%s :%s",
