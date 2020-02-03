@@ -57,7 +57,7 @@ var _ = commander.RegisterCommandVar(func() {
 
 var _ = commander.RegisterCommandInit(func() {
 	cmd.GetAddCommand(getPvcCmd)
-	getPvcCmd.Flags().StringP("namespace", "n", "", "Kubernetes namespace")
+	getPvcCmd.Flags().String("namespace", "", "Kubernetes namespace")
 	getPvcCmd.Flags().Bool("all-namespaces", false, "Kubernetes namespace")
 	getPvcCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
 	getPvcCmd.Flags().Bool("show-labels", false, "Show labels in the last column of the output")

@@ -1,4 +1,6 @@
 pxc
+*.code-workspace
+kubectl-pxc
 .*.swp
 *.px
 *.zip

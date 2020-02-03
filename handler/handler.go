@@ -17,11 +17,8 @@ package handler
 
 import (
 	_ "github.com/portworx/pxc/handler/alerts"
-	_ "github.com/portworx/pxc/handler/cloudmigration"
 	_ "github.com/portworx/pxc/handler/cluster"
-	_ "github.com/portworx/pxc/handler/clusterpair"
 	_ "github.com/portworx/pxc/handler/config"
-	_ "github.com/portworx/pxc/handler/context"
 	_ "github.com/portworx/pxc/handler/login"
 	_ "github.com/portworx/pxc/handler/logs"
 	_ "github.com/portworx/pxc/handler/node"
@@ -31,4 +28,9 @@ import (
 	_ "github.com/portworx/pxc/handler/volumeclone"
 	_ "github.com/portworx/pxc/handler/volumesnapshot"
 	_ "github.com/portworx/pxc/handler/volumestats"
+	// The following features will not be released until further work
+	//	_ "github.com/portworx/pxc/handler/cloudmigration"
+	//	_ "github.com/portworx/pxc/handler/clusterpair"
+	// This feature is being replaced with `config`
+	//	_ "github.com/portworx/pxc/handler/context"
 )

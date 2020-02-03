@@ -8,3 +8,4 @@ script:
   - go vet $(go list ./... | grep -v vendor)
   - make install
   - make test
+  - make docs

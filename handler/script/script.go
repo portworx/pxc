@@ -53,7 +53,47 @@ var _ = commander.RegisterCommandVar(func() {
 	scriptCmd = &cobra.Command{
 		Use:   "script [NAME]",
 		Short: "Run a script against the current cluster",
-		RunE:  runScriptExec,
+		Long: `
+Run a SDK script to communicate to the specified Kubernetes and Portworx systems.
+Pxc will pass to the script all configuration and authentication information needed.
+
+Pxc scripts current only support Python scripts, but more langauges will be supported
+in future releases.
+
+`,
+		Example: `
+  # Python
+
+  You will need to first type the following to install the required library:
+
+      pip3 install --user --upgrade libopenstorage-openstorage
+
+  The following python example application can used to return the id and status
+  of a Portworx cluster:
+
+      import grpc
+
+      from openstorage import api_pb2
+      from openstorage import api_pb2_grpc
+      from openstorage import connector
+
+      # No need to setup connection information to your cluster.
+      # pxc will pass all the required information.
+      c = connector.Connector()
+      channel = c.connect()
+
+      try:
+          clusters = api_pb2_grpc.OpenStorageClusterStub(channel)
+          ic_resp = clusters.InspectCurrent(api_pb2.SdkClusterInspectCurrentRequest())
+          print('Conntected to {0} with status {1}'.format(ic_resp.cluster.id, api_pb2.Status.Name(ic_resp.cluster.status)))
+      except grpc.RpcError as e:
+          print('Failed: code={0} msg={1}'.format(e.code(), e.details()))
+
+  For more information please visit the python tutorial on https://libopenstorage.github.io/
+
+  # Execute a python script called myscript.py
+  pxc script myscript.py`,
+		RunE: runScriptExec,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("Must supply a script")

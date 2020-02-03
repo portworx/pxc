@@ -61,12 +61,12 @@ var _ = commander.RegisterCommandVar(func() {
 var _ = commander.RegisterCommandVar(func() {
 	cmd.CreateAddCommand(createClusterpairCmd)
 
-	createClusterpairCmd.Flags().StringVarP(&ccpOpts.source, "source", "s", "", "Context for the source cluster (required)")
-	createClusterpairCmd.Flags().StringVarP(&ccpOpts.destination, "destination", "d", "", "Context for the destination cluster (required)")
-	createClusterpairCmd.Flags().Uint32VarP(&ccpOpts.destinationPort, "destination-port", "p", 9001,
+	createClusterpairCmd.Flags().StringVar(&ccpOpts.source, "source", "", "Context for the source cluster (required)")
+	createClusterpairCmd.Flags().StringVar(&ccpOpts.destination, "destination", "", "Context for the destination cluster (required)")
+	createClusterpairCmd.Flags().Uint32Var(&ccpOpts.destinationPort, "destination-port", 9001,
 		"Port for destination cluster (optional)")
-	createClusterpairCmd.Flags().StringVarP(&ccpOpts.mode, "mode", "m", "", "Pairing mode to use (optional)")
-	createClusterpairCmd.Flags().BoolVarP(&ccpOpts.req.SetDefault, "set-default", "", false, "Set this as the default cluster pair (optional)")
+	createClusterpairCmd.Flags().StringVar(&ccpOpts.mode, "mode", "", "Pairing mode to use (optional)")
+	createClusterpairCmd.Flags().BoolVar(&ccpOpts.req.SetDefault, "set-default", false, "Set this as the default cluster pair (optional)")
 	createClusterpairCmd.Flags().SortFlags = false
 })
 

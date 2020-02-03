@@ -61,6 +61,10 @@ distzip: $(ZIPPACKAGE)
 
 dist: $(TGZPACKAGE)
 
+# This also tests for any conflicts
+docs: all
+	./kubectl-pxc gendocs --output-dir=docs/usage
+
 test:
 	./hack/test.sh
 
