@@ -51,7 +51,7 @@ var _ = commander.RegisterCommandVar(func() {
 // describePvcCmd represents the describePvc command
 var _ = commander.RegisterCommandInit(func() {
 	cmd.DescribeAddCommand(describePvcCmd)
-	describePvcCmd.Flags().StringP("namespace", "n", "", "Kubernetes namespace")
+	describePvcCmd.Flags().String("namespace", "", "Kubernetes namespace")
 	describePvcCmd.Flags().Bool("all-namespaces", false, "Kubernetes namespace")
 })
 

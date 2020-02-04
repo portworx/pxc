@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/portworx/pxc/pkg/commander"
@@ -24,12 +25,18 @@ import (
 	"github.com/spf13/cobra/doc"
 )
 
+type gendocCmdArgs struct {
+	outputDir string
+	format    string
+}
+
 var (
-	gendocCmd       *cobra.Command
-	gendocOutputDir string
+	gendocCmd  *cobra.Command
+	gendocArgs *gendocCmdArgs
 )
 
 var _ = commander.RegisterCommandVar(func() {
+	gendocArgs = &gendocCmdArgs{}
 	gendocCmd = &cobra.Command{
 		Use:     "gendoc",
 		Aliases: []string{"gendocs"},
@@ -43,7 +50,8 @@ var _ = commander.RegisterCommandVar(func() {
 var _ = commander.RegisterCommandInit(func() {
 	RootAddCommand(gendocCmd)
 
-	gendocCmd.Flags().StringVar(&gendocOutputDir, "output-dir", "pxdocs", "Output directory")
+	gendocCmd.Flags().StringVar(&gendocArgs.format, "format", "md", "Output formats: md, man")
+	gendocCmd.Flags().StringVar(&gendocArgs.outputDir, "output-dir", "pxdocs", "Output directory")
 })
 
 func GenDocAddCommand(cmd *cobra.Command) {
@@ -51,8 +59,23 @@ func GenDocAddCommand(cmd *cobra.Command) {
 }
 
 func gendocExec(cmd *cobra.Command, args []string) error {
-	util.Printf("Creating docs in %s...\n", gendocOutputDir)
+	switch gendocArgs.format {
+	case "md":
+		util.Printf("Creating markdown docs in %s...\n", gendocArgs.outputDir)
 
-	os.MkdirAll(gendocOutputDir, 0755)
-	return doc.GenMarkdownTree(rootCmd, gendocOutputDir)
+		os.MkdirAll(gendocArgs.outputDir, 0755)
+		return doc.GenMarkdownTree(rootCmd, gendocArgs.outputDir)
+	case "man":
+		util.Printf("Creating man pages in %s...\n", gendocArgs.outputDir)
+
+		os.MkdirAll(gendocArgs.outputDir, 0755)
+		manHeader := &doc.GenManHeader{
+			Title: "pxc Portworx client",
+		}
+		return doc.GenManTree(rootCmd, manHeader, gendocArgs.outputDir)
+
+	default:
+		return fmt.Errorf("Unknown format: %s", gendocArgs.format)
+	}
+
 }

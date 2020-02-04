@@ -1,5 +1,10 @@
 pxc
+pxc.exe
+*.code-workspace
+kubectl-pxc
+kubectl-pxc.exe
 .*.swp
 *.px
 *.zip
 .code-workspace*
+dist/

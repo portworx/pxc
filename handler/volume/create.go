@@ -86,7 +86,7 @@ var _ = commander.RegisterCommandVar(func() {
   # Create a volume called 'myvolume" with volume access (collaborators and groups) option flag.
   # r - read, w - write, a -admin:
   pxc create volume myvolume --size=3 --groups group1:r,group2:w,group3:a --collaborators user1:r,user2:a,user3:w
-  
+
   # Create a volume with periodic snapshot policy for every 15 minutes with retain=2 (maintaing two snapshot copies at a given time):
   pxc create volume snapvol --periodic 15,2
 
@@ -95,7 +95,7 @@ var _ = commander.RegisterCommandVar(func() {
 
   # Create a volume with weekly snapshot for every monday at 00h:12m with retain=2 (maintaing two snapshot copies at a given time):
   pxc create volume snapvol --weekly monday@00:12,2
-  
+
   # Create a volume with monthly snapshot on 25th of every month at 10h:10m with retain=2 (maintaing two snapshot copies at a given time):
   pxc create volume snapvol --monthly 25@10:10,2`,
 
