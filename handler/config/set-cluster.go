@@ -64,7 +64,7 @@ func setClusterExec(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get the current context
-	currentContextName, err := config.GetKubernetesCurrentContext()
+	currentContextName, err := config.KM().GetKubernetesCurrentContext()
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func setClusterExec(cmd *cobra.Command, args []string) error {
 	location := kconfig.Clusters[currentContext.Cluster].LocationOfOrigin
 
 	// Storage the information to the appropriate kubeconfig
-	if err := config.SaveClusterInKubeconfig(currentContext.Cluster, location, clusterInfo); err != nil {
+	if err := config.KM().SaveClusterInKubeconfig(currentContext.Cluster, location, clusterInfo); err != nil {
 		return err
 	}
 
