@@ -16,9 +16,10 @@ limitations under the License.
 package config
 
 import (
-	"github.com/spf13/pflag"
 	"os"
 	"path"
+
+	"github.com/spf13/pflag"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
@@ -32,6 +33,7 @@ const (
 
 	flagPrefix          = "pxc."
 	flagConfigFile      = flagPrefix + "config"
+	flagConfigDir       = flagPrefix + "config-dir"
 	flagContext         = flagPrefix + "context"
 	flagSecretNamespace = flagPrefix + "secret-namespace"
 	flagSecretName      = flagPrefix + "secret-name"
@@ -40,6 +42,7 @@ const (
 )
 
 type ConfigFlags struct {
+	ConfigDir       string
 	ConfigFile      string
 	Context         string
 	SecretNamespace string
@@ -51,7 +54,21 @@ type ConfigFlags struct {
 func newConfigFlags() *ConfigFlags {
 	// If the cfgFile has not been setup in the arguments, then
 	// read it from the HOME directory
-	return &ConfigFlags{}
+
+	// Check env
+	configDir := os.Getenv("PXCONFIGDIR")
+	if len(configDir) == 0 {
+		// Find home directory.
+		home, err := homedir.Dir()
+		if err != nil {
+			logrus.Fatalf("unable to determine home directory: %v\n", err)
+		}
+		configDir = path.Join(home, PxDefaultDir)
+	}
+
+	return &ConfigFlags{
+		ConfigDir: configDir,
+	}
 }
 
 func (c *ConfigFlags) GetConfigFile() string {
@@ -90,5 +107,6 @@ func (c *ConfigFlags) AddFlagsPluginMode(flags *pflag.FlagSet) {
 
 func (c *ConfigFlags) addFlagsCommon(flags *pflag.FlagSet) {
 	flags.StringVar(&c.ConfigFile, flagConfigFile, c.ConfigFile, "Config file (default is $HOME/"+PxDefaultDir+"/"+PxDefaultConfigName+")")
+	flags.StringVar(&c.ConfigDir, flagConfigDir, c.ConfigDir, "Config directory")
 	flags.Int32Var(&c.Verbosity, flagVerbosity, c.Verbosity, "[0-3] Log level verbosity")
 }

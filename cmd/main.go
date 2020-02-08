@@ -20,6 +20,7 @@ import (
 
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/config"
+	"github.com/portworx/pxc/pkg/plugin"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -68,6 +69,17 @@ func Execute() {
 func Main() error {
 	// Setup flags
 	commander.Setup()
+
+	// Search for plugins and only execute if a command is not found
+	if len(os.Args) > 1 {
+		cmdPathPieces := os.Args[1:]
+		if _, _, err := rootCmd.Find(cmdPathPieces); err != nil {
+			pluginHandler := NewDefaultPluginHandler(plugin.ValidPluginFilenamePrefixes)
+			if err = HandlePluginCommand(pluginHandler, cmdPathPieces); err != nil {
+				return err
+			}
+		}
+	}
 
 	// Execute pxc
 	return rootCmd.Execute()
