@@ -47,8 +47,8 @@ var (
 func StartTunnel() error {
 	if kubePortForwarder == nil {
 		logrus.Info("Kubectl plugin mode detected")
-		logrus.Infof("Port forwarder using kubeconfig %s", *config.KM().KubeConfig)
-		kubePortForwarder = newKubectlPortForwarder(*config.KM().KubeConfig)
+		logrus.Infof("Port forwarder using kubeconfig %s", *config.KM().ConfigFlags().KubeConfig)
+		kubePortForwarder = newKubectlPortForwarder(*config.KM().ConfigFlags().KubeConfig)
 		if err := kubePortForwarder.Start(); err != nil {
 			return fmt.Errorf("Failed to setup port forward: %v", err)
 		}
@@ -80,7 +80,7 @@ func newKubectlPortForwarder(kubeconfig string) *KubectlPortForwarder {
 
 // Start creates the portforward using kubectl
 func (p *KubectlPortForwarder) Start() error {
-	args := config.KubectlFlagsToCliArgs()
+	args := config.KM().KubectlFlagsToCliArgs()
 	currentCluster := config.CM().GetCurrentCluster()
 	logrus.Debugf("port-forward: CurrentCluster: %v", *currentCluster)
 	args = args + fmt.Sprintf("-n %s port-forward svc/%s :%s",

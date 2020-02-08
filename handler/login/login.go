@@ -67,7 +67,7 @@ func loginExec(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get the current context
-	currentContextName, err := config.GetKubernetesCurrentContext()
+	currentContextName, err := config.KM().GetKubernetesCurrentContext()
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func loginExec(cmd *cobra.Command, args []string) error {
 	location := kconfig.AuthInfos[currentContext.AuthInfo].LocationOfOrigin
 
 	// Storage the information to the appropriate kubeconfig
-	if err := config.SaveAuthInfoForKubeUser(currentContext.AuthInfo, location, authInfo); err != nil {
+	if err := config.KM().SaveAuthInfoForKubeUser(currentContext.AuthInfo, location, authInfo); err != nil {
 		return err
 	}
 

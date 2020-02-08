@@ -49,7 +49,7 @@ func deleteClusterExec(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get the current context
-	currentContextName, err := config.GetKubernetesCurrentContext()
+	currentContextName, err := config.KM().GetKubernetesCurrentContext()
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func deleteClusterExec(cmd *cobra.Command, args []string) error {
 	location := kconfig.Clusters[currentContext.Cluster].LocationOfOrigin
 
 	// Storage the information to the appropriate kubeconfig
-	if err := config.DeleteClusterInKubeconfig(currentContext.Cluster); err != nil {
+	if err := config.KM().DeleteClusterInKubeconfig(currentContext.Cluster); err != nil {
 		return err
 	}
 

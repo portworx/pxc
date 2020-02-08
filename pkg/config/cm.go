@@ -136,12 +136,12 @@ func (cm *ConfigManager) override() {
 	// See if we need to set current context from Kubernetes
 	if util.InKubectlPluginMode() {
 		// Get the current context, either from the file or from the args to the CLI
-		contextName, err := GetKubernetesCurrentContext()
+		contextName, err := KM().GetKubernetesCurrentContext()
 		if err != nil {
 			logrus.Fatal(err)
 		}
 
-		clientConfig := KM().ToRawKubeConfigLoader()
+		clientConfig := KM().ConfigFlags().ToRawKubeConfigLoader()
 		kConfig, err := clientConfig.RawConfig()
 		if err != nil {
 			logrus.Fatalf("unable to read kubernetes configuration: %v", err)
