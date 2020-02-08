@@ -21,60 +21,94 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
-var (
+// KubernetesConfigManager contains all the Kubernetes configuration
+type KubernetesConfigManager struct {
 	kubeCliOpts *genericclioptions.ConfigFlags
+}
+
+var (
+	km *KubernetesConfigManager
 )
 
 // KM returns the Kubernetes configuration flags and settings
-func KM() *genericclioptions.ConfigFlags {
-	if kubeCliOpts == nil {
-		kubeCliOpts = genericclioptions.NewConfigFlags(true)
+func KM() *KubernetesConfigManager {
+	if km == nil {
+		km = newKubernetesConfigManager()
 	}
-	return kubeCliOpts
+	return km
+}
+
+func newKubernetesConfigManager() *KubernetesConfigManager {
+	return &KubernetesConfigManager{
+		kubeCliOpts: genericclioptions.NewConfigFlags(true),
+	}
+}
+
+// ConfigFlags returns the kubernetes raw configuration object
+func (k *KubernetesConfigManager) ConfigFlags() *genericclioptions.ConfigFlags {
+	return k.kubeCliOpts
+}
+
+// ToRawKubeConfigLoader binds config flag values to config overrides
+// Returns an interactive clientConfig if the password flag is enabled,
+// or a non-interactive clientConfig otherwise.
+// comment from k8s.io/cli-runtime
+func (k *KubernetesConfigManager) ToRawKubeConfigLoader() clientcmd.ClientConfig {
+	return k.ConfigFlags().ToRawKubeConfigLoader()
+}
+
+// ToRESTConfig implements RESTClientGetter.
+// Returns a REST client configuration based on a provided path
+// to a .kubeconfig file, loading rules, and config flag overrides.
+// Expects the AddFlags method to have been called.
+// comment from k8s.io/cli-runtime
+func (k *KubernetesConfigManager) ToRESTConfig() (*rest.Config, error) {
+	return k.ConfigFlags().ToRESTConfig()
 }
 
 // GetStartingKubeconfig is used to adjust the current Kubernetes config. You can then
 // call ModifyKubeconfig() with the modified configuration
-func GetStartingKubeconfig() (*clientcmdapi.Config, error) {
-	return KM().ToRawKubeConfigLoader().ConfigAccess().GetStartingConfig()
+func (k *KubernetesConfigManager) GetStartingKubeconfig() (*clientcmdapi.Config, error) {
+	return k.ToRawKubeConfigLoader().ConfigAccess().GetStartingConfig()
 }
 
 // ModifyKubeconfig takes a modified configuration and seves it to disk
-func ModifyKubeconfig(newConfig *clientcmdapi.Config) error {
-	return clientcmd.ModifyConfig(KM().ToRawKubeConfigLoader().ConfigAccess(), *newConfig, true)
+func (k *KubernetesConfigManager) ModifyKubeconfig(newConfig *clientcmdapi.Config) error {
+	return clientcmd.ModifyConfig(k.ToRawKubeConfigLoader().ConfigAccess(), *newConfig, true)
 }
 
 // KubectlFlagsToCliArgs rebuilds the flags as cli args
-func KubectlFlagsToCliArgs() string {
+func (k *KubernetesConfigManager) KubectlFlagsToCliArgs() string {
 	var args string
 
-	if len(*KM().KubeConfig) != 0 {
-		args = "--kubeconfig=" + *KM().KubeConfig + " "
+	if len(*k.kubeCliOpts.KubeConfig) != 0 {
+		args = "--kubeconfig=" + *k.kubeCliOpts.KubeConfig + " "
 	}
-	if len(*KM().Context) != 0 {
-		args += "--context=" + *KM().Context + " "
+	if len(*k.kubeCliOpts.Context) != 0 {
+		args += "--context=" + *k.kubeCliOpts.Context + " "
 	}
-	if len(*KM().BearerToken) != 0 {
-		args += "--token=" + *KM().BearerToken + " "
+	if len(*k.kubeCliOpts.BearerToken) != 0 {
+		args += "--token=" + *k.kubeCliOpts.BearerToken + " "
 	}
-	if len(*KM().APIServer) != 0 {
-		args += "--server=" + *KM().APIServer + " "
+	if len(*k.kubeCliOpts.APIServer) != 0 {
+		args += "--server=" + *k.kubeCliOpts.APIServer + " "
 	}
-	if len(*KM().CAFile) != 0 {
-		args += "--certificate-authority=" + *KM().CAFile + " "
+	if len(*k.kubeCliOpts.CAFile) != 0 {
+		args += "--certificate-authority=" + *k.kubeCliOpts.CAFile + " "
 	}
-	if len(*KM().AuthInfoName) != 0 {
-		args += "--user=" + *KM().AuthInfoName + " "
+	if len(*k.kubeCliOpts.AuthInfoName) != 0 {
+		args += "--user=" + *k.kubeCliOpts.AuthInfoName + " "
 	}
-	if len(*KM().CertFile) != 0 {
-		args += "--client-certificate=" + *KM().CertFile + " "
+	if len(*k.kubeCliOpts.CertFile) != 0 {
+		args += "--client-certificate=" + *k.kubeCliOpts.CertFile + " "
 	}
-	if len(*KM().KeyFile) != 0 {
-		args += "--client-key=" + *KM().KeyFile + " "
+	if len(*k.kubeCliOpts.KeyFile) != 0 {
+		args += "--client-key=" + *k.kubeCliOpts.KeyFile + " "
 	}
 	return args
 }
@@ -82,9 +116,9 @@ func KubectlFlagsToCliArgs() string {
 // SaveAuthInfoForKubeUser saves the pxc configuration in the kubeconfig file as a new user entry.
 // Supply locationOfOrigin so that the Kubernetes saves the object with the appropriate user. LocationOfOrigin
 // is found in each of the user objects in the kubernetes Config object.
-func SaveAuthInfoForKubeUser(user, locationOfOrigin string, a *AuthInfo) error {
+func (k *KubernetesConfigManager) SaveAuthInfoForKubeUser(user, locationOfOrigin string, a *AuthInfo) error {
 	pxcName := KubeconfigUserPrefix + user
-	oldConfig, err := GetStartingKubeconfig()
+	oldConfig, err := k.GetStartingKubeconfig()
 	if err != nil {
 		return err
 	}
@@ -104,13 +138,13 @@ func SaveAuthInfoForKubeUser(user, locationOfOrigin string, a *AuthInfo) error {
 	}
 
 	// Save the information in the kubeconfig
-	return ModifyKubeconfig(oldConfig)
+	return k.ModifyKubeconfig(oldConfig)
 }
 
 // SaveClusterInKubeconfig stores pxc cluster configuration information in Kubeconfig
-func SaveClusterInKubeconfig(clusterName, location string, c *Cluster) error {
+func (k *KubernetesConfigManager) SaveClusterInKubeconfig(clusterName, location string, c *Cluster) error {
 	pxcName := KubeconfigUserPrefix + clusterName
-	oldConfig, err := GetStartingKubeconfig()
+	oldConfig, err := k.GetStartingKubeconfig()
 	if err != nil {
 		return err
 	}
@@ -128,13 +162,13 @@ func SaveClusterInKubeconfig(clusterName, location string, c *Cluster) error {
 	oldConfig.Clusters[pxcName].Server = "portworx-server"
 	oldConfig.Clusters[pxcName].CertificateAuthorityData = []byte(encodedString)
 
-	return ModifyKubeconfig(oldConfig)
+	return k.ModifyKubeconfig(oldConfig)
 }
 
-//
-func DeleteClusterInKubeconfig(clusterName string) error {
+// DeleteClusterInKubeconfig deletes the saved Portworx configuration in the kubeconfig
+func (k *KubernetesConfigManager) DeleteClusterInKubeconfig(clusterName string) error {
 	pxcName := KubeconfigUserPrefix + clusterName
-	oldConfig, err := GetStartingKubeconfig()
+	oldConfig, err := k.GetStartingKubeconfig()
 	if err != nil {
 		return err
 	}
@@ -144,22 +178,22 @@ func DeleteClusterInKubeconfig(clusterName string) error {
 	}
 
 	delete(oldConfig.Clusters, pxcName)
-	return ModifyKubeconfig(oldConfig)
+	return k.ModifyKubeconfig(oldConfig)
 }
 
 // GetKubernetesCurrentContext returns the context currently selected by either the config
 // file or from the command line
-func GetKubernetesCurrentContext() (string, error) {
+func (k *KubernetesConfigManager) GetKubernetesCurrentContext() (string, error) {
 	var contextName string
 
-	kConfig, err := KM().ToRawKubeConfigLoader().RawConfig()
+	kConfig, err := k.ToRawKubeConfigLoader().RawConfig()
 	if err != nil {
 		return "", err
 	}
 
 	// Check if the was passed in the CLI flags
-	if KM().Context != nil && len(*KM().Context) != 0 {
-		contextName = *KM().Context
+	if k.kubeCliOpts.Context != nil && len(*k.kubeCliOpts.Context) != 0 {
+		contextName = *k.kubeCliOpts.Context
 	} else {
 		// Read it from the kubeconfig file
 		contextName = kConfig.CurrentContext
@@ -171,4 +205,11 @@ func GetKubernetesCurrentContext() (string, error) {
 		return "", fmt.Errorf("context %q does not exist", contextName)
 	}
 	return contextName, nil
+}
+
+// Namespace returns the namespace resulting from the merged
+// result of all overrides and a boolean indicating if it was
+// overridden
+func (k *KubernetesConfigManager) Namespace() (string, bool, error) {
+	return k.ToRawKubeConfigLoader().Namespace()
 }

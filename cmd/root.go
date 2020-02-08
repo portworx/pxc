@@ -52,7 +52,7 @@ var _ = commander.RegisterCommandInit(func() {
 	// Add persistent flags
 	if util.InKubectlPluginMode() {
 		// As kubectl plugin mode
-		config.KM().AddFlags(rootCmd.PersistentFlags())
+		config.KM().ConfigFlags().AddFlags(rootCmd.PersistentFlags())
 		config.CM().GetFlags().AddFlagsPluginMode(rootCmd.PersistentFlags())
 	} else {
 		// Not in plugin mode
