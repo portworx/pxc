@@ -28,6 +28,7 @@ import (
 	"syscall"
 
 	"github.com/portworx/pxc/pkg/config"
+	"github.com/portworx/pxc/pkg/util"
 )
 
 // PluginHandler is capable of parsing command line arguments
@@ -129,8 +130,11 @@ func HandlePluginCommand(pluginHandler PluginHandler, cmdArgs []string) error {
 		return nil
 	}
 
+	// Setup environment variables
+	envVars := append(os.Environ(), fmt.Sprintf("%s=%v", util.EvInKubectlPluginMode, util.InKubectlPluginMode()))
+
 	// invoke cmd binary relaying the current environment and args given
-	if err := pluginHandler.Execute(foundBinaryPath, cmdArgs[len(remainingArgs):], os.Environ()); err != nil {
+	if err := pluginHandler.Execute(foundBinaryPath, cmdArgs[len(remainingArgs):], envVars); err != nil {
 		return err
 	}
 

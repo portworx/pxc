@@ -20,11 +20,16 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/asaskevich/govalidator"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+)
+
+const (
+	EvInKubectlPluginMode = "PXC_KUBECTL_PLUGIN_MODE"
 )
 
 var (
@@ -204,5 +209,9 @@ func GetAclFromString(s string) (string, api.Ownership_AccessType, error) {
 
 // InKubectlPluginMode returns true if running as a plugin to kubectl
 func InKubectlPluginMode() bool {
-	return strings.Contains(os.Args[0], "kubectl-pxc")
+	envInKubectlMode := false
+	if v, err := strconv.ParseBool(os.Getenv(EvInKubectlPluginMode)); err == nil {
+		envInKubectlMode = v
+	}
+	return envInKubectlMode || strings.Contains(os.Args[0], "kubectl-pxc")
 }
