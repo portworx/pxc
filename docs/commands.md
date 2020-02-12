@@ -2,24 +2,11 @@
 
 ## Command Structure
 
-pxc commands have the following structure:
-
-gcloud/pxctl style:
+pxc commands have the following structure which is based on the gcloud/pxctl style:
 
 ```
 pxc [COMPONENT] [GROUP(s)] [COMMAND] [OPTIONS]
 ```
-
-Kubernetes style:
-
-```
-pxc [COMPONENT] [VERB] [OBJ] [OPTIONS]
-```
-
-Only Kubernetes specific components are encorougaed to use the Kubernetes style.
-All other components should use the gcloud/pxctl style.
-
-## gcloud style
 
 ### Components
 
@@ -29,7 +16,10 @@ backup, DR, etc. A component can have `[GROUP] [COMMAND] [OPTIONS]`.
 This method is used by most CLIs and it may benefit supporting plugins
 in future releases.
 
-#### Examples
+For a component example see
+[pxc-component-example](https://github.com/portworx/pxc-component-example)
+
+#### Example component commands
 
 ```
 # central as the component
@@ -37,14 +27,11 @@ pxc central login
 
 # operator as the component
 pxc operator version
-
-# pxc as a component
-pxc version
 ```
 
 ### Groups
 
-Some components may have sub-components or groups as a way of s a grouping
+Some components may have sub-components or groups as a way of grouping
 commands for a certain task. Groups can have groups, commands/verbs, or options.
 
 #### Examples
@@ -71,15 +58,14 @@ pxc operator status -o=yaml
 pxc config set-cluster --endpoint=...
 ```
 
-### Kubernetes Style
 
-CLI capabilities specific to Kuberntes are encouraged to use the Kubernetes
-style.
+## Kubernetes style grandfathered
 
-#### Examples
+Some current applications may already be using the Kubernetes style:
 
 ```
-# stork
-pxc stork create migration mymigration
+pxc [COMPONENT] [VERB] [OBJ] [OPTIONS]
 ```
 
+These applications may still need to use this model to avoid confusing current
+users.
