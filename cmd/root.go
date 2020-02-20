@@ -25,10 +25,39 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type rootFlags struct {
+	showOptions bool
+}
+
 // rootCmd represents the base command when called without any subcommands
 var (
-	rootCmd *cobra.Command
-	//kubePortForwarder kubernetes.PortForwarder
+	rootCmd     *cobra.Command
+	rootOptions *rootFlags
+	rootTmpl    = `Usage:{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+
+Aliases:
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+Examples:
+{{.Example}}{{end}}{{if .HasAvailableSubCommands}}
+
+Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+
+Flags:
+{{.LocalNonPersistentFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+
+Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+
+Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+Use "pxc --options" for a list of global command-line options (applies to all commands)
+`
+	globalsOnlyTmpl = `Global Flags:
+{{.PersistentFlags.FlagUsages | trimTrailingWhitespaces}}
+`
 )
 
 func RootAddCommand(c *cobra.Command) {
@@ -36,6 +65,7 @@ func RootAddCommand(c *cobra.Command) {
 }
 
 var _ = commander.RegisterCommandVar(func() {
+	rootOptions = &rootFlags{}
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd = &cobra.Command{
 		Use:                "pxc",
@@ -44,6 +74,7 @@ var _ = commander.RegisterCommandVar(func() {
 		SilenceErrors:      true,
 		PersistentPreRunE:  rootPersistentPreRunE,
 		PersistentPostRunE: rootPersistentPostRunE,
+		RunE:               rootCmdExec,
 	}
 })
 
@@ -58,7 +89,17 @@ var _ = commander.RegisterCommandInit(func() {
 		// Not in plugin mode
 		config.CM().GetFlags().AddFlags(rootCmd.PersistentFlags())
 	}
+	rootCmd.Flags().BoolVar(&rootOptions.showOptions, "options", false, "Show global options for all commands")
+	rootCmd.SetUsageTemplate(rootTmpl)
 })
+
+func rootCmdExec(cmd *cobra.Command, args []string) error {
+	if rootOptions.showOptions {
+		rootCmd.SetUsageTemplate(globalsOnlyTmpl)
+	}
+	rootCmd.Usage()
+	return nil
+}
 
 func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 
