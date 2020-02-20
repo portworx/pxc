@@ -65,39 +65,39 @@ var _ = commander.RegisterCommandVar(func() {
 		},
 	}
 	createVolumeCmd = &cobra.Command{
-		Use:   "volume [NAME]",
+		Use:   "create [NAME]",
 		Short: "Create a volume in Portworx",
 		Example: `
   # Create a volume called "myvolume" with size as 3GiB:
-  pxc create volume myvolume --size=3
+  pxc volume create myvolume --size=3
 
   # Create a volume called "myvolume" with size as 3GiB and replicas set to 3:
-  pxc create volume myvolume --size=3 --replicas=3
+  pxc volume create myvolume --size=3 --replicas=3
 
   # Create a shared volume called "myvolume" with size as 3GiB:
-  pxc create volume myvolume --size=3 --shared
+  pxc volume create myvolume --size=3 --shared
 
   # Create a shared volume called "myvolume" with size as 2GiB and replicas set to 3:
-  pxc create volume myvolume --size=3 --shared --replicas=3
+  pxc volume create myvolume --size=3 --shared --replicas=3
 
   # Create a volume called "myvolume" with label as "access=slow" and size as 3 GiB:
-  pxc create volume myvolume --size=3 --labels 'access=slow'
+  pxc volume create myvolume --size=3 --labels 'access=slow'
 
   # Create a volume called 'myvolume" with volume access (collaborators and groups) option flag.
   # r - read, w - write, a -admin:
-  pxc create volume myvolume --size=3 --groups group1:r,group2:w,group3:a --collaborators user1:r,user2:a,user3:w
+  pxc volume create myvolume --size=3 --groups group1:r,group2:w,group3:a --collaborators user1:r,user2:a,user3:w
 
   # Create a volume with periodic snapshot policy for every 15 minutes with retain=2 (maintaing two snapshot copies at a given time):
-  pxc create volume snapvol --periodic 15,2
+  pxc volume create snapvol --periodic 15,2
 
   # Create a volume with daily snapshot policy at 00h:10m with retain=2 (maintaing two snapshot copies at a given time):
-  pxc create volume snapvol --daily 00:10,2
+  pxc volume create snapvol --daily 00:10,2
 
   # Create a volume with weekly snapshot for every monday at 00h:12m with retain=2 (maintaing two snapshot copies at a given time):
-  pxc create volume snapvol --weekly monday@00:12,2
+  pxc volume create snapvol --weekly monday@00:12,2
 
   # Create a volume with monthly snapshot on 25th of every month at 10h:10m with retain=2 (maintaing two snapshot copies at a given time):
-  pxc create volume snapvol --monthly 25@10:10,2`,
+  pxc volume create snapvol --monthly 25@10:10,2`,
 
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
@@ -110,7 +110,7 @@ var _ = commander.RegisterCommandVar(func() {
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	cmd.CreateAddCommand(createVolumeCmd)
+	VolumeAddCommand(createVolumeCmd)
 
 	createVolumeCmd.Flags().IntVar(&cvOpts.sizeInGi, "size", 0, "Size in GiB")
 	createVolumeCmd.Flags().Int64Var(&cvOpts.req.Spec.HaLevel, "replicas", 1, "Number of replicas also called HA level [1-3]")

@@ -26,9 +26,6 @@ import (
 	_ "github.com/portworx/pxc/handler/pvc"
 	_ "github.com/portworx/pxc/handler/script"
 	_ "github.com/portworx/pxc/handler/volume"
-	_ "github.com/portworx/pxc/handler/volumeclone"
-	_ "github.com/portworx/pxc/handler/volumesnapshot"
-	_ "github.com/portworx/pxc/handler/volumestats"
 	// The following features will not be released until further work
 	//	_ "github.com/portworx/pxc/handler/cloudmigration"
 	//	_ "github.com/portworx/pxc/handler/clusterpair"

@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/portworx"
@@ -59,35 +58,36 @@ var _ = commander.RegisterCommandVar(func() {
 	}
 
 	patchVolumeCmd = &cobra.Command{
-		Use:   "volume [NAME]",
-		Short: "Update field(s) of a portworx volume",
+		Use:     "update [NAME]",
+		Aliases: []string{"patch"},
+		Short:   "Update field(s) of a portworx volume",
 		Example: `
   # Set the High Availability Level (HA Level) of the volume xyz to 3
-  pxc patch volume xyz --halevel 3
+  pxc volume update xyz --halevel 3
 
   # Update the size of the volume to 2GiB
-  pxc patch volume xyz --size 2
+  pxc volume update xyz --size 2
 
   # Set the sticky flag of the volume xyz
-  pxc patch volume xyz --sticky
+  pxc volume update xyz --sticky
 
   # Set the shared flag of the volume xyz
-  pxc patch volume xyz --shared
+  pxc volume update xyz --shared
 
   # Update collaborators and groups of the volume access list
-  pxc patch volume xyz --add-collaborators user1:r,user2:w,user3:a --add-groups group1:r,group2:w,group3:a
+  pxc volume update xyz --add-collaborators user1:r,user2:w,user3:a --add-groups group1:r,group2:w,group3:a
 
   # Remove collaborators and groups from exisiting volume access list
-  pxc patch volume xyz --remove-collaborators user1:r, --remove-groups group1:r
+  pxc volume update xyz --remove-collaborators user1:r, --remove-groups group1:r
 
   # Remove all the collaborators and groups from exisiting volume access list
-  pxc patch volume xyz --remove-all-collaborators --remove-all-groups
+  pxc volume update xyz --remove-all-collaborators --remove-all-groups
 
   # Update collaborators and remove few groups from the volume access list
-  pxc patch volume xyz --add-collaborators user4:r,user5:w, --remove-groups group1:r
+  pxc volume update xyz --add-collaborators user4:r,user5:w, --remove-groups group1:r
 
   # Update the access type of the existing collaborators and groups
-  pxc patch volume xyz --add-collaborators user1:a --add-groups group1:a`,
+  pxc volume update xyz --add-collaborators user1:a --add-groups group1:a`,
 
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
@@ -100,7 +100,7 @@ var _ = commander.RegisterCommandVar(func() {
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	cmd.PatchAddCommand(patchVolumeCmd)
+	VolumeAddCommand(patchVolumeCmd)
 
 	patchVolumeCmd.Flags().Int64Var(&updateReq.halevel, "halevel", 0, "New replication factor (Valid Range: [1, 3]) (default 1)")
 	patchVolumeCmd.Flags().StringSliceVar(&updateReq.replicaSet, "nodes", []string{}, "Desired set of nodes for the volume data")

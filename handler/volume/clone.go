@@ -12,24 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package volumeclone
+package volume
 
 import (
 	"fmt"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-var createCloneCmd *cobra.Command
+var volumeCloneCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
-	createCloneCmd = &cobra.Command{
-		Use:   "volumeclone [VOLUME] [NAME]",
+	volumeCloneCmd = &cobra.Command{
+		Use:   "clone [VOLUME] [NAME]",
 		Short: "Creates a new volume from a volume or snapshot",
 		Long:  `Create a clone for the specified volume`,
 		Example: `
@@ -41,19 +40,19 @@ var _ = commander.RegisterCommandVar(func() {
 			}
 			return nil
 		},
-		RunE: createCloneExec,
+		RunE: volumeCloneExec,
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	cmd.CreateAddCommand(createCloneCmd)
+	VolumeAddCommand(volumeCloneCmd)
 })
 
-func CreateAddCommand(cmd *cobra.Command) {
-	createCloneCmd.AddCommand(cmd)
+func VolumeCloneAddCommand(cmd *cobra.Command) {
+	volumeCloneCmd.AddCommand(cmd)
 }
 
-func createCloneExec(cmd *cobra.Command, args []string) error {
+func volumeCloneExec(cmd *cobra.Command, args []string) error {
 	ctx, conn, err := portworx.PxConnectDefault()
 	if err != nil {
 		return err
