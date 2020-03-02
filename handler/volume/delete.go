@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
@@ -30,11 +29,11 @@ var deleteVolumeCmd *cobra.Command
 var _ = commander.RegisterCommandVar(func() {
 	// deleteVolumeCmd represents the deleteVolume command
 	deleteVolumeCmd = &cobra.Command{
-		Use:   "volume [NAME]",
+		Use:   "delete [NAME]",
 		Short: "Delete a volume in Portworx",
 		Example: `
   # Delete the volume by name muvolume
-  pxc delete volume myvolume`,
+  pxc volume delete myvolume`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("Must supply a volume name")
@@ -46,7 +45,7 @@ var _ = commander.RegisterCommandVar(func() {
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	cmd.DeleteAddCommand(deleteVolumeCmd)
+	VolumeAddCommand(deleteVolumeCmd)
 })
 
 func DeleteAddCommand(cmd *cobra.Command) {

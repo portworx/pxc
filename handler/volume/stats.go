@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package volumestats
+package volume
 
 import (
 	"bytes"
@@ -24,7 +24,6 @@ import (
 
 	"github.com/cheynewallace/tabby"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/portworx"
@@ -33,35 +32,36 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var getVolumeStatsCmd *cobra.Command
+var volumeStatsCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
-	getVolumeStatsCmd = &cobra.Command{
-		Use:   "volumestats",
+	volumeStatsCmd = &cobra.Command{
+		Use:   "stats [NAME]",
 		Short: "Get stats of Portworx volumes",
-		RunE:  getVolumeStatsExec,
+		RunE:  volumeStatsExec,
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	cmd.GetAddCommand(getVolumeStatsCmd)
+	VolumeAddCommand(volumeStatsCmd)
+
 	headers := strings.Join(allHeaders, "|")
 	sortMsg := fmt.Sprintf("Specify one of '%s' to sort on", headers)
-	getVolumeStatsCmd.Flags().StringP("selector", "l", "", "Selector (label query) comma-separated name=value pairs")
-	getVolumeStatsCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
-	getVolumeStatsCmd.Flags().String("sort-on", allHeaders[int(WRITE_TPUT)], sortMsg)
-	getVolumeStatsCmd.Flags().String("sort-order", "desc", "Sort in ascending or descending order. Specify one of asc|desc")
-	getVolumeStatsCmd.Flags().BoolP("watch", "w", false, "Monitor stats at a periodic interval")
-	getVolumeStatsCmd.Flags().DurationP("interval", "i", time.Second*2, "Specify refresh interval")
-	getVolumeStatsCmd.Flags().Bool("no-graphs", false, "Don't show graphs")
-	getVolumeStatsCmd.Flags().MarkHidden("no-graphs")
+	volumeStatsCmd.Flags().StringP("selector", "l", "", "Selector (label query) comma-separated name=value pairs")
+	volumeStatsCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
+	volumeStatsCmd.Flags().String("sort-on", allHeaders[int(WRITE_TPUT)], sortMsg)
+	volumeStatsCmd.Flags().String("sort-order", "desc", "Sort in ascending or descending order. Specify one of asc|desc")
+	volumeStatsCmd.Flags().BoolP("watch", "w", false, "Monitor stats at a periodic interval")
+	volumeStatsCmd.Flags().DurationP("interval", "i", time.Second*2, "Specify refresh interval")
+	volumeStatsCmd.Flags().Bool("no-graphs", false, "Don't show graphs")
+	volumeStatsCmd.Flags().MarkHidden("no-graphs")
 })
 
-func GetAddCommand(cmd *cobra.Command) {
-	getVolumeStatsCmd.AddCommand(cmd)
+func VolumeStatsAddCommand(cmd *cobra.Command) {
+	volumeStatsCmd.AddCommand(cmd)
 }
 
-func getVolumeStatsExec(cmd *cobra.Command, args []string) error {
+func volumeStatsExec(cmd *cobra.Command, args []string) error {
 	// Check if any flag value is not provided, error out
 	err := cliops.ValidateCliInput(cmd, args)
 	if err != nil {

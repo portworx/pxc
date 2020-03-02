@@ -24,7 +24,6 @@ import (
 	"github.com/cheynewallace/tabby"
 	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
 	prototime "github.com/portworx/pxc/pkg/openstorage/proto/time"
@@ -39,25 +38,25 @@ var describeVolumeCmd *cobra.Command
 var _ = commander.RegisterCommandVar(func() {
 	// describeVolumeCmd represents the describeVolume command
 	describeVolumeCmd = &cobra.Command{
-		Use:     "volume [NAME]",
-		Aliases: []string{"volumes"},
+		Use:     "inspect [NAME]",
+		Aliases: []string{"describe"},
 		Short:   "Describe a Portworx volume",
 		Long:    "Show detailed information of Portworx volumes",
 		Example: `
   # Describe all the volumes:
-  pxc describe volume
+  pxc volume inspect
 
   # Describe specific volume called "abc":
-  pxc describe volume abc
+  pxc volume inspect abc
 
   # Describe list of volumes (abc, xyz)
-  pxc describe volume abc xyz`,
+  pxc volume inspect abc xyz`,
 		RunE: describeVolumesExec,
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	cmd.DescribeAddCommand(describeVolumeCmd)
+	VolumeAddCommand(describeVolumeCmd)
 	describeVolumeCmd.Flags().String("owner", "", "Owner of volume")
 	describeVolumeCmd.Flags().String("volumegroup", "", "Volume group id")
 	describeVolumeCmd.Flags().Bool("deep", false, "Collect more information, this may delay the request")

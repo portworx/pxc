@@ -24,7 +24,6 @@ import (
 	"github.com/cheynewallace/tabby"
 	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/portworx"
@@ -36,18 +35,18 @@ var getVolumesCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
 	getVolumesCmd = &cobra.Command{
-		Use:     "volume [NAME]",
-		Aliases: []string{"volumes"},
+		Use:     "list [NAME]",
+		Aliases: []string{"get"},
 		Short:   "Get information about Portworx volumes",
 		Example: `
   # Get informtation about the portworx volumes
-  pxc get volume xyz`,
+  pxc volume list`,
 		RunE: getVolumesExec,
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	cmd.GetAddCommand(getVolumesCmd)
+	VolumeAddCommand(getVolumesCmd)
 	getVolumesCmd.Flags().String("owner", "", "Owner of volume")
 	getVolumesCmd.Flags().String("volumegroup", "", "Volume group id")
 	getVolumesCmd.Flags().Bool("deep", false, "Collect more information, this may delay the request")

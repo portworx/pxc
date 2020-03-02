@@ -184,7 +184,7 @@ func verifyVolumeDescription(
 
 // Takes a list of volumes and returns a array of string, one volume description per string
 func testDescribeVolumes(t *testing.T, volNames []string) ([]string, error) {
-	cli := "px describe volume"
+	cli := "pxc volume inspect"
 	for _, v := range volNames {
 		cli = fmt.Sprintf("%v %v", cli, v)
 	}

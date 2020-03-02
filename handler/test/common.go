@@ -98,7 +98,7 @@ func ExecuteCli(cli string) ([]string, []string, error) {
 // Takes a volume name and size. Returns the created volume id.
 // For some reason our test container only recoganizes id and not name for some calls.
 func PxTestCreateVolume(t *testing.T, volName string, size uint64) {
-	cli := fmt.Sprintf("pxc create volume %s --size %s --groups group1:r --collaborators user1:w", volName, strconv.FormatUint(size, 10))
+	cli := fmt.Sprintf("pxc volume create %s --size %s --groups group1:r --collaborators user1:w", volName, strconv.FormatUint(size, 10))
 	lines, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
 
@@ -107,7 +107,7 @@ func PxTestCreateVolume(t *testing.T, volName string, size uint64) {
 
 // Takes a volume name and size. Returns the created volume id.
 func PxTestCreateVolumeWithLabel(t *testing.T, volName string, size uint64, labels string) {
-	cli := fmt.Sprintf("pxc create volume %s --size %s --labels %s",
+	cli := fmt.Sprintf("pxc volume create %s --size %s --labels %s",
 		volName, strconv.FormatUint(size, 10), labels)
 	lines, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
@@ -118,30 +118,30 @@ func PxTestCreateVolumeWithLabel(t *testing.T, volName string, size uint64, labe
 // Takes a volume id assert volume exists
 func PxTestHasVolume(id string) bool {
 	// Get volume information
-	cli := "pxc get volume " + id
+	cli := "pxc volume list " + id
 	_, _, err := ExecuteCli(cli)
 
 	return err == nil
 }
 
 func PxTestGetVolumeWithLabels(t *testing.T, selector string) (*bytes.Buffer, error) {
-	cli := fmt.Sprintf("pxc get volume --show-labels --selector %s", selector)
+	cli := fmt.Sprintf("pxc volume list --show-labels --selector %s", selector)
 	so, _, err := executeCliRaw(cli)
 	return so, err
 }
 
 func PxTestGetVolumeWithNameSelector(t *testing.T, volName string, selector string) {
-	cli := fmt.Sprintf("pxc get volume %s --show-labels --selector %s", volName, selector)
+	cli := fmt.Sprintf("pxc volume list %s --show-labels --selector %s", volName, selector)
 	_, _, err := executeCliRaw(cli)
 	assert.Error(t, err)
 }
 
 // Return volume information
-// TODO: If necessary, we can do a `pxc get volume <id> -o json` then
+// TODO: If necessary, we can do a `pxc volume list <id> -o json` then
 //       unmarshal the JSON to appropriate object
 // 		 then return the &api.Volume inside of it.
 func PxTestVolumeInfo(t *testing.T, id string) *api.Volume {
-	cli := fmt.Sprintf("pxc get volume %s -o json", id)
+	cli := fmt.Sprintf("pxc volume list %s -o json", id)
 	so, _, err := executeCliRaw(cli)
 	assert.NoError(t, err)
 
@@ -159,7 +159,7 @@ func PxTestVolumeInfo(t *testing.T, id string) *api.Volume {
 //       parse, and as a library function, it may be easier to
 //       get a specific volume.
 func PxTestGetAllVolumes(t *testing.T) []string {
-	cli := fmt.Sprintf("pxc get volume")
+	cli := fmt.Sprintf("pxc volume list")
 	lines, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
 
@@ -177,14 +177,14 @@ func PxTestGetAllVolumes(t *testing.T) []string {
 
 // Deletes specified volume
 func PxTestDeleteVolume(t *testing.T, volName string) {
-	cli := fmt.Sprintf("pxc delete volume %s", volName)
+	cli := fmt.Sprintf("pxc volume delete %s", volName)
 	_, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
 }
 
 // Takes a volume name and snapshot name
 func PxTestCreateSnapshot(t *testing.T, volId string, snapName string) {
-	cli := fmt.Sprintf("pxc create volumesnapshot %s %s", volId, snapName)
+	cli := fmt.Sprintf("pxc volume snapshot %s %s", volId, snapName)
 	lines, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
 
@@ -193,7 +193,7 @@ func PxTestCreateSnapshot(t *testing.T, volId string, snapName string) {
 
 // Takes a volume name and clone name
 func PxTestCreateClone(t *testing.T, volId string, cloneName string) {
-	cli := fmt.Sprintf("pxc create volumeclone %s %s", volId, cloneName)
+	cli := fmt.Sprintf("pxc volume clone %s %s", volId, cloneName)
 	lines, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
 
@@ -202,7 +202,7 @@ func PxTestCreateClone(t *testing.T, volId string, cloneName string) {
 
 // Helper function to create volume with "sticky" flag set
 func PxTestCreateStickyVolume(t *testing.T, volName string, size uint64) {
-	cli := fmt.Sprintf("pxc create volume %s --size %d --sticky",
+	cli := fmt.Sprintf("pxc volume create %s --size %d --sticky",
 		volName, size)
 	lines, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
@@ -212,7 +212,7 @@ func PxTestCreateStickyVolume(t *testing.T, volName string, size uint64) {
 
 // Helper function to create volume with "encryption" flag set
 func PxTestCreateEncrypVolume(t *testing.T, volName string, size uint64) {
-	cli := fmt.Sprintf("pxc create volume %s --size %d --encryption",
+	cli := fmt.Sprintf("pxc volume create %s --size %d --encryption",
 		volName, size)
 	lines, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
@@ -222,7 +222,7 @@ func PxTestCreateEncrypVolume(t *testing.T, volName string, size uint64) {
 
 // Helper function to create volume with "journal" flag set
 func PxTestCreateJournalVolume(t *testing.T, volName string, size uint64) {
-	cli := fmt.Sprintf("pxc create volume %s --size %d --journal",
+	cli := fmt.Sprintf("pxc volume create %s --size %d --journal",
 		volName, size)
 	lines, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
@@ -232,7 +232,7 @@ func PxTestCreateJournalVolume(t *testing.T, volName string, size uint64) {
 
 // Helper function to create volume with access (--groups and --collaborators) flag set
 func PxTestCreateVolumeWithAccess(t *testing.T, volName string, size uint64, groups string, collaborators string) {
-	cli := fmt.Sprintf("pxc create volume %s --size %d --groups %s --collaborators %s",
+	cli := fmt.Sprintf("pxc volume create %s --size %d --groups %s --collaborators %s",
 		volName, size, groups, collaborators)
 	lines, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
@@ -242,7 +242,7 @@ func PxTestCreateVolumeWithAccess(t *testing.T, volName string, size uint64, gro
 
 // Helper function to create volume with "aggregation level" flag set
 func PxTestCreateAggrVolume(t *testing.T, volName string, size uint64, aggrLevel uint32) {
-	cli := fmt.Sprintf("pxc create volume %s --size %d --aggregation-level %d",
+	cli := fmt.Sprintf("pxc volume create %s --size %d --aggregation-level %d",
 		volName, size, aggrLevel)
 	lines, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
@@ -252,7 +252,7 @@ func PxTestCreateAggrVolume(t *testing.T, volName string, size uint64, aggrLevel
 
 // Helper function to create volume with "io profile" flag set
 func PxTestCreateIoProfVolume(t *testing.T, volName string, size uint64, IoProfile string) {
-	cli := fmt.Sprintf("pxc create volume %s --size %d --ioprofile %s",
+	cli := fmt.Sprintf("pxc volume create %s --size %d --ioprofile %s",
 		volName, size, IoProfile)
 	lines, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
@@ -261,92 +261,92 @@ func PxTestCreateIoProfVolume(t *testing.T, volName string, size uint64, IoProfi
 }
 
 func PxTestPatchVolumeHalevel(t *testing.T, volName string, haLevel int) {
-	cli := fmt.Sprintf("pxc patch volume %s --halevel %d", volName, haLevel)
+	cli := fmt.Sprintf("pxc volume update %s --halevel %d", volName, haLevel)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
 
 func PxTestPatchVolumeHalevelWithNodes(t *testing.T, volName string, haLevel int64, node string) {
-	cli := fmt.Sprintf("pxc patch volume %s --halevel %d --node %s", volName, haLevel, node)
+	cli := fmt.Sprintf("pxc volume update %s --halevel %d --node %s", volName, haLevel, node)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines)
 }
 
 func PxTestPatchVolumeResize(t *testing.T, volName string, size uint64) {
-	cli := fmt.Sprintf("pxc patch volume %s --size %d", volName, size)
+	cli := fmt.Sprintf("pxc volume update %s --size %d", volName, size)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
 
 func PxTestPatchVolumeShared(t *testing.T, volName string, shared string) {
-	cli := fmt.Sprintf("pxc patch volume %s --shared %s", volName, shared)
+	cli := fmt.Sprintf("pxc volume update %s --shared %s", volName, shared)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
 
 func PxTestPatchVolumeAddCollaborators(t *testing.T, volName string, collaborators string) {
-	cli := fmt.Sprintf("pxc patch volume %s  --add-collaborators %s", volName, collaborators)
+	cli := fmt.Sprintf("pxc volume update %s  --add-collaborators %s", volName, collaborators)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
 
 func PxTestPatchVolumeRemoveCollaborators(t *testing.T, volName string, collaborators string) {
-	cli := fmt.Sprintf("pxc patch volume %s  --remove-collaborators %s", volName, collaborators)
+	cli := fmt.Sprintf("pxc volume update %s  --remove-collaborators %s", volName, collaborators)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
 
 func PxTestPatchVolumeRemoveAllCollaborators(t *testing.T, volName string) {
-	cli := fmt.Sprintf("pxc patch volume %s  --remove-all-collaborators=true", volName)
+	cli := fmt.Sprintf("pxc volume update %s  --remove-all-collaborators=true", volName)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
 
 func PxTestPatchVolumeAddGroups(t *testing.T, volName string, groups string) {
-	cli := fmt.Sprintf("px patch volume %s  --add-groups %s", volName, groups)
+	cli := fmt.Sprintf("pxc volume update %s  --add-groups %s", volName, groups)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
 
 func PxTestPatchVolumeRemoveGroups(t *testing.T, volName string, groups string) {
-	cli := fmt.Sprintf("px patch volume %s  --remove-groups %s", volName, groups)
+	cli := fmt.Sprintf("pxc volume update %s  --remove-groups %s", volName, groups)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
 
 func PxTestPatchVolumeRemoveAllGroups(t *testing.T, volName string) {
-	cli := fmt.Sprintf("px patch volume %s  --remove-all-groups=true", volName)
+	cli := fmt.Sprintf("pxc volume update %s  --remove-all-groups=true", volName)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
 
 func PxTestCreateVolumeSnap(t *testing.T, volName string, policy string) {
-	cli := fmt.Sprintf("pxc create volume %s %s --size 1", volName, policy)
+	cli := fmt.Sprintf("pxc volume create %s %s --size 1", volName, policy)
 	lines, _, _ := ExecuteCli(cli)
 
 	assert.True(t, util.ListContainsSubString(lines, fmt.Sprintf("Volume %s created with id", volName)))
 }
 
 func PxTestPatchVolumeEarlyAck(t *testing.T, volName string, value string) {
-	cli := fmt.Sprintf("px patch volume %s  --early-ack=%s", volName, value)
+	cli := fmt.Sprintf("pxc volume update %s  --early-ack=%s", volName, value)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
 
 func PxTestPatchVolumeAsyncIo(t *testing.T, volName string, value string) {
-	cli := fmt.Sprintf("px patch volume %s  --async-io=%s", volName, value)
+	cli := fmt.Sprintf("pxc volume update %s  --async-io=%s", volName, value)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
 
 func PxTestPatchVolumeIoProfile(t *testing.T, volName string, profile string) {
-	cli := fmt.Sprintf("px patch volume %s  --io-profile=%s", volName, profile)
+	cli := fmt.Sprintf("pxc volume update %s  --io-profile=%s", volName, profile)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
 
 func PxTestPatchVolumeNoDiscard(t *testing.T, volName string, value string) {
-	cli := fmt.Sprintf("px patch volume %s  --nodiscard=%s", volName, value)
+	cli := fmt.Sprintf("pxc volume update %s  --nodiscard=%s", volName, value)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }

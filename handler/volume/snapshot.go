@@ -12,38 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package volumesnapshot
+package volume
 
 import (
 	"fmt"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-type createSnapshotOpts struct {
+type volumeSnapshotOpts struct {
 	req            *api.SdkVolumeSnapshotCreateRequest
 	labelsAsString string
 }
 
 var (
-	csOpts            *createSnapshotOpts
-	createSnapshotCmd *cobra.Command
+	csOpts            *volumeSnapshotOpts
+	volumeSnapshotCmd *cobra.Command
 )
 
 var _ = commander.RegisterCommandVar(func() {
-	csOpts = &createSnapshotOpts{
+	csOpts = &volumeSnapshotOpts{
 		req: &api.SdkVolumeSnapshotCreateRequest{},
 	}
 
-	createSnapshotCmd = &cobra.Command{
-		Use:   "volumesnapshot [VOLUME] [NAME]",
-		Short: "Create a volume snapshot",
-		Long:  `Create a snapshot for the specified volume`,
+	volumeSnapshotCmd = &cobra.Command{
+		Use:     "snapshot [VOLUME] [NAME]",
+		Aliases: []string{"snap"},
+		Short:   "Create a volume snapshot",
+		Long:    `Create a snapshot for the specified volume`,
 		Example: `
   # Create a snapshot named mysnap for the specified volume "myvol":
   pxc create volumesnapshot mysnap --labels color=blue,fabric=wool --volume myvol`,
@@ -53,20 +53,20 @@ var _ = commander.RegisterCommandVar(func() {
 			}
 			return nil
 		},
-		RunE: createSnapshotExec,
+		RunE: volumeSnapshotExec,
 	}
 })
 
-var _ = commander.RegisterCommandVar(func() {
-	cmd.CreateAddCommand(createSnapshotCmd)
-	createSnapshotCmd.Flags().StringVar(&csOpts.labelsAsString, "labels", "", "Comma separated list of labels as key-value pairs: 'k1=v1,k2=v2'")
+var _ = commander.RegisterCommandInit(func() {
+	VolumeAddCommand(volumeSnapshotCmd)
+	volumeSnapshotCmd.Flags().StringVar(&csOpts.labelsAsString, "labels", "", "Comma separated list of labels as key-value pairs: 'k1=v1,k2=v2'")
 })
 
-func CreateAddCommand(cmd *cobra.Command) {
-	createSnapshotCmd.AddCommand(cmd)
+func VolumeSnapshotAddCommand(cmd *cobra.Command) {
+	volumeSnapshotCmd.AddCommand(cmd)
 }
 
-func createSnapshotExec(cmd *cobra.Command, args []string) error {
+func volumeSnapshotExec(cmd *cobra.Command, args []string) error {
 	ctx, conn, err := portworx.PxConnectDefault()
 	if err != nil {
 		return err
