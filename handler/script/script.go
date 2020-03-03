@@ -130,8 +130,6 @@ func pythonScriptExec(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-	} else {
-		return fmt.Errorf("Must provide an endpoint to Portworx server")
 	}
 
 	logrus.Infof("args: %+v", args)

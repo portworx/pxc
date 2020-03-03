@@ -16,15 +16,9 @@ limitations under the License.
 package clusterpair
 
 import (
-	"net"
-	"strings"
-
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
-	"github.com/portworx/pxc/pkg/contextconfig"
-	"github.com/portworx/pxc/pkg/portworx"
-	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -75,6 +69,7 @@ func CreateAddCommand(cmd *cobra.Command) {
 }
 
 func createClusterpairExec(c *cobra.Command, args []string) error {
+	/* REMOVED UNTIL CONTEXT DONE
 	contextManager, err := contextconfig.NewContextManager(cmd.GetConfigFile())
 	if err != nil {
 		return util.PxErrorMessagef(err, "Failed to load context configuration at path %s", cmd.GetConfigFile())
@@ -137,5 +132,6 @@ func createClusterpairExec(c *cobra.Command, args []string) error {
 		ccpOpts.source,
 		ccpOpts.destination,
 	)
+	*/
 	return nil
 }

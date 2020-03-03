@@ -29,6 +29,4 @@ import (
 	// The following features will not be released until further work
 	//	_ "github.com/portworx/pxc/handler/cloudmigration"
 	//	_ "github.com/portworx/pxc/handler/clusterpair"
-	// This feature is being replaced with `config`
-	//	_ "github.com/portworx/pxc/handler/context"
 )

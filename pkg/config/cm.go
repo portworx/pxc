@@ -17,15 +17,8 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path"
-	"strings"
 
 	"github.com/portworx/pxc/pkg/util"
-
-	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -35,6 +28,7 @@ const (
 type ConfigManager struct {
 	Config         *Config
 	Flags          *ConfigFlags
+	configrw       ConfigReaderWriter
 	tunnelEndpoint string
 }
 
@@ -65,12 +59,22 @@ func newConfigManager() *ConfigManager {
 		Flags:  newConfigFlags(),
 	}
 
+	if util.InKubectlPluginMode() {
+		configManager.configrw = KM()
+	} else {
+		configManager.configrw = newPxcConfigReaderWriter()
+	}
+
 	return configManager
 }
 
 func (cm *ConfigManager) Load() error {
 	// Load from config file if any
-	cm.load()
+	var err error
+	cm.Config, err = cm.ConfigLoad()
+	if err != nil {
+		return err
+	}
 
 	// Override with flags
 	cm.override()
@@ -112,80 +116,7 @@ func (cm *ConfigManager) GetCurrentAuthInfo() *AuthInfo {
 	return cm.Config.AuthInfos[cm.Config.Contexts[cm.Config.CurrentContext].AuthInfo]
 }
 
-// Write saves the pxc config file
-func (cm *ConfigManager) Write() error {
-	if len(cm.GetConfigFile()) == 0 {
-		panic("cm.GetConfigFile() is 0")
-	}
-	contextYaml, err := yaml.Marshal(cm.Config)
-	if err != nil {
-		return fmt.Errorf("Failed to create yaml parse: %v", err)
-	}
-
-	// Create the contextconfig location
-	err = os.MkdirAll(path.Dir(cm.GetConfigFile()), 0700)
-	if err != nil {
-		return fmt.Errorf("Failed to create context config dir: %v", err)
-	}
-
-	return ioutil.WriteFile(cm.GetConfigFile(), contextYaml, 0600)
-}
-
 func (cm *ConfigManager) override() {
-
-	// See if we need to set current context from Kubernetes
-	if util.InKubectlPluginMode() {
-		// Get the current context, either from the file or from the args to the CLI
-		contextName, err := KM().GetKubernetesCurrentContext()
-		if err != nil {
-			logrus.Fatal(err)
-		}
-
-		clientConfig := KM().ConfigFlags().ToRawKubeConfigLoader()
-		kConfig, err := clientConfig.RawConfig()
-		if err != nil {
-			logrus.Fatalf("unable to read kubernetes configuration: %v", err)
-		}
-
-		// Initialize the context
-		cm.Config.CurrentContext = contextName
-		cm.Config.Contexts[contextName] = &Context{
-			AuthInfo: kConfig.Contexts[contextName].AuthInfo,
-			Cluster:  kConfig.Contexts[contextName].Cluster,
-		}
-
-		// Load all the pxc authentication information from the kubeconfig file
-		for k, v := range kConfig.AuthInfos {
-			if strings.HasPrefix(k, KubeconfigUserPrefix) && v.AuthProvider != nil {
-				logrus.Debugf("Loading user %s from %s", k, v.LocationOfOrigin)
-				pxcAuthInfo := NewAuthInfoFromMap(v.AuthProvider.Config)
-				cm.Config.AuthInfos[pxcAuthInfo.Name] = pxcAuthInfo
-			}
-		}
-
-		// Load all the pxc cluster information from the kubeconfig file
-		for k, c := range kConfig.Clusters {
-			if strings.HasPrefix(k, KubeconfigUserPrefix) {
-				pxcClusterInfo, err := NewClusterFromEncodedString(string(c.CertificateAuthorityData))
-				if err == nil {
-					logrus.Debugf("Loading cluster %s from %s", k, c.LocationOfOrigin)
-					cm.Config.Clusters[pxcClusterInfo.Name] = pxcClusterInfo
-				} else {
-					logrus.Debugf("Unable to load cluster %s from %s", k, c.LocationOfOrigin)
-				}
-			}
-		}
-	} else {
-		// Not in plugin mode
-		if len(cm.Config.CurrentContext) == 0 {
-			cm.Config.CurrentContext = "default"
-			cm.Config.Contexts[cm.Config.CurrentContext] = &Context{
-				AuthInfo: "default",
-				Cluster:  "default",
-			}
-		}
-	}
-
 	currentAuth := cm.Config.Contexts[cm.Config.CurrentContext].AuthInfo
 	currentCluster := cm.Config.Contexts[cm.Config.CurrentContext].Cluster
 
@@ -222,22 +153,62 @@ func (cm *ConfigManager) override() {
 	}
 }
 
-func (cm *ConfigManager) load() {
-	if _, err := os.Stat(cm.GetConfigFile()); err != nil {
-		// Does not exist
-		return
-	}
+// ConfigSaveCluster saves the cluster configuration to disk
+func (cm *ConfigManager) ConfigSaveCluster(c *Cluster) error {
+	return cm.configrw.ConfigSaveCluster(c)
+}
 
-	data, err := ioutil.ReadFile(cm.GetConfigFile())
+// ConfigDeleteCluster deletes the cluster configuration from disk
+func (cm *ConfigManager) ConfigDeleteCluster(name string) error {
+	return cm.configrw.ConfigDeleteCluster(name)
+}
+
+// ConfigLoad loads the configuration from disk
+func (cm *ConfigManager) ConfigLoad() (*Config, error) {
+	return cm.configrw.ConfigLoad()
+}
+
+// ConfigSaveAuthInfo saves user configuration to disk
+func (cm *ConfigManager) ConfigSaveAuthInfo(a *AuthInfo) error {
+	return cm.configrw.ConfigSaveAuthInfo(a)
+}
+
+// ConfigSaveContext saves a context to disk
+func (cm *ConfigManager) ConfigSaveContext(c *Context) error {
+	configInfo, err := cm.configrw.ConfigLoad()
 	if err != nil {
-		logrus.Fatalf("Failed to load config file %s, %v", cm.GetConfigFile(), err)
-	}
-	if len(data) == 0 {
-		// Empty
-		return
+		return err
 	}
 
-	if err := yaml.Unmarshal(data, &cm.Config); err != nil {
-		logrus.Fatalf("Failed to process config file %s, %v", cm.GetConfigFile(), err)
+	if len(c.AuthInfo) != 0 {
+		if _, ok := configInfo.AuthInfos[c.AuthInfo]; !ok {
+			return fmt.Errorf("Credentials %s do not exist", c.AuthInfo)
+		}
+	} else {
+		c.AuthInfo = "default"
 	}
+	if _, ok := configInfo.Clusters[c.Cluster]; !ok {
+		return fmt.Errorf("Cluster %s does not exist", c.Cluster)
+	}
+	return cm.configrw.ConfigSaveContext(c)
+}
+
+// ConfigDeleteAuthInfo deletes credentials from disk
+func (cm *ConfigManager) ConfigDeleteAuthInfo(name string) error {
+	return cm.configrw.ConfigDeleteAuthInfo(name)
+}
+
+// ConfigDeleteContext deletes context from disk
+func (cm *ConfigManager) ConfigDeleteContext(name string) error {
+	return cm.configrw.ConfigDeleteContext(name)
+}
+
+// ConfigUseContext is not supported by kubectl plugin
+func (cm *ConfigManager) ConfigUseContext(name string) error {
+	return cm.configrw.ConfigUseContext(name)
+}
+
+// ConfigGetCurrentContext returns the current context set by kubectl
+func (cm *ConfigManager) ConfigGetCurrentContext() (string, error) {
+	return cm.configrw.ConfigGetCurrentContext()
 }

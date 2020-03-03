@@ -50,7 +50,7 @@ func Connect(address string, dialOptions []grpc.DialOption) (*grpc.ClientConn, e
 
 	// We wait for 1 minute until conn.GetState() is READY.
 	// The interval for this check is 1 second.
-	if err := util.WaitFor(1*time.Minute, 10*time.Millisecond, func() (bool, error) {
+	if err := util.WaitFor(5*time.Second, 10*time.Millisecond, func() (bool, error) {
 		if conn.GetState() == connectivity.Ready {
 			return false, nil
 		}
@@ -58,9 +58,9 @@ func Connect(address string, dialOptions []grpc.DialOption) (*grpc.ClientConn, e
 	}); err != nil {
 		// Clean up the connection
 		if err := conn.Close(); err != nil {
-			return nil, fmt.Errorf("Connection timed out and failed to close connction: %v", err)
+			return nil, fmt.Errorf("Connection timed out and failed to close connection: %v", err)
 		}
-		return nil, fmt.Errorf("Connection timed out")
+		return nil, fmt.Errorf("Connection timed out to server %s", address)
 	}
 
 	return conn, nil
