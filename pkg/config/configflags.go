@@ -91,7 +91,7 @@ func (c *ConfigFlags) GetConfigFile() string {
 	return c.ConfigFile
 }
 
-// AddFlags adds the appropriate global flags
+// AddFlags adds the appropriate global flags for non-kubectl plugin mode
 func (c *ConfigFlags) AddFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&c.Context, flagContext, c.Context, "Force context name for the command")
 	c.addFlagsCommon(flags)
@@ -101,11 +101,11 @@ func (c *ConfigFlags) AddFlags(flags *pflag.FlagSet) {
 func (c *ConfigFlags) AddFlagsPluginMode(flags *pflag.FlagSet) {
 	flags.StringVar(&c.SecretNamespace, flagSecretNamespace, c.SecretNamespace, "Kubernetes namespace where secret contains token")
 	flags.StringVar(&c.SecretName, flagSecretName, c.SecretName, "Kubernetes secret name containing authentication token")
-	flags.StringVar(&c.Token, flagToken, c.Token, "Portworx authentication token")
 	c.addFlagsCommon(flags)
 }
 
 func (c *ConfigFlags) addFlagsCommon(flags *pflag.FlagSet) {
+	flags.StringVar(&c.Token, flagToken, c.Token, "Portworx authentication token")
 	flags.StringVar(&c.ConfigFile, flagConfigFile, c.ConfigFile, "Config file (default is $HOME/"+PxDefaultDir+"/"+PxDefaultConfigName+")")
 	flags.StringVar(&c.ConfigDir, flagConfigDir, c.ConfigDir, "Config directory")
 	flags.Int32Var(&c.Verbosity, flagVerbosity, c.Verbosity, "[0-3] Log level verbosity")

@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -181,6 +182,22 @@ func (k *KubernetesConfigManager) DeleteClusterInKubeconfig(clusterName string) 
 	return k.ModifyKubeconfig(oldConfig)
 }
 
+// DeleteAuthInfoInKubeconfig deletes the saved Portworx configuration in the kubeconfig
+func (k *KubernetesConfigManager) DeleteAuthInfoInKubeconfig(authInfoName string) error {
+	pxcName := KubeconfigUserPrefix + authInfoName
+	oldConfig, err := k.GetStartingKubeconfig()
+	if err != nil {
+		return err
+	}
+
+	if v := oldConfig.AuthInfos[pxcName]; v == nil {
+		return nil
+	}
+
+	delete(oldConfig.AuthInfos, pxcName)
+	return k.ModifyKubeconfig(oldConfig)
+}
+
 // GetKubernetesCurrentContext returns the context currently selected by either the config
 // file or from the command line
 func (k *KubernetesConfigManager) GetKubernetesCurrentContext() (string, error) {
@@ -212,4 +229,238 @@ func (k *KubernetesConfigManager) GetKubernetesCurrentContext() (string, error) 
 // overridden
 func (k *KubernetesConfigManager) Namespace() (string, bool, error) {
 	return k.ToRawKubeConfigLoader().Namespace()
+}
+
+// ConfigSaveCluster saves the cluster configuration as part of an extension to the
+// current context cluster in the Kubeconfig
+func (k *KubernetesConfigManager) ConfigSaveCluster(clusterInfo *Cluster) error {
+
+	cc := k.ToRawKubeConfigLoader()
+
+	// This is the raw kubeconfig which may have been overridden by CLI args
+	kconfig, err := cc.RawConfig()
+	if err != nil {
+		return err
+	}
+
+	// Get the current context
+	currentContextName, err := k.GetKubernetesCurrentContext()
+	if err != nil {
+		return err
+	}
+
+	// Get the current context object
+	currentContext := kconfig.Contexts[currentContextName]
+
+	// Override the name to the name of the current cluster
+	clusterInfo.Name = currentContext.Cluster
+
+	// Get the location of the kubeconfig for this specific object. This is necessary
+	// because KUBECONFIG can have many kubeconfigs, example: KUBECONFIG=kube1.conf:kube2.conf
+	location := kconfig.Clusters[currentContext.Cluster].LocationOfOrigin
+
+	// Storage the information to the appropriate kubeconfig
+	if err := k.SaveClusterInKubeconfig(currentContext.Cluster, location, clusterInfo); err != nil {
+		return err
+	}
+
+	logrus.Infof("Portworx server information saved in %s for Kubernetes cluster %s\n",
+		location,
+		currentContext.Cluster)
+
+	return nil
+}
+
+func (k *KubernetesConfigManager) ConfigDeleteCluster(name string) error {
+	cc := k.ToRawKubeConfigLoader()
+
+	// This is the raw kubeconfig which may have been overridden by CLI args
+	kconfig, err := cc.RawConfig()
+	if err != nil {
+		return err
+	}
+
+	// Get the current context
+	currentContextName, err := k.GetKubernetesCurrentContext()
+	if err != nil {
+		return err
+	}
+
+	currentContext := kconfig.Contexts[currentContextName]
+
+	// Get the location of the kubeconfig for this specific object. This is necessary
+	// because KUBECONFIG can have many kubeconfigs, example: KUBECONFIG=kube1.conf:kube2.conf
+	location := kconfig.Clusters[currentContext.Cluster].LocationOfOrigin
+
+	// Storage the information to the appropriate kubeconfig
+	if err := k.DeleteClusterInKubeconfig(currentContext.Cluster); err != nil {
+		return err
+	}
+
+	logrus.Infof("Portworx server information removed from %s for Kubernetes cluster %s\n",
+		location,
+		currentContext.Cluster)
+	return nil
+}
+
+func (k *KubernetesConfigManager) ConfigLoad() (*Config, error) {
+
+	clusterConfig := newConfig()
+
+	// Get the current context, either from the file or from the args to the CLI
+	contextName, err := k.GetKubernetesCurrentContext()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get kubectl context: %v", err)
+	}
+
+	clientConfig := k.ConfigFlags().ToRawKubeConfigLoader()
+	kConfig, err := clientConfig.RawConfig()
+	if err != nil {
+		return nil, fmt.Errorf("unable to read kubernetes configuration: %v", err)
+	}
+
+	// Initialize the context
+	clusterConfig.CurrentContext = contextName
+	clusterConfig.Contexts[contextName] = &Context{
+		AuthInfo: kConfig.Contexts[contextName].AuthInfo,
+		Cluster:  kConfig.Contexts[contextName].Cluster,
+	}
+
+	// Load all the pxc authentication information from the kubeconfig file
+	for k, v := range kConfig.AuthInfos {
+		if strings.HasPrefix(k, KubeconfigUserPrefix) && v.AuthProvider != nil {
+			logrus.Debugf("Loading user %s from %s", k, v.LocationOfOrigin)
+			pxcAuthInfo := NewAuthInfoFromMap(v.AuthProvider.Config)
+			clusterConfig.AuthInfos[pxcAuthInfo.Name] = pxcAuthInfo
+		}
+	}
+
+	// Load all the pxc cluster information from the kubeconfig file
+	for k, c := range kConfig.Clusters {
+		if strings.HasPrefix(k, KubeconfigUserPrefix) {
+			pxcClusterInfo, err := NewClusterFromEncodedString(string(c.CertificateAuthorityData))
+			if err == nil {
+				logrus.Debugf("Loading cluster %s from %s", k, c.LocationOfOrigin)
+				clusterConfig.Clusters[pxcClusterInfo.Name] = pxcClusterInfo
+			} else {
+				logrus.Debugf("Unable to load cluster %s from %s", k, c.LocationOfOrigin)
+			}
+		}
+	}
+
+	return clusterConfig, nil
+}
+
+func (k *KubernetesConfigManager) ConfigSaveAuthInfo(authInfo *AuthInfo) error {
+	if authInfo == nil {
+		panic("authInfo required")
+	}
+	cc := k.ToRawKubeConfigLoader()
+	save := false
+
+	// This is the raw kubeconfig which may have been overridden by CLI args
+	kconfig, err := cc.RawConfig()
+	if err != nil {
+		return err
+	}
+
+	// Get the current context
+	currentContextName, err := k.GetKubernetesCurrentContext()
+	if err != nil {
+		return err
+	}
+
+	currentContext := kconfig.Contexts[currentContextName]
+
+	// Initialize authInfo object
+	authInfo.Name = currentContext.AuthInfo
+
+	// Check for token
+	if len(authInfo.Token) != 0 {
+		save = true
+		// TODO: Validate if the token is expired
+	}
+
+	// Check for Kubernetes secret and secret namespace
+	if len(authInfo.KubernetesAuthInfo.SecretNamespace) != 0 &&
+		len(authInfo.KubernetesAuthInfo.SecretName) != 0 {
+		save = true
+	} else if len(authInfo.KubernetesAuthInfo.SecretNamespace) == 0 && len(authInfo.KubernetesAuthInfo.SecretName) != 0 {
+		return fmt.Errorf("Must supply secret namespace with secret name")
+	} else if len(authInfo.KubernetesAuthInfo.SecretNamespace) != 0 && len(authInfo.KubernetesAuthInfo.SecretName) == 0 {
+		return fmt.Errorf("Must supply secret name with secret namespace")
+	}
+
+	// Check if any information necessary was passed
+	if !save {
+		return fmt.Errorf("Must supply authentication information")
+	}
+
+	// Get the location of the kubeconfig for this specific authInfo. This is necessary
+	// because KUBECONFIG can have many kubeconfigs, example: KUBECONFIG=kube1.conf:kube2.conf
+	location := kconfig.AuthInfos[currentContext.AuthInfo].LocationOfOrigin
+
+	// Storage the information to the appropriate kubeconfig
+	if err := k.SaveAuthInfoForKubeUser(currentContext.AuthInfo, location, authInfo); err != nil {
+		return err
+	}
+
+	logrus.Infof("Portworx login information saved in %s for Kubernetes user context %s\n",
+		location,
+		currentContext.AuthInfo)
+	return nil
+}
+
+// ConfigSaveContext does not do anything in kubectl plugin mode because it is managed
+// by kubectl
+func (k *KubernetesConfigManager) ConfigSaveContext(c *Context) error {
+	return fmt.Errorf("Use <kubectl config set-context> to set the context instead")
+}
+
+// ConfigDeleteAuthInfo deletes auth information for the current context
+func (k *KubernetesConfigManager) ConfigDeleteAuthInfo(name string) error {
+	cc := k.ToRawKubeConfigLoader()
+
+	// This is the raw kubeconfig which may have been overridden by CLI args
+	kconfig, err := cc.RawConfig()
+	if err != nil {
+		return err
+	}
+
+	// Get the current context
+	currentContextName, err := k.GetKubernetesCurrentContext()
+	if err != nil {
+		return err
+	}
+
+	currentContext := kconfig.Contexts[currentContextName]
+
+	// Get the location of the kubeconfig for this specific object. This is necessary
+	// because KUBECONFIG can have many kubeconfigs, example: KUBECONFIG=kube1.conf:kube2.conf
+	location := kconfig.AuthInfos[currentContext.AuthInfo].LocationOfOrigin
+
+	// Storage the information to the appropriate kubeconfig
+	if err := k.DeleteAuthInfoInKubeconfig(currentContext.AuthInfo); err != nil {
+		return err
+	}
+
+	logrus.Infof("Portworx server information removed from %s for Kubernetes cluster %s\n",
+		location,
+		currentContext.Cluster)
+	return nil
+}
+
+// ConfigDeleteContext deletes auth information for the current context
+func (k *KubernetesConfigManager) ConfigDeleteContext(name string) error {
+	return fmt.Errorf("Use kubectl config to manage context")
+}
+
+// ConfigUseContext is not supported by kubectl plugin
+func (k *KubernetesConfigManager) ConfigUseContext(name string) error {
+	return fmt.Errorf("Use kubectl to set the current context")
+}
+
+// ConfigGetCurrentContext returns the current context set by kubectl
+func (k *KubernetesConfigManager) ConfigGetCurrentContext() (string, error) {
+	return k.GetKubernetesCurrentContext()
 }

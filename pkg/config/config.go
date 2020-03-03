@@ -43,6 +43,7 @@ type Preferences struct {
 
 // Context provides information on who is trying to connect to a specific cluster
 type Context struct {
+	Name     string `json:"name,omitempty" yaml:"name,omitempty"`
 	AuthInfo string `json:"user,omitempty" yaml:"user,omitempty"`
 	Cluster  string `json:"cluster,omitempty" yaml:"cluster,omitempty"`
 }
@@ -84,12 +85,28 @@ type Config struct {
 	CurrentContext string               `json:"current-context,omitempty" yaml:"current-context,omitempty"`
 }
 
+type ConfigReaderWriter interface {
+	ConfigSaveCluster(*Cluster) error
+	ConfigDeleteCluster(string) error
+	ConfigLoad() (*Config, error)
+	ConfigSaveAuthInfo(*AuthInfo) error
+	ConfigSaveContext(*Context) error
+	ConfigDeleteAuthInfo(string) error
+	ConfigDeleteContext(string) error
+	ConfigUseContext(string) error
+	ConfigGetCurrentContext() (string, error)
+}
+
 func Get(k string) string {
 	return config[k]
 }
 
 func Set(k, v string) {
 	config[k] = v
+}
+
+func NewContext() *Context {
+	return &Context{}
 }
 
 func NewCluster() *Cluster {

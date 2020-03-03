@@ -9,6 +9,15 @@ fail()
 	exit 1
 }
 
+createConfig()
+{
+ ./pxc --pxc.config=$TESTCONFIG config cluster set --name=target --endpoint=localhost:9921 || fail "Failed to create target cluster"
+ ./pxc --pxc.config=$TESTCONFIG config cluster set --name=source --endpoint=localhost:9920 || fail "Failed to create source clusterh"
+ ./pxc --pxc.config=$TESTCONFIG config context set --cluster=source --name=source || fail "Failed to set context source"
+ ./pxc --pxc.config=$TESTCONFIG config context set --cluster=target --name=target || fail "Failed to set context target"
+ ./pxc --pxc.config=$TESTCONFIG config context use --name=source || fail "Failed to use source context"
+}
+
 # $1 - name
 # $2 - port
 startdocker()
@@ -30,10 +39,12 @@ stopdocker()
 
 ### MAIN ###
 
+export TESTCONFIG=/tmp/pxc-testconfig.yml
+export PXCONFIG=$TESTCONFIG
+
+createConfig
 startdocker pxutsource 9920
 startdocker pxuttarget 9921
-
-export PXCONFIG=$PWD/hack/config.yml
 
 result=0
 if [ $# -eq 0 ] ; then

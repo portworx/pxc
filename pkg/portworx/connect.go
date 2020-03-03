@@ -21,10 +21,8 @@ import (
 	"fmt"
 
 	"github.com/portworx/pxc/pkg/config"
-	"github.com/portworx/pxc/pkg/contextconfig"
 	pxgrpc "github.com/portworx/pxc/pkg/grpc"
 	"github.com/portworx/pxc/pkg/kubernetes"
-	"github.com/portworx/pxc/pkg/util"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -38,43 +36,36 @@ import (
 // named context
 func PxConnectDefault() (context.Context, *grpc.ClientConn, error) {
 
-	if util.InKubectlPluginMode() {
-		return PxConnectAsPlugin()
-	}
-
-	// Global information will be set here, like forced context
-	file := config.Get(config.File)
-	context := config.Get(config.SpecifiedContext)
-	if len(context) == 0 {
-		return PxConnectCurrent(file)
-	} else {
-		return PxConnectNamed(file, context)
-	}
-}
-
-// PxConnectAsPlugin expects that the portforwarder has been setup and uses
-// a local port to communicate with the gRPC port in Portworx through the
-// Kubernetes API.
-func PxConnectAsPlugin() (context.Context, *grpc.ClientConn, error) {
-
 	var (
+		caerr       error
 		dialOptions []grpc.DialOption
 	)
 
-	// Start global tunnel if not up already
-	err := kubernetes.StartTunnel()
-	if err != nil {
-		return nil, nil, err
+	if len(config.CM().GetEndpoint()) == 0 {
+		// Start global tunnel if not up already
+		err := kubernetes.StartTunnel()
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	// If secure: true set in config.yaml file, use TLS
-	dialOptions = append(dialOptions, grpc.WithInsecure())
+	currentCluster := config.CM().GetCurrentCluster()
+	if currentCluster.Secure || len(currentCluster.CACertData) != 0 {
+		dialOptions, caerr = PxAppendCaCertcontext(config.CM().GetCurrentCluster())
+		if caerr != nil {
+			return nil, nil, caerr
+		}
+	} else {
+		dialOptions = append(dialOptions, grpc.WithInsecure())
+	}
 
 	// Get config
 	endpoint := config.CM().GetEndpoint()
 	authInfo := config.CM().GetCurrentAuthInfo()
 
 	// Connect to server
+	logrus.Infof("Connecting to Portworx at endpoint %s", endpoint)
 	conn, err := pxgrpc.Connect(endpoint, dialOptions)
 	if err != nil {
 		return nil, nil, err
@@ -95,62 +86,11 @@ func PxConnectAsPlugin() (context.Context, *grpc.ClientConn, error) {
 		ctx = pxgrpc.AddMetadataToContext(ctx, "authorization", "bearer "+token)
 	}
 
-	logrus.Infof("Connected through API server to %s\n", endpoint)
+	logrus.Infof("Connected to %s\n", endpoint)
 	return ctx, conn, nil
 }
 
-// TODO: Add Support to connect to a context name
-
-// PxConnectCurrent will connect to the default context server using TLS if needed
-// and returns the context setup with any security if any and the grpc client.
-// The context will not have a timeout set, that should be setup by the caller
-// of the gRPC call.
-func PxConnectCurrent(cfgFile string) (context.Context, *grpc.ClientConn, error) {
-	contextManager, err := contextconfig.NewContextManager(cfgFile)
-	if err != nil {
-		return nil, nil, err
-	}
-	pxctx, err := contextManager.GetCurrent()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var (
-		dialOptions []grpc.DialOption
-		caerr       error
-	)
-
-	// If secure: true set in config.yaml file, use TLS
-	if pxctx.Secure {
-		// cannot set Insecure with TLS.
-		if len(pxctx.TlsData.Cacert) != 0 {
-			// If user has provided valid CA cert, append to the existing system CA pool.
-			// Parameter "true" signifies user provided CA.
-			dialOptions, caerr = PxAppendCaCertcontext(pxctx, true)
-		} else {
-			// Parameter "false" signifies load available CA from the system.
-			dialOptions, caerr = PxAppendCaCertcontext(pxctx, false)
-		}
-		if caerr != nil {
-			return nil, nil, caerr
-		}
-	} else {
-		dialOptions = append(dialOptions, grpc.WithInsecure())
-	}
-
-	conn, err := pxgrpc.Connect(pxctx.Endpoint, dialOptions)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Add authentication metadata
-	ctx := context.Background()
-	if len(pxctx.Token) != 0 {
-		ctx = pxgrpc.AddMetadataToContext(ctx, "authorization", "bearer "+pxctx.Token)
-	}
-
-	return ctx, conn, nil
-}
+/* Needs to be updated to new config
 
 // PxConnectNamed will connect to a specified context server using TLS if needed
 // and returns the context setup with any security if any and the grpc client.
@@ -200,15 +140,18 @@ func PxConnectNamed(cfgFile string, name string) (context.Context, *grpc.ClientC
 	}
 	return ctx, conn, nil
 }
+*/
 
 // PxAppendCaCertcontext appends the provided valid CA from the user to the existing systemPool or
 // load the default CA certs used for authentication with the sdk server.
-func PxAppendCaCertcontext(pxctx *contextconfig.ClientContext, userCa bool) ([]grpc.DialOption, error) {
+func PxAppendCaCertcontext(clusterInfo *config.Cluster) ([]grpc.DialOption, error) {
 	// Read the provided CA cert from the user
 	capool, err := x509.SystemCertPool()
+
+	// TODO: Read CA Cert file
 	// If user provided CA cert, then append it to systemCertPool.
-	if userCa {
-		if !capool.AppendCertsFromPEM([]byte(pxctx.TlsData.Cacert)) {
+	if len(clusterInfo.CACertData) != 0 {
+		if !capool.AppendCertsFromPEM([]byte(clusterInfo.CACertData)) {
 			return nil, err
 		}
 	}
