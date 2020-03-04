@@ -24,7 +24,6 @@ import (
 	"github.com/cheynewallace/tabby"
 	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/portworx"
@@ -37,15 +36,15 @@ var getNodesCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
 	getNodesCmd = &cobra.Command{
-		Use:     "node",
-		Aliases: []string{"nodes"},
-		Short:   "Get Portworx node information",
+		Use:     "list",
+		Aliases: []string{"get"},
+		Short:   "List Portworx nodes information",
 		RunE:    getNodesExec,
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	cmd.GetAddCommand(getNodesCmd)
+	NodeAddCommand(getNodesCmd)
 	getNodesCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
 	getNodesCmd.Flags().Bool("show-labels", false, "Show labels in the last column of the output")
 })
