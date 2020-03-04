@@ -1,5 +1,7 @@
-CLINAME := pxc
-KUBECTL_PLUGIN := kubectl-$(CLINAME)
+# Should match the name of component
+CLINAME := cm
+
+PXC_COMPONENT := pxc-$(CLINAME)
 SHA := $(shell git rev-parse --short HEAD)
 BRANCH := $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
 VER := $(shell git describe --tags)
@@ -16,24 +18,23 @@ else
   VERSION = $(VER)-$(BRANCH)
 endif
 endif
-LDFLAGS :=-ldflags "-X github.com/portworx/pxc/cmd.PxVersion=$(VERSION)"
+LDFLAGS :=-ldflags "-X main.ComponentName=$(CLINAME) -X main.ComponentVersion=$(VERSION)"
 
 ifneq (windows,$(GOOS))
 PKG_NAME = $(CLINAME)
-PLUGIN_PKG_NAME = $(KUBECTL_PLUGIN)
+COMPONENT_PKG_NAME = $(PXC_COMPONENT)
 else
 PKG_NAME = $(CLINAME).exe
-PLUGIN_PKG_NAME = $(KUBECTL_PLUGIN).exe
+COMPONENT_PKG_NAME = $(PXC_COMPONENT).exe
 endif
 
-ZIPPACKAGE := $(CLINAME)-$(VERSION).$(GOOS).$(ARCH).zip
-TGZPACKAGE := $(CLINAME)-$(VERSION).$(GOOS).$(ARCH).tar.gz
+ZIPPACKAGE := $(PXC_COMPONENT)-$(VERSION).$(GOOS).$(ARCH).zip
+TGZPACKAGE := $(PXC_COMPONENT)-$(VERSION).$(GOOS).$(ARCH).tar.gz
 
-all: pxc $(PLUGIN_PKG_NAME)
+all: $(PKG_NAME) $(COMPONENT_PKG_NAME)
 
 install: all
-	cp $(PKG_NAME) $(GOPATH)/bin
-	cp $(PKG_NAME) $(GOPATH)/bin/$(PLUGIN_PKG_NAME)
+	cp $(PKG_NAME) $(HOME)/.pxc/bin/$(COMPONENT_PKG_NAME)
 
 imports:
 	goimports -w ./cmd
@@ -44,7 +45,7 @@ imports:
 lint:
 	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
 
-pxc:
+$(PKG_NAME):
 	go build -o $(PKG_NAME) $(LDFLAGS)
 
 release: darwin_amd64_dist \
@@ -66,37 +67,37 @@ dist: $(TGZPACKAGE)
 
 # This also tests for any conflicts
 docs: all
-	./pxc gendocs --output-dir=docs/usage
+	./$(PKG_NAME) gendocs --output-dir=docs/usage
 
-test:
-	./hack/test.sh
+# Look at pxc ./hack directory to see how it creates environments to test
+#test:
+#	./hack/test.sh
 
-verify: all test
+verify: all
 	go fmt $(go list ./... | grep -v vendor) | wc -l | grep 0
 	go vet $(go list ./... | grep -v vendor)
-	$(MAKE) -C example-component verify
 
-$(PLUGIN_PKG_NAME): pxc
-	cp pxc $(PLUGIN_PKG_NAME)
+$(COMPONENT_PKG_NAME): $(PKG_NAME)
+	cp $(PKG_NAME) $(COMPONENT_PKG_NAME)
 
 $(ZIPPACKAGE): all
-	@echo Packaging pxc ...
+	@echo Packaging binaries...
 	@mkdir -p dist
-	@zip dist/$@ $(PLUGIN_PKG_NAME)
+	@zip dist/$@ $(COMPONENT_PKG_NAME)
 	@rm -f $(PKG_NAME)
 
 $(TGZPACKAGE): all
-	@echo Packaging Binaries...
+	@echo Packaging binaries...
 	@mkdir -p tmp/$(PKG_NAME)
-	@cp $(PLUGIN_PKG_NAME) tmp/$(PKG_NAME)/
+	@cp $(COMPONENT_PKG_NAME) tmp/$(PKG_NAME)/
 	@mkdir -p $(DIR)/dist/
 	tar -czf $(DIR)/dist/$@ -C tmp $(PKG_NAME)
 	@rm -rf tmp
 
 clean:
-	rm -f $(PKG_NAME) $(PLUGIN_PKG_NAME)
+	rm -f $(PKG_NAME) $(COMPONENT_PKG_NAME)
 	rm -rf dist
 
 .PHONY: dist all clean darwin_amd64_dist windows_amd64_dist linux_amd64_dist \
-	install release pxc test
+	install release test
 
