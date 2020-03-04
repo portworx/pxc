@@ -117,15 +117,14 @@ func (p *KubectlPortForwarder) Start() error {
 			currentCluster.TunnelServicePort)
 	}
 	sbuf := string(buf[:n])
-	index := strings.Index(sbuf, "127.0.0.1:")
-	if index < 0 {
-		p.Stop()
-		logrus.Warningf("Unable to find 127.0.0.1: in [%s]", sbuf)
-		return fmt.Errorf("Failed to determine endpoint information")
-	}
 
 	// Set endpoint
-	p.endpoint = strings.Split(sbuf[index:], " ")[0]
+	p.endpoint, err = p.getEndpointFromKubectlOutput(sbuf)
+	if err != nil {
+		p.Stop()
+		return err
+	}
+
 	logrus.Infof("Connected to %s", p.endpoint)
 	logrus.Debugf("Read %d bytes", n)
 	logrus.Debugf("Output: %s", sbuf)
@@ -145,4 +144,19 @@ func (p *KubectlPortForwarder) Stop() error {
 // Endpoint returns the gRPC endpoint to the SDK
 func (p *KubectlPortForwarder) Endpoint() string {
 	return p.endpoint
+}
+
+func (p *KubectlPortForwarder) getEndpointFromKubectlOutput(sbuf string) (string, error) {
+	index := strings.Index(sbuf, "127.0.0.1:")
+	if index >= 0 {
+		return strings.Split(sbuf[index:], " ")[0], nil
+	}
+
+	index = strings.Index(sbuf, "[::1]:")
+	if index >= 0 {
+		return strings.Split(sbuf[index:], " ")[0], nil
+	}
+
+	logrus.Warningf("Unable to find 127.0.0.1 or [::1]: in [%s]", sbuf)
+	return "", fmt.Errorf("Failed to determine endpoint information")
 }

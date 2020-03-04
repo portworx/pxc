@@ -33,3 +33,47 @@ func TestKubectlPortForwarder(t *testing.T) {
 	err = p.Stop()
 	assert.NoError(t, err)
 }
+
+func TestGetEndpointFromKubectlOutput(t *testing.T) {
+
+	tests := []struct {
+		expectFailure  bool
+		expectedOutput string
+		buffer         string
+	}{
+		{
+			expectFailure:  false,
+			expectedOutput: "127.0.0.1:12345",
+			buffer:         " Forwarding from 127.0.0.1:12345 --> 9020",
+		},
+		{
+			expectFailure:  false,
+			expectedOutput: "[::1]:35572",
+			buffer:         " Forwarding from [::1]:35572 --> 9020",
+		},
+		{
+			expectFailure: true,
+			buffer:        " Forwarding from ]:35572 --> 9020",
+		},
+		{
+			expectFailure: true,
+			buffer:        " Bad",
+		},
+		{
+			expectFailure:  false,
+			buffer:         "Forwarding from 127.0.0.1:41240 -> 9020\n Forwarding from [::1]:41240 -> 9020",
+			expectedOutput: "127.0.0.1:41240",
+		},
+	}
+
+	p := &KubectlPortForwarder{}
+	for _, test := range tests {
+		s, err := p.getEndpointFromKubectlOutput(test.buffer)
+		if test.expectFailure {
+			assert.Error(t, err)
+		} else {
+			assert.NoError(t, err)
+			assert.Equal(t, s, test.expectedOutput)
+		}
+	}
+}
