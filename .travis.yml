@@ -9,3 +9,4 @@ script:
   - make install
   - make test
   - make docs
+  - cd example-component && make verify

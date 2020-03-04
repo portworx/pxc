@@ -1,5 +1,7 @@
 pxc
 pxc.exe
+example-component/cm
+example-component/pxc-cm*
 *.code-workspace
 kubectl-pxc
 kubectl-pxc.exe
