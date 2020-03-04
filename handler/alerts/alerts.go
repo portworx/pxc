@@ -13,30 +13,33 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package cmd
+package alerts
 
 import (
+	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-var getCmd *cobra.Command
-
-func GetAddCommand(c *cobra.Command) {
-	getCmd.AddCommand(c)
-}
+// alertCmd represents the alert command
+var alertCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
-	getCmd = &cobra.Command{
-		Use:   "get",
-		Short: "Get information from Portworx",
+	alertCmd = &cobra.Command{
+		Use:     "alert",
+		Aliases: []string{"alerts"},
+		Short:   "Manage alerts on a Portworx cluster",
 		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see pxc get --help for more information\n")
+			util.Printf("Please see pxc alert --help for more commands\n")
 		},
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	RootAddCommand(getCmd)
+	cmd.RootAddCommand(alertCmd)
 })
+
+func AlertAddCommand(cmd *cobra.Command) {
+	alertCmd.AddCommand(cmd)
+}

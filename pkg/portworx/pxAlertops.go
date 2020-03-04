@@ -17,11 +17,12 @@ limitations under the License.
 package portworx
 
 import (
-	"errors"
-	"github.com/portworx/pxc/pkg/util"
+	"fmt"
 	"io"
 	"sort"
 	"time"
+
+	"github.com/portworx/pxc/pkg/util"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	prototime "github.com/portworx/pxc/pkg/openstorage/proto/time"
@@ -86,12 +87,12 @@ func (p *pxAlertOps) GetPxAlerts(cliAlertInputs CliAlertInputs) (AlertResp, erro
 	if (len(cliAlertInputs.StartTime) > 0) && (len(cliAlertInputs.EndTime) > 0) {
 		st, err := time.Parse(time.RFC3339, cliAlertInputs.StartTime)
 		if err != nil {
-			return alertResp, errors.New("Invaid start-time timestamp format.")
+			return alertResp, fmt.Errorf("Invaid start-time timestamp format.")
 		}
 
 		et, err := time.Parse(time.RFC3339, cliAlertInputs.EndTime)
 		if err != nil {
-			return alertResp, errors.New("Invaid end-time timestamp format.")
+			return alertResp, fmt.Errorf("Invaid end-time timestamp format.")
 		}
 
 		opts = append(opts, &api.SdkAlertsOption{
@@ -116,7 +117,7 @@ func (p *pxAlertOps) GetPxAlerts(cliAlertInputs CliAlertInputs) (AlertResp, erro
 		case "alarm":
 			severity = api.SeverityType_SEVERITY_TYPE_ALARM
 		default:
-			return alertResp, errors.New("Invalid severity level.")
+			return alertResp, fmt.Errorf("Invalid severity level.")
 		}
 
 		opts = append(opts, &api.SdkAlertsOption{
@@ -137,7 +138,7 @@ func (p *pxAlertOps) GetPxAlerts(cliAlertInputs CliAlertInputs) (AlertResp, erro
 
 	alterType := getAlertType(cliAlertInputs.AlertType)
 	if len(alterType) == 0 {
-		return alertResp, errors.New("Invalid type provided.")
+		return alertResp, fmt.Errorf("Invalid type provided.")
 	}
 
 	for _, resourceType := range alterType {
@@ -178,7 +179,7 @@ func (p *pxAlertOps) GetPxAlerts(cliAlertInputs CliAlertInputs) (AlertResp, erro
 		client := api.NewOpenStorageAlertsClient(conn)
 		resp, err := client.EnumerateWithFilters(ctx, getAlertsGetReq.req)
 		if err != nil {
-			return alertResp, errors.New("Failed to fetch alerts.")
+			return alertResp, fmt.Errorf("Failed to fetch alerts.")
 		}
 
 		for {
@@ -233,7 +234,7 @@ func (p *pxAlertOps) DeletePxAlerts(alert string) error {
 		client := api.NewOpenStorageAlertsClient(conn)
 		_, err = client.Delete(ctx, delAlertsGetReq.req)
 		if err != nil {
-			return errors.New("Failed to delete alerts")
+			return fmt.Errorf("Failed to delete alerts")
 		}
 	}
 	return err

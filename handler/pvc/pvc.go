@@ -13,30 +13,35 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package cmd
+package pvc
 
 import (
+	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-var createCmd *cobra.Command
+// pvcCmd represents the pvc command
+var pvcCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
-	createCmd = &cobra.Command{
-		Use:   "create",
-		Short: "Create an object in Portworx",
+	pvcCmd = &cobra.Command{
+		Use:     "pvc",
+		Aliases: []string{"pvcs"},
+		Short:   "Manage Kubernetes pvcs on a Portworx cluster",
 		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see pxc create --help for more information\n")
+			util.Printf("Please see pxc pvc --help for more commands\n")
 		},
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	RootAddCommand(createCmd)
+	if util.InKubectlPluginMode() {
+		cmd.RootAddCommand(pvcCmd)
+	}
 })
 
-func CreateAddCommand(c *cobra.Command) {
-	createCmd.AddCommand(c)
+func PvcAddCommand(cmd *cobra.Command) {
+	pvcCmd.AddCommand(cmd)
 }

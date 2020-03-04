@@ -17,7 +17,6 @@ package clusterpair
 
 import (
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/spf13/cobra"
 )
@@ -53,7 +52,7 @@ var _ = commander.RegisterCommandVar(func() {
 })
 
 var _ = commander.RegisterCommandVar(func() {
-	cmd.CreateAddCommand(createClusterpairCmd)
+	//reateAddCommand(createClusterpairCmd)
 
 	createClusterpairCmd.Flags().StringVar(&ccpOpts.source, "source", "", "Context for the source cluster (required)")
 	createClusterpairCmd.Flags().StringVar(&ccpOpts.destination, "destination", "", "Context for the destination cluster (required)")

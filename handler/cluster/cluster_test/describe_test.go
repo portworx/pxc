@@ -32,7 +32,7 @@ func TestDescribeCluster(t *testing.T) {
 
 	// Setup to run: pxc describe cluster and return the Stdout, Stderr,
 	// and a function to restore state
-	so, _, r := test.PxTestSetupCli("px describe cluster")
+	so, _, r := test.PxTestSetupCli("pxc cluster describe")
 
 	// Defer to cleanup state
 	defer r()

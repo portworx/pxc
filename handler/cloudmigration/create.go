@@ -17,7 +17,6 @@ package cloudmigration
 
 import (
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
@@ -57,7 +56,7 @@ var _ = commander.RegisterCommandVar(func() {
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	cmd.CreateAddCommand(createCloudmigrationCmd)
+	//CreateAddCommand(createCloudmigrationCmd)
 
 	createCloudmigrationCmd.Flags().BoolVarP(&ccmOpts.all, "all", "a", false, "Migrate all volumes")
 	createCloudmigrationCmd.Flags().StringVarP(&ccmOpts.volumeId, "volume-id", "v", "", "Volume ID to migrate")

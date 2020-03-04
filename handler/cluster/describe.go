@@ -31,23 +31,19 @@ var describeClusterCmd *cobra.Command
 var _ = commander.RegisterCommandVar(func() {
 	// describeClusterCmd represents the describeCluster command
 	describeClusterCmd = &cobra.Command{
-		Use:   "cluster [NAME]",
+		Use:   "describe [NAME]",
 		Short: "Describe a Portworx cluster",
 		Long:  "Show detailed information of Portworx cluster",
 		Example: `
   # Display detailed information about Portworx cluster
-  pxc describe cluster`,
+  pxc cluster describe`,
 		RunE: describeClusterExec,
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	cmd.DescribeAddCommand(describeClusterCmd)
+	ClusterAddCommand(describeClusterCmd)
 })
-
-func DescribeAddCommand(cmd *cobra.Command) {
-	describeClusterCmd.AddCommand(cmd)
-}
 
 func describeClusterExec(c *cobra.Command, args []string) error {
 	ctx, conn, err := portworx.PxConnectDefault()
