@@ -24,7 +24,6 @@ import (
 
 	"github.com/cheynewallace/tabby"
 	humanize "github.com/dustin/go-humanize"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/kubernetes"
@@ -39,33 +38,28 @@ var getPvcCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
 	getPvcCmd = &cobra.Command{
-		Use:     "pvc [NAME]",
-		Aliases: []string{"pvcs"},
+		Use:     "list [NAME]",
+		Aliases: []string{"get"},
 		Short:   "Show Portworx volume information for Kubernetes PVCs",
 		Example: `
   # Get information for all pvcs that are Portworx volumes
-  pxc get pvc
+  pxc pvc list
 
   # Get information for pvc abc
-  pxc get pvc abc
+  pxc pvc list abc
 
   # Get information for pvcs abc and xyz
-  pxc get pvc abc xyz`,
+  pxc pvc list abc xyz`,
 		RunE: getPvcExec,
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	cmd.GetAddCommand(getPvcCmd)
-	getPvcCmd.Flags().String("namespace", "", "Kubernetes namespace")
+	PvcAddCommand(getPvcCmd)
 	getPvcCmd.Flags().Bool("all-namespaces", false, "Kubernetes namespace")
 	getPvcCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
 	getPvcCmd.Flags().Bool("show-labels", false, "Show labels in the last column of the output")
 })
-
-func GetAddCommand(cmd *cobra.Command) {
-	getPvcCmd.AddCommand(cmd)
-}
 
 func getPvcExec(cmd *cobra.Command, args []string) error {
 	// Parse out all of the common cli volume flags
@@ -252,13 +246,13 @@ func (p *pvcGetFormatter) getLine(pxpvc *kubernetes.PxPvc) ([]interface{}, error
 	pods := strings.Join(pxpvc.PodNames, ",")
 
 	/*
-	   $ pxc get pvc
+	   $ pxc pvc list
 	   NAME        VOLUME                                    CAPACITY  SHARED  STATE  PODS
 	   ----        ------                                    --------  ------  -----  ----
 	   mysql-data  pvc-d2a47415-1aef-428c-b998-5aee138d93a9  2         1       false  on lpabon-k8s-1-node2  default/mysql-59b76b98f9-grcvd
 
 	   lpabon@PDC4-SM26-N8 : ~/git/golang/porx/src/github.com/portworx/px
-	   $ pxc get pvc -o wide
+	   $ pxc pvc list -o wide
 	   NAME        VOLUME                                    VOLUME ID           HA  CAPACITY  SHARED  STATUS  STATE  SNAP ENABLED           ENCRYPTED  PODS
 	   ----        ------                                    ---------           --  --------  ------  ------  -----  ------------           ---------  ----
 	   mysql-data  pvc-d2a47415-1aef-428c-b998-5aee138d93a9  605625582897896102  1   2         1       false   UP     on lpabon-k8s-1-node2  false      false  default/mysql-59b76b98f9-grcvd

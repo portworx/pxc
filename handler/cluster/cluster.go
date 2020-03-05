@@ -13,32 +13,33 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-package cmd
+package cluster
 
 import (
+	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-var patchCmd *cobra.Command
+// clusterCmd represents the cluster command
+var clusterCmd *cobra.Command
 
-// patchCmd represents the patch command
 var _ = commander.RegisterCommandVar(func() {
-	patchCmd = &cobra.Command{
-		Use:   "patch",
-		Short: "Update field(s) of a Portworx resource",
+	clusterCmd = &cobra.Command{
+		Use:     "cluster",
+		Aliases: []string{"clusters"},
+		Short:   "Manage Portworx cluster",
 		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see pxc patch --help for more information\n")
+			util.Printf("Please see pxc cluster --help for more commands\n")
 		},
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	RootAddCommand(patchCmd)
+	cmd.RootAddCommand(clusterCmd)
 })
 
-func PatchAddCommand(cmd *cobra.Command) {
-	patchCmd.AddCommand(cmd)
+func ClusterAddCommand(cmd *cobra.Command) {
+	clusterCmd.AddCommand(cmd)
 }

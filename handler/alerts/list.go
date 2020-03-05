@@ -19,7 +19,6 @@ package alerts
 import (
 	"bytes"
 	"github.com/cheynewallace/tabby"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/portworx"
@@ -32,50 +31,47 @@ import (
 	prototime "github.com/portworx/pxc/pkg/openstorage/proto/time"
 )
 
-var getAlertsCmd *cobra.Command
+var listAlertsCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
-	getAlertsCmd = &cobra.Command{
-		Use:     "alerts",
-		Aliases: []string{"alert"},
-		Short:   "Get information about Portworx alerts",
+	listAlertsCmd = &cobra.Command{
+		Use:     "list",
+		Aliases: []string{"get"},
+		Short:   "List and get information about Portworx alerts",
 		Example: `
   # Get portworx related alerts
-  pxc get alerts
+  pxc alert list
 
   # Fetch alerts based on particular alert id. Fetch all alerts based on "VolumeCreateSuccess" id
-  pxc get alerts --id "VolumeCreateSuccess"
+  pxc alert list --id "VolumeCreateSuccess"
 
   # Fetch alerts between a time window
   pxctl alerts show --start-time "2019-09-19T09:40:26.371Z" --end-time "2019-09-19T09:43:59.371Z"
 
   # Fetch alerts with min severity level
-  pxc get alerts --severity "alarm"
+  pxc alert list --severity "alarm"
 
   # Fetch alerts based on resource type. Here we fetch all "volume" related alerts
-  pxc get alerts -t "volume"
+  pxc alert list -t "volume"
 
   # Fetch alerts based on resource id. Here we fetch alerts related to "cluster"
-  pxc get alerts --id "1f95a5e7-6a38-41f9-9cb2-8bb4f8ab72c5"`,
-		RunE: getAlertsExec,
+  pxc alert list --id "1f95a5e7-6a38-41f9-9cb2-8bb4f8ab72c5"`,
+		RunE: listAlertsExec,
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	cmd.GetAddCommand(getAlertsCmd)
-	getAlertsCmd.Flags().StringP("type", "t", "all", "alert type (Valid Values: [volume node cluster drive all])")
-	getAlertsCmd.Flags().StringP("id", "i", "", "Alert id ")
-	getAlertsCmd.Flags().StringP("start-time", "a", "", "start time span (RFC 3339)")
-	getAlertsCmd.Flags().StringP("end-time", "e", "", "end time span (RFC 3339)")
-	getAlertsCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
-	getAlertsCmd.Flags().StringP("severity", "v", "notify", "Min severity value (Valid Values: [notify warn warning alarm]) (default \"notify\")")
+	AlertAddCommand(listAlertsCmd)
+
+	listAlertsCmd.Flags().StringP("type", "t", "all", "alert type (Valid Values: [volume node cluster drive all])")
+	listAlertsCmd.Flags().StringP("id", "i", "", "Alert id ")
+	listAlertsCmd.Flags().StringP("start-time", "a", "", "start time span (RFC 3339)")
+	listAlertsCmd.Flags().StringP("end-time", "e", "", "end time span (RFC 3339)")
+	listAlertsCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
+	listAlertsCmd.Flags().StringP("severity", "v", "notify", "Min severity value (Valid Values: [notify warn warning alarm]) (default \"notify\")")
 })
 
-func GetAddCommand(cmd *cobra.Command) {
-	getAlertsCmd.AddCommand(cmd)
-}
-
-func getAlertsExec(cmd *cobra.Command, args []string) error {
+func listAlertsExec(cmd *cobra.Command, args []string) error {
 	ctx, conn, err := portworx.PxConnectDefault()
 	_ = ctx
 	if err != nil {

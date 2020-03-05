@@ -26,6 +26,7 @@ import (
 )
 
 func TestMultipleClustersContextsFromCli(t *testing.T) {
+	t.Skip("contexts not support yet")
 	// This test depends on the ./hack/config.yml to have
 	// a 'source' and 'target' context and two running mock-sdk-servers
 

@@ -21,7 +21,9 @@ import (
 	"io"
 	"sync"
 
+	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/util"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kclikube "k8s.io/client-go/kubernetes"
@@ -64,7 +66,7 @@ func (p *kubeConnection) GetNamespace(s *string) (string, error) {
 }
 
 func (p *kubeConnection) GetDefaultNamespace() (string, error) {
-	ns, _, err := p.clientConfig.Namespace()
+	ns, _, err := config.KM().Namespace()
 	if err != nil {
 		return "", err
 	}

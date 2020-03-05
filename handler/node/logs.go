@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package logs
+package node
 
 import (
 	"fmt"
 
-	pxcmd "github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/kubernetes"
@@ -29,41 +28,36 @@ var logsNodeCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
 	logsNodeCmd = &cobra.Command{
-		Use:     "node [NAME]",
-		Aliases: []string{"nodes"},
-		Short:   "Print Portworx logs for specified nodes",
+		Use:   "logs [NAME]",
+		Short: "Print Portworx logs for specified nodes",
 		Example: `
   # Return Portworx logs from all nodes
-  pxc logs node --all-nodes
+  pxc node logs --all-nodes
 
   # Return Portworx logs from  node abc
-  pxc logs node abc
+  pxc node logs abc
 
   # Begin streaming the Portworx logs from  node abc
-  pxc logs node -f  abc
+  pxc node logs -f  abc
 
   # Apply filters to only the most recent 20 log lines and display the matched lines
-  pxc logs node --tail=20 abc
+  pxc node logs --tail=20 abc
 
   # Display all log lines that has either error or warning on node abc
-  pxc logs node abc --filter "error,warning"
+  pxc node logs abc --filter "error,warning"
 
   # Show all Portworx logs from node abc written in the last hour
-  pxc logs node --since=1h node`,
+  pxc node logs --since=1h node`,
 		RunE: logsNodesExec,
 	}
 })
 
 // logsCmd represents the logs command
 var _ = commander.RegisterCommandInit(func() {
-	pxcmd.LogsAddCommand(logsNodeCmd)
+	NodeAddCommand(logsNodeCmd)
 	cliops.AddCommonLogOptions(logsNodeCmd)
 	logsNodeCmd.Flags().Bool("all-nodes", false, "If specified, logs from all nodes will be displayed")
 })
-
-func NodeAddCommand(cmd *cobra.Command) {
-	logsNodeCmd.AddCommand(cmd)
-}
 
 func getNodeLogOptions(
 	cmd *cobra.Command,

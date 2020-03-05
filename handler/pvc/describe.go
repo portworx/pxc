@@ -19,7 +19,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/cheynewallace/tabby"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/handler/volume"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
@@ -32,26 +31,25 @@ var describePvcCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
 	describePvcCmd = &cobra.Command{
-		Use:   "pvc [NAME]",
+		Use:   "describe [NAME]",
 		Short: "Describe Portworx volume for Kubernetes PVCs",
 		Long:  "Show detailed information of Portworx volume for Kubernetes PVCs",
 		Example: `
   # Describe all pvcs that are Portworx volumes:
-  pxc describe pvc
+  pxc pvc describe
 
   # Describe specific pvc called pvc:
-  pxc describe pvc abc
+  pxc pvc describe abc
 
   # Describe list of pvcs (abc, xyz):
-  pxc describe pvc abc xyz`,
+  pxc pvc describe abc xyz`,
 		RunE: describePvcExec,
 	}
 })
 
 // describePvcCmd represents the describePvc command
 var _ = commander.RegisterCommandInit(func() {
-	cmd.DescribeAddCommand(describePvcCmd)
-	describePvcCmd.Flags().String("namespace", "", "Kubernetes namespace")
+	PvcAddCommand(describePvcCmd)
 	describePvcCmd.Flags().Bool("all-namespaces", false, "Kubernetes namespace")
 })
 

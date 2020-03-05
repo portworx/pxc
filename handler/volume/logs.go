@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package logs
+package volume
 
 import (
 	"fmt"
 
-	pxcmd "github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/kubernetes"
@@ -30,39 +29,34 @@ var logsVolumeCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
 	logsVolumeCmd = &cobra.Command{
-		Use:     "volume [NAME]",
-		Aliases: []string{"volumes"},
-		Short:   "Print Portworx logs related to specified volume(s)",
+		Use:   "logs [NAME]",
+		Short: "(NOT WORKING WELL) Print Portworx logs related to specified volume(s)",
 		Example: `
   # Return Portworx logs related to volume abc
-  pxc logs volume abc
+  pxc volume logs abc
 
   # Begin streaming the Portworx logs related to volume abc
-  pxc logs volume -f  abc
+  pxc volume logs -f  abc
 
   # Apply the volume filters  and the filters specified in --filters to the most recent 20 log lines of each relevant pod  and display only lines that match
-  pxc logs volume --tail=20 abc
+  pxc volume logs --tail=20 abc
 
   # Display all log lines that is related to volume abc or has either error or warning in the log lines
-  pxc logs node abc --filter "error,warning"
+  pxc volume logs abc --filter "error,warning"
 
   # Show all Portworx logs related to volume abc written in the last hour
-  pxc logs volume --since=1h volume`,
+  pxc volume logs --since=1h volume`,
 		RunE: logsVolumesExec,
 	}
 })
 
 // logsCmd represents the logs command
 var _ = commander.RegisterCommandInit(func() {
-	pxcmd.LogsAddCommand(logsVolumeCmd)
+	VolumeAddCommand(logsVolumeCmd)
 	cliops.AddCommonLogOptions(logsVolumeCmd)
 	logsVolumeCmd.Flags().Bool("all-logs", false, "If specified all logs from the pods related to the volume are displayed. Otherwise only log lines that reference the volume or its id is displayed ")
 	logsVolumeCmd.Flags().StringP("selector", "l", "", "Selector (label query) comma-separated name=value pairs")
 })
-
-func VolumeAddCommand(cmd *cobra.Command) {
-	logsVolumeCmd.AddCommand(cmd)
-}
 
 func getVolumeLogOptions(
 	cmd *cobra.Command,
