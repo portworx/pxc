@@ -14,6 +14,8 @@ endif
 
 all: grpc
 
+clean:
+
 grpc:
 ifndef HAS_PROTOC_GEN_GO
 	$(error "Please install grpc rools for ruby: gem install grpc && gem install grpc-tools")
