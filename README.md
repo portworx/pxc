@@ -7,7 +7,7 @@ a stand alone program or as a kubectl plugin.
 
 `pxc` also support pluggable runtime components. See:
 
-* In [pxc/example-component](https://github.com/portworx/pxc/tree/dc22a64a8730fdb902bd05f8112833f29e88d69c/example-component)
+* In [pxc/example-component](https://github.com/portworx/pxc/tree/master/example-component)
 * Repo: https://github.com/portworx/pxc-component-example
 
 # Downloads
