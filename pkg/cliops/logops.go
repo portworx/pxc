@@ -183,6 +183,11 @@ func FillContainerInfo(
 	ciInfoList := make(map[string]kubernetes.ContainerInfo)
 	for _, v := range vols {
 		// Get all of the pods using the volume
+		if !allLogs {
+			lo.Filters = append(lo.Filters, v.GetLocator().GetName())
+			lo.Filters = append(lo.Filters, v.GetId())
+			lo.ApplyFilters = true
+		}
 		labels := v.GetLocator().GetVolumeLabels()
 		namespace, ok := labels["namespace"]
 		if !ok || namespace == "" {
@@ -201,13 +206,9 @@ func FillContainerInfo(
 		if err != nil {
 			return err
 		}
-		if allLogs != true {
-			lo.Filters = append(lo.Filters, v.GetLocator().GetName())
-			lo.Filters = append(lo.Filters, v.GetId())
-			if pvcName, ok := labels["pvc"]; ok {
-				lo.Filters = append(lo.Filters, pvcName)
-			}
-			lo.ApplyFilters = true
+		pvcName, ok := labels["pvc"]
+		if !allLogs && ok {
+			lo.Filters = append(lo.Filters, pvcName)
 		}
 
 		for _, ci := range cinfo {
