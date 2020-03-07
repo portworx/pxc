@@ -95,18 +95,18 @@ func NewCliInputs(cmd *cobra.Command, args []string) *CliInputs {
 
 // Checks if namespace is specified and if so set it
 func (p *CliInputs) GetNamespace(cmd *cobra.Command) {
-	// get the namespace from kube apis
-	flagNamespace, _, _ := config.KM().Namespace()
-	if len(flagNamespace) != 0 {
-		p.ns = &flagNamespace
-		return
-	}
-
 	// if it was not provided, check if the command has an all-namespaces choice
 	allNamespaces, _ := cmd.Flags().GetBool("all-namespaces")
 	if allNamespaces {
 		str := string("")
 		p.ns = &str
+		return
+	}
+
+	// get the namespace from kube apis
+	flagNamespace, _, _ := config.KM().Namespace()
+	if len(flagNamespace) != 0 {
+		p.ns = &flagNamespace
 		return
 	}
 
