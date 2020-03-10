@@ -114,7 +114,8 @@ var _ = commander.RegisterCommandInit(func() {
 
 	createVolumeCmd.Flags().IntVar(&cvOpts.sizeInGi, "size", 0, "Size in GiB")
 	createVolumeCmd.Flags().Int64Var(&cvOpts.req.Spec.HaLevel, "replicas", 1, "Number of replicas also called HA level [1-3]")
-	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Shared, "shared", false, "Shared volume")
+	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Sharedv4, "shared", false, "Shared volume using sharedv4 model")
+	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Shared, "deprecated-shared", false, "Shared volume (deprecated)")
 	createVolumeCmd.Flags().StringVar(&cvOpts.labelsAsString, "labels", "", "Comma separated list of labels as key-value pairs: 'k1=v1,k2=v2'")
 	createVolumeCmd.Flags().StringVar(&cvOpts.filesystemAsString, "fs", "ext4", "Filesystem type for the volume [none, ext4]")
 	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Sticky, "sticky", false, "Sitcky volume")
