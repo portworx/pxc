@@ -30,6 +30,7 @@ import (
 
 const (
 	EvInKubectlPluginMode = "PXC_KUBECTL_PLUGIN_MODE"
+	EvPxcToken            = "PXC_TOKEN"
 )
 
 var (

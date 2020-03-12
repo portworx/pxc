@@ -28,6 +28,7 @@ import (
 	"syscall"
 
 	"github.com/portworx/pxc/pkg/config"
+	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 )
 
@@ -131,7 +132,21 @@ func HandlePluginCommand(pluginHandler PluginHandler, cmdArgs []string) error {
 	}
 
 	// Setup environment variables
+	authInfo := config.CM().GetCurrentAuthInfo()
+
+	// Get token
+	var err error
+	token := authInfo.Token
+	if len(authInfo.KubernetesAuthInfo.SecretName) != 0 &&
+		len(authInfo.KubernetesAuthInfo.SecretNamespace) != 0 {
+		token, err = portworx.PxGetTokenFromSecret(authInfo.KubernetesAuthInfo.SecretName, authInfo.KubernetesAuthInfo.SecretNamespace)
+		if err != nil {
+			return err
+		}
+	}
+
 	envVars := append(os.Environ(), fmt.Sprintf("%s=%v", util.EvInKubectlPluginMode, util.InKubectlPluginMode()))
+	envVars = append(envVars, fmt.Sprintf("%s=%v", util.EvPxcToken, token))
 
 	// invoke cmd binary relaying the current environment and args given
 	if err := pluginHandler.Execute(foundBinaryPath, cmdArgs[len(remainingArgs):], envVars); err != nil {

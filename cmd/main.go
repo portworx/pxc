@@ -22,6 +22,8 @@ import (
 	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/plugin"
 	"github.com/portworx/pxc/pkg/util"
+
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -72,6 +74,11 @@ func Main() error {
 
 	// Search for plugins and only execute if a command is not found
 	if len(os.Args) > 1 {
+		// Load configuration information from disk if any
+		logrus.SetLevel(logrus.FatalLevel)
+		if err := config.CM().Load(); err != nil {
+			return err
+		}
 		cmdPathPieces := os.Args[1:]
 		if _, _, err := rootCmd.Find(cmdPathPieces); err != nil {
 			pluginHandler := NewDefaultPluginHandler(plugin.ValidPluginFilenamePrefixes)
