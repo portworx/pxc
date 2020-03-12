@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# Copyright © 2020 Portworx
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Example installer for components
+#
+
+if [ $# -lt 1 ] ; then
+	echo "Must supply a url or filename"
+	exit 1
+fi
+STAGING_DIR=/tmp/pxc-staging
+plugin=$STAGING_DIR/pxc-plugin.tar.gz
+
+mkdir -p $STAGING_DIR
+
+if echo $1 | egrep "^http://|^https://" > /dev/null 2>&1 ; then
+	echo "--> Downloading"
+	curl -L -s -o $STAGING_DIR/pxc-plugin.tar.gz $1
+else
+	if [ ! -f $1 ] ; then
+		echo "File $1 does not exist"
+	fi
+	cp $1 $plugin
+fi
+
+echo "--> Unpacking"
+( cd $STAGING_DIR ; tar xzf $plugin )
+
+echo "--> Installing"
+( cd $STAGING_DIR ; cp -r */* $HOME/.pxc )
+
+echo "Done"
+
+rm -rf $STAGING_DIR

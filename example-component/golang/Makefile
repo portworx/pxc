@@ -8,6 +8,8 @@ VER := $(shell git describe --tags)
 ARCH := $(shell go env GOARCH)
 GOOS := $(shell go env GOOS)
 DIR=.
+TMP=$(DIR)/tmp
+PKGDIR=$(TMP)/$(PXC_COMPONENT)
 
 ifdef APP_SUFFIX
   VERSION = $(VER)-$(subst /,-,$(APP_SUFFIX))
@@ -82,20 +84,24 @@ $(COMPONENT_PKG_NAME): $(PKG_NAME)
 
 $(ZIPPACKAGE): all
 	@echo Packaging binaries...
+	@mkdir -p $(PKGDIR)/bin
+	@cp $(COMPONENT_PKG_NAME) $(PKGDIR)/bin
 	@mkdir -p dist
-	@zip dist/$@ $(COMPONENT_PKG_NAME)
-	@rm -f $(PKG_NAME)
+	( cd $(DIR)/tmp && zip -r ../dist/$@ $(PXC_COMPONENT) )
+	@rm -rf $(TMP)
+	@rm -f $(PKG_NAME) $(COMPONENT_PKG_NAME) $(CLINAME).exe $(PXC_COMPONENT).exe
 
 $(TGZPACKAGE): all
 	@echo Packaging binaries...
-	@mkdir -p tmp/$(PKG_NAME)
-	@cp $(COMPONENT_PKG_NAME) tmp/$(PKG_NAME)/
+	@mkdir -p $(PKGDIR)/bin
+	@cp $(COMPONENT_PKG_NAME) $(PKGDIR)/bin
 	@mkdir -p $(DIR)/dist/
-	tar -czf $(DIR)/dist/$@ -C tmp $(PKG_NAME)
-	@rm -rf tmp
+	tar -czf $(DIR)/dist/$@ -C $(DIR)/tmp $(PXC_COMPONENT)
+	@rm -rf $(TMP)
+	@rm -f $(PKG_NAME) $(COMPONENT_PKG_NAME) $(CLINAME).exe $(PXC_COMPONENT).exe
 
 clean:
-	rm -f $(PKG_NAME) $(COMPONENT_PKG_NAME)
+	rm -f $(PKG_NAME) $(COMPONENT_PKG_NAME) $(CLINAME).exe $(PXC_COMPONENT).exe
 	rm -rf dist
 
 .PHONY: dist all clean darwin_amd64_dist windows_amd64_dist linux_amd64_dist \

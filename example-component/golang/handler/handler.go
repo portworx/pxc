@@ -13,26 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package main
+package handler
 
 import (
-	_ "github.com/portworx/pxc/example-component/handler"
-	pxc "github.com/portworx/pxc/pkg/component"
+	_ "github.com/portworx/pxc/example-component/golang/handler/cluster"
 )
-
-var (
-	// ComponentName is set by the Makefile
-	ComponentName = "dev"
-
-	// ComponentVersion is set by the Makefile
-	ComponentVersion = "(dev)"
-)
-
-func main() {
-	c := pxc.NewComponent(&pxc.ComponentConfig{
-		Name:    ComponentName,
-		Short:   "This is a short message from cm",
-		Version: ComponentVersion,
-	})
-	c.Execute()
-}
