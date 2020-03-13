@@ -225,6 +225,9 @@ func (p *pvcGetFormatter) getHeader() []interface{} {
 	if p.cliOps.CliInputs().ShowLabels {
 		header = append(header, "LABELS")
 	}
+	if p.cliOps.CliInputs().AllNamespaces {
+		header = append([]interface{}{"NAMESPACE"}, header...)
+	}
 
 	return header
 }
@@ -281,6 +284,9 @@ func (p *pvcGetFormatter) getLine(pxpvc *kubernetes.PxPvc) ([]interface{}, error
 			state,
 			pods,
 		}
+	}
+	if p.cliOps.CliInputs().AllNamespaces {
+		line = append([]interface{}{pxpvc.Namespace}, line...)
 	}
 	if p.cliOps.CliInputs().ShowLabels {
 		line = append(line, util.StringMapToCommaString(v.GetLocator().GetVolumeLabels()))

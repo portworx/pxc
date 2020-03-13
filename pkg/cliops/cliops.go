@@ -27,9 +27,10 @@ import (
 
 type CliInputs struct {
 	util.BaseFormatOutput
-	Wide       bool
-	ShowLabels bool
-	ShowK8s    bool
+	Wide          bool
+	ShowLabels    bool
+	ShowK8s       bool
+	AllNamespaces bool
 	// If ns is nil, use default namespace
 	// if ns is "", use all-namespaces
 	// else use specified namespace
@@ -79,17 +80,20 @@ func NewCliInputs(cmd *cobra.Command, args []string) *CliInputs {
 	labels, _ := cmd.Flags().GetString("selector")
 	//convert string to map
 	mlabels, _ := util.CommaStringToStringMap(labels)
+
+	allNamespaces, _ := cmd.Flags().GetBool("all-namespaces")
 	// If valid label is present, we need to pass it.
 	return &CliInputs{
 		BaseFormatOutput: util.BaseFormatOutput{
 			FormatType: output,
 		},
-		ShowK8s:    showK8s,
-		Wide:       wide,
-		ShowLabels: showLabels,
-		Args:       args,
-		ns:         &namespace, // In most places use all namespaces
-		Labels:     mlabels,
+		ShowK8s:       showK8s,
+		Wide:          wide,
+		ShowLabels:    showLabels,
+		AllNamespaces: allNamespaces,
+		Args:          args,
+		ns:            &namespace, // In most places use all namespaces
+		Labels:        mlabels,
 	}
 }
 
