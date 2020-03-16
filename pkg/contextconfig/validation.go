@@ -1,5 +1,6 @@
 package contextconfig
 
+/*
 import (
 	"encoding/json"
 	"fmt"
@@ -86,3 +87,4 @@ func MarkInvalidTokens(contextCfg *ContextConfig) *ContextConfig {
 
 	return contextCfg
 }
+*/

@@ -17,15 +17,12 @@ package kubernetes
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/portworx/pxc/pkg/config"
-	"github.com/portworx/pxc/pkg/contextconfig"
 	"github.com/portworx/pxc/pkg/util"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/sirupsen/logrus"
 )
@@ -49,12 +46,17 @@ func KubeConnectDefault() (clientcmd.ClientConfig, *kubernetes.Clientset, error)
 		}
 		return clientConfig, clientSet, nil
 	}
+	panic("nope")
+	return nil, nil, fmt.Errorf("Must be used in kubectl plugin mode")
 
-	// TODO: Need to read the information from the command line using the Kubernetes APIs
-	// to create a client set when running in kubectl plugin mode
-	return KubeConnect(config.Get(config.File), config.Get(config.SpecifiedContext))
+	/*
+		// TODO: Need to read the information from the command line using the Kubernetes APIs
+		// to create a client set when running in kubectl plugin mode
+		return KubeConnect(config.Get(config.File), config.Get(config.SpecifiedContext))
+	*/
 }
 
+/*
 // KubeConnect will return a Kubernetes client using the kubeconfig file
 // set in the default context.
 // clientcmd.ClientConfig will allow the caller to call ClientConfig.Namespace() to get the namespace
@@ -100,3 +102,4 @@ func KubeConnect(cfgFile, context string) (clientcmd.ClientConfig, *kubernetes.C
 
 	return cc, clientset, nil
 }
+*/

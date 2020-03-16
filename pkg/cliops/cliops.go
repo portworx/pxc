@@ -18,7 +18,6 @@ package cliops
 import (
 	"fmt"
 
-	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/kubernetes"
 	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
@@ -29,15 +28,9 @@ type CliInputs struct {
 	util.BaseFormatOutput
 	Wide          bool
 	ShowLabels    bool
-	ShowK8s       bool
 	AllNamespaces bool
-	// If ns is nil, use default namespace
-	// if ns is "", use all-namespaces
-	// else use specified namespace
-	ns        *string
-	Namespace string
-	Labels    map[string]string
-	Args      []string
+	Labels        map[string]string
+	Args          []string
 }
 
 type CliOps interface {
@@ -69,14 +62,12 @@ func GetCliOps() CliOps {
 
 // NewCliVolumeInputs looks for all of the common flags and create a new cliVolumeInputs object
 func NewCliInputs(cmd *cobra.Command, args []string) *CliInputs {
-	showK8s, _ := cmd.Flags().GetBool("show-k8s-info")
 	output, _ := cmd.Flags().GetString("output")
 	wide := false
 	if output == "wide" {
 		wide = true
 	}
 	showLabels, _ := cmd.Flags().GetBool("show-labels")
-	namespace := string("")
 	labels, _ := cmd.Flags().GetString("selector")
 	//convert string to map
 	mlabels, _ := util.CommaStringToStringMap(labels)
@@ -87,35 +78,12 @@ func NewCliInputs(cmd *cobra.Command, args []string) *CliInputs {
 		BaseFormatOutput: util.BaseFormatOutput{
 			FormatType: output,
 		},
-		ShowK8s:       showK8s,
 		Wide:          wide,
 		ShowLabels:    showLabels,
 		AllNamespaces: allNamespaces,
 		Args:          args,
-		ns:            &namespace, // In most places use all namespaces
 		Labels:        mlabels,
 	}
-}
-
-// Checks if namespace is specified and if so set it
-func (p *CliInputs) GetNamespace(cmd *cobra.Command) {
-	// if it was not provided, check if the command has an all-namespaces choice
-	allNamespaces, _ := cmd.Flags().GetBool("all-namespaces")
-	if allNamespaces {
-		str := string("")
-		p.ns = &str
-		return
-	}
-
-	// get the namespace from kube apis
-	flagNamespace, _, _ := config.KM().Namespace()
-	if len(flagNamespace) != 0 {
-		p.ns = &flagNamespace
-		return
-	}
-
-	// No default namespace was specified so use default namespace
-	p.ns = nil
 }
 
 func NewCliOps(ci *CliInputs) CliOps {
@@ -150,18 +118,11 @@ func (p *cliOps) Connect() error {
 	}
 	p.pxops = pxops
 
-	cops, err := kubernetes.NewCOps(p.cliInputs.ShowK8s)
+	cops, err := kubernetes.NewCOps()
 	if err != nil {
 		return err
 	}
 	p.cops = cops
-	if p.cliInputs.ShowK8s {
-		ns, err := cops.GetNamespace(p.cliInputs.ns)
-		if err != nil {
-			return err
-		}
-		p.cliInputs.Namespace = ns
-	}
 
 	return nil
 }

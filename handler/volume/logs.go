@@ -100,7 +100,6 @@ func getVolumeLogOptions(
 
 func logsVolumesExec(cmd *cobra.Command, args []string) error {
 	cvi := cliops.NewCliInputs(cmd, args)
-	cvi.ShowK8s = true
 	if len(cvi.Labels) == 0 && len(args) == 0 {
 		return fmt.Errorf("Please specify either --selector or volume name")
 	}

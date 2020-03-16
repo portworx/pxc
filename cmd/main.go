@@ -74,13 +74,14 @@ func Main() error {
 
 	// Search for plugins and only execute if a command is not found
 	if len(os.Args) > 1 {
-		// Load configuration information from disk if any
-		logrus.SetLevel(logrus.FatalLevel)
-		if err := config.CM().Load(); err != nil {
-			return err
-		}
 		cmdPathPieces := os.Args[1:]
 		if _, _, err := rootCmd.Find(cmdPathPieces); err != nil {
+			// Load configuration information from disk if any
+			logrus.SetLevel(logrus.FatalLevel)
+			if err := config.CM().Load(); err != nil {
+				return err
+			}
+
 			pluginHandler := NewDefaultPluginHandler(plugin.ValidPluginFilenamePrefixes)
 			if err = HandlePluginCommand(pluginHandler, cmdPathPieces); err != nil {
 				return err

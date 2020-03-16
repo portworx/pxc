@@ -15,6 +15,7 @@ limitations under the License.
 */
 package contextconfig
 
+/*
 import (
 	"fmt"
 	"io/ioutil"
@@ -300,3 +301,4 @@ func (cm *ContextManager) loadContext() error {
 
 	return nil
 }
+*/

@@ -235,7 +235,7 @@ func (p *VolumeDescribeFormatter) addVolumeBasicInfo(
 	// Print basic info
 	t.AddLine("Volume:", v.GetId())
 	t.AddLine("Name:", v.GetLocator().GetName())
-	if p.cliOps.CliInputs().ShowK8s == true {
+	if util.InKubectlPluginMode() {
 		labels := v.GetLocator().GetVolumeLabels()
 		pvc := labels["pvc"]
 		ns := labels["namespace"]

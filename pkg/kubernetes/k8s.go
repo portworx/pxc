@@ -40,8 +40,8 @@ type kubeConnection struct {
 	clientSet    *kclikube.Clientset
 }
 
-func NewCOps(connect bool) (COps, error) {
-	if connect == true {
+func NewCOps() (COps, error) {
+	if util.InKubectlPluginMode() {
 		cc, cs, err := KubeConnectDefault()
 		if err != nil {
 			return nil, err
@@ -58,14 +58,7 @@ func (p *kubeConnection) Close() {
 	// Nothing to do
 }
 
-func (p *kubeConnection) GetNamespace(s *string) (string, error) {
-	if s != nil {
-		return *s, nil
-	}
-	return p.GetDefaultNamespace()
-}
-
-func (p *kubeConnection) GetDefaultNamespace() (string, error) {
+func (p *kubeConnection) GetNamespace() (string, error) {
 	ns, _, err := config.KM().Namespace()
 	if err != nil {
 		return "", err
