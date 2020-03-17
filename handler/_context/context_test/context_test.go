@@ -16,6 +16,8 @@ limitations under the License.
 
 package context_test
 
+/*
+
 import (
 	"fmt"
 	"testing"
@@ -46,3 +48,4 @@ func TestMultipleClustersContextsFromCli(t *testing.T) {
 	// Delete volume
 	test.PxTestDeleteVolume(t, vol)
 }
+*/

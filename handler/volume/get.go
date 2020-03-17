@@ -178,7 +178,7 @@ func (p *volumeGetFormatter) getHeader() []interface{} {
 	} else {
 		header = []interface{}{"Name", "Size", "HA", "Shared", "Status", "State"}
 	}
-	if p.cliOps.CliInputs().ShowK8s {
+	if util.InKubectlPluginMode() {
 		header = append(header, "Pods")
 	}
 	if p.cliOps.CliInputs().ShowLabels {
@@ -211,7 +211,7 @@ func (p *volumeGetFormatter) getLine(v *api.Volume) ([]interface{}, error) {
 			spec.GetShared() || spec.GetSharedv4(), portworx.PrettyStatus(v), state,
 		}
 	}
-	if p.cliOps.CliInputs().ShowK8s {
+	if util.InKubectlPluginMode() {
 		pods, err := p.podsUsingVolume(v)
 		if err != nil {
 			return line, err

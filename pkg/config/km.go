@@ -111,6 +111,9 @@ func (k *KubernetesConfigManager) KubectlFlagsToCliArgs() string {
 	if len(*k.kubeCliOpts.KeyFile) != 0 {
 		args += "--client-key=" + *k.kubeCliOpts.KeyFile + " "
 	}
+	if len(*k.kubeCliOpts.Namespace) != 0 {
+		args += "--namespace=" + *k.kubeCliOpts.Namespace + " "
+	}
 	return args
 }
 
@@ -228,7 +231,9 @@ func (k *KubernetesConfigManager) GetKubernetesCurrentContext() (string, error) 
 // result of all overrides and a boolean indicating if it was
 // overridden
 func (k *KubernetesConfigManager) Namespace() (string, bool, error) {
-	return k.ToRawKubeConfigLoader().Namespace()
+	n, b, e := k.ToRawKubeConfigLoader().Namespace()
+	logrus.Infof("Kubernetes namespace: ns=%s b=%v e=%v", n, b, e)
+	return n, b, e
 }
 
 // ConfigSaveCluster saves the cluster configuration as part of an extension to the

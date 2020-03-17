@@ -83,10 +83,7 @@ func getNodeLogOptions(
 }
 
 func logsNodesExec(cmd *cobra.Command, args []string) error {
-	cvi := &cliops.CliInputs{
-		ShowK8s: true,
-	}
-	cvi.GetNamespace(cmd)
+	cvi := cliops.NewCliInputs(cmd, args)
 
 	// Create a cliVolumeOps object
 	cliOps := cliops.NewCliOps(cvi)

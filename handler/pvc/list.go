@@ -26,6 +26,7 @@ import (
 	humanize "github.com/dustin/go-humanize"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
+	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/kubernetes"
 	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
@@ -64,8 +65,6 @@ var _ = commander.RegisterCommandInit(func() {
 func getPvcExec(cmd *cobra.Command, args []string) error {
 	// Parse out all of the common cli volume flags
 	cvi := cliops.NewCliInputs(cmd, args)
-	cvi.ShowK8s = true
-	cvi.GetNamespace(cmd)
 
 	// Create a cliVolumeOps object
 	cliOps := cliops.NewCliOps(cvi)
@@ -78,7 +77,10 @@ func getPvcExec(cmd *cobra.Command, args []string) error {
 	defer cliOps.Close()
 
 	// Create the parser object
-	pgf := NewPvcGetFormatter(cliOps)
+	pgf, err := NewPvcGetFormatter(cliOps)
+	if err != nil {
+		return err
+	}
 
 	// Print the details and return errors if any
 	return util.PrintFormatted(pgf)
@@ -92,9 +94,17 @@ type pvcGetFormatter struct {
 	pvcs     portworx.Pvcs
 }
 
-func NewPvcGetFormatter(cliOps cliops.CliOps) *pvcGetFormatter {
+func NewPvcGetFormatter(cliOps cliops.CliOps) (*pvcGetFormatter, error) {
+	// Get namespace
+	ns, _, err := config.KM().Namespace()
+	if err != nil {
+		return nil, err
+	}
+	if cliOps.CliInputs().AllNamespaces {
+		ns = ""
+	}
 	pvcSpec := &portworx.PvcSpec{
-		Namespace: cliOps.CliInputs().Namespace,
+		Namespace: ns,
 		Labels:    cliOps.CliInputs().Labels,
 	}
 	pvcs := portworx.NewPvcs(cliOps.PxOps(), cliOps.COps(), pvcSpec)
@@ -104,7 +114,7 @@ func NewPvcGetFormatter(cliOps cliops.CliOps) *pvcGetFormatter {
 		pvcs:     pvcs,
 	}
 	p.FormatType = cliOps.CliInputs().FormatType
-	return p
+	return p, nil
 }
 
 func filterPxPvcs(
@@ -225,6 +235,9 @@ func (p *pvcGetFormatter) getHeader() []interface{} {
 	if p.cliOps.CliInputs().ShowLabels {
 		header = append(header, "LABELS")
 	}
+	if p.cliOps.CliInputs().AllNamespaces {
+		header = append([]interface{}{"NAMESPACE"}, header...)
+	}
 
 	return header
 }
@@ -281,6 +294,9 @@ func (p *pvcGetFormatter) getLine(pxpvc *kubernetes.PxPvc) ([]interface{}, error
 			state,
 			pods,
 		}
+	}
+	if p.cliOps.CliInputs().AllNamespaces {
+		line = append([]interface{}{pxpvc.Namespace}, line...)
 	}
 	if p.cliOps.CliInputs().ShowLabels {
 		line = append(line, util.StringMapToCommaString(v.GetLocator().GetVolumeLabels()))

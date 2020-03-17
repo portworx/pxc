@@ -22,6 +22,7 @@ import (
 	"github.com/portworx/pxc/handler/volume"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
+	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
@@ -60,8 +61,6 @@ func DescribeAddCommand(cmd *cobra.Command) {
 func describePvcExec(cmd *cobra.Command, args []string) error {
 	// Parse out all of the common cli volume flags
 	cvi := cliops.NewCliInputs(cmd, make([]string, 0))
-	cvi.ShowK8s = true
-	cvi.GetNamespace(cmd)
 
 	// Create a cliOps object
 	cvOps := cliops.NewCliOps(cvi)
@@ -74,7 +73,10 @@ func describePvcExec(cmd *cobra.Command, args []string) error {
 	defer cvOps.Close()
 
 	// Create the parser object
-	pdf := NewPvcDescribeFormatter(cvOps, args)
+	pdf, err := NewPvcDescribeFormatter(cvOps, args)
+	if err != nil {
+		return err
+	}
 
 	// Print details and return any errors found during parsing
 	return util.PrintFormatted(pdf)
@@ -86,11 +88,20 @@ type pvcDescribeFormatter struct {
 	pvcs     portworx.Pvcs
 }
 
-func NewPvcDescribeFormatter(cliOps cliops.CliOps, pvcNames []string) *pvcDescribeFormatter {
+func NewPvcDescribeFormatter(cliOps cliops.CliOps, pvcNames []string) (*pvcDescribeFormatter, error) {
 	vcf := volume.NewVolumeDescribeFormatter(cliOps)
 
+	// Get namespace
+	ns, _, err := config.KM().Namespace()
+	if err != nil {
+		return nil, err
+	}
+	if cliOps.CliInputs().AllNamespaces {
+		ns = ""
+	}
+
 	pvcSpec := &portworx.PvcSpec{
-		Namespace: cliOps.CliInputs().Namespace,
+		Namespace: ns,
 		Labels:    cliOps.CliInputs().Labels,
 	}
 	pvcs := portworx.NewPvcs(cliOps.PxOps(), cliOps.COps(), pvcSpec)
@@ -98,7 +109,7 @@ func NewPvcDescribeFormatter(cliOps cliops.CliOps, pvcNames []string) *pvcDescri
 		VolumeDescribeFormatter: *vcf,
 		pvcNames:                pvcNames,
 		pvcs:                    pvcs,
-	}
+	}, nil
 }
 
 // DefaultFormat returns the default string representation of the object
