@@ -46,7 +46,6 @@ func KubeConnectDefault() (clientcmd.ClientConfig, *kubernetes.Clientset, error)
 		}
 		return clientConfig, clientSet, nil
 	}
-	panic("nope")
 	return nil, nil, fmt.Errorf("Must be used in kubectl plugin mode")
 
 	/*
