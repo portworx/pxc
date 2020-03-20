@@ -296,10 +296,10 @@ func (p *VolumeDescribeFormatter) addVolumeStatsInfo(
 	v *api.Volume,
 	t *tabby.Tabby,
 ) error {
-	stats, err := p.volumes.GetStats(v, false)
-	if err != nil {
-		return err
-	}
+
+	// Ignore the error if it cannot get stats
+	stats, _ := p.volumes.GetStats(v, false)
+
 	t.AddLine("Stats:")
 	t.AddLine("  Reads:", stats.GetReads())
 	t.AddLine("  Reads MS:", stats.GetReadMs())
@@ -308,7 +308,7 @@ func (p *VolumeDescribeFormatter) addVolumeStatsInfo(
 	t.AddLine("  Writes MS:", stats.GetWriteMs())
 	t.AddLine("  Bytes Written:", stats.GetWriteBytes())
 	t.AddLine("  IOs in progress:", stats.GetIoProgress())
-	t.AddLine("  Bytes used:", humanize.BigIBytes(big.NewInt(int64(stats.BytesUsed))))
+	t.AddLine("  Bytes used:", humanize.BigIBytes(big.NewInt(int64(stats.GetBytesUsed()))))
 	return nil
 }
 
