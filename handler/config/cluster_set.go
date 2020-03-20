@@ -16,6 +16,9 @@ limitations under the License.
 package configcli
 
 import (
+	"fmt"
+	"io/ioutil"
+
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/util"
@@ -68,6 +71,14 @@ var _ = commander.RegisterCommandInit(func() {
 })
 
 func clusterSetExec(cmd *cobra.Command, args []string) error {
+
+	if len(clusterSet.CACert) != 0 {
+		var err error
+		clusterSet.CACertData, err = ioutil.ReadFile(clusterSet.CACert)
+		if err != nil {
+			return fmt.Errorf("Failed to read %s: %v", clusterSet.CACert, err)
+		}
+	}
 
 	if err := config.CM().ConfigSaveCluster(clusterSet); err != nil {
 		return err

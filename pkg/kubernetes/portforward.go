@@ -149,7 +149,10 @@ func (p *KubectlPortForwarder) Endpoint() string {
 func (p *KubectlPortForwarder) getEndpointFromKubectlOutput(sbuf string) (string, error) {
 	index := strings.Index(sbuf, "127.0.0.1:")
 	if index >= 0 {
-		return strings.Split(sbuf[index:], " ")[0], nil
+		//return strings.Split(sbuf[index:], " ")[0], nil
+		e := strings.Split(sbuf[index:], " ")[0]
+		e = "localhost:" + strings.Split(e, ":")[1]
+		return e, nil
 	}
 
 	index = strings.Index(sbuf, "[::1]:")
