@@ -43,7 +43,7 @@ func TestGetEndpointFromKubectlOutput(t *testing.T) {
 	}{
 		{
 			expectFailure:  false,
-			expectedOutput: "127.0.0.1:12345",
+			expectedOutput: "localhost:12345",
 			buffer:         " Forwarding from 127.0.0.1:12345 --> 9020",
 		},
 		{
@@ -62,7 +62,7 @@ func TestGetEndpointFromKubectlOutput(t *testing.T) {
 		{
 			expectFailure:  false,
 			buffer:         "Forwarding from 127.0.0.1:41240 -> 9020\n Forwarding from [::1]:41240 -> 9020",
-			expectedOutput: "127.0.0.1:41240",
+			expectedOutput: "localhost:41240",
 		},
 	}
 
