@@ -1,5 +1,11 @@
 [![Build Status](https://travis-ci.com/portworx/pxc.svg?token=koUsyDmAMgMD5TViiacc&branch=master)](https://travis-ci.com/portworx/pxc)
 
+:construction: :construction: :construction: 
+
+This is a technical preview. We use it internally at Portworx and you are welcome to use it, but please file any bugs or issues [here](https://github.com/portworx/pxc/issues) 
+
+:construction: :construction: :construction: 
+
 # Overview
 `pxc` is a client side application which communicates with Portworx, Kubernetes,
 and other services to provide users with an integrated tool. It can be used as
