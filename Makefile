@@ -77,7 +77,7 @@ verify: all test
 	$(MAKE) -C example-component/golang verify
 
 $(PLUGIN_PKG_NAME): pxc
-	cp pxc $(PLUGIN_PKG_NAME)
+	cp $(PKG_NAME) $(PLUGIN_PKG_NAME)
 
 $(ZIPPACKAGE): all
 	@echo Packaging pxc ...
