@@ -57,9 +57,9 @@ type CommandOverrideVerifier struct {
 
 var (
 	pluginListLong = `
-		List all available plugin files on a user's PATH.
+		List all available component files on a user's PATH.
 
-		Available plugin files are those that are:
+		Available component files are those that are:
 		- executable
 		- anywhere on the user's PATH
 		- begin with "pxc-"`
@@ -72,14 +72,14 @@ var _ = commander.RegisterCommandVar(func() {
 	listOptions = &pluginListOptions{}
 	listCmd = &cobra.Command{
 		Use:   "list",
-		Short: "List all visible plugin executables",
+		Short: "List all visible component executables",
 		Long:  pluginListLong,
 		RunE:  listExec,
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	listCmd.Flags().BoolVar(&listOptions.NameOnly, "name-only", listOptions.NameOnly, "If true, display only the binary name of each plugin, rather than its full path")
+	listCmd.Flags().BoolVar(&listOptions.NameOnly, "name-only", listOptions.NameOnly, "If true, display only the binary name of each component, rather than its full path")
 	PluginAddCommand(listCmd)
 })
 
@@ -131,7 +131,7 @@ func (o *pluginListOptions) Run(cmd *cobra.Command, args []string) error {
 			}
 
 			if isFirstFile {
-				util.Eprintf("The following compatible plugins are available:\n\n")
+				util.Eprintf("The following compatible components are available:\n\n")
 				pluginsFound = true
 				isFirstFile = false
 			}
@@ -152,14 +152,14 @@ func (o *pluginListOptions) Run(cmd *cobra.Command, args []string) error {
 	}
 
 	if !pluginsFound {
-		pluginErrors = append(pluginErrors, fmt.Errorf("error: unable to find any pxc plugins in your PATH"))
+		pluginErrors = append(pluginErrors, fmt.Errorf("error: unable to find any pxc components in your PATH"))
 	}
 
 	if pluginWarnings > 0 {
 		if pluginWarnings == 1 {
-			pluginErrors = append(pluginErrors, fmt.Errorf("error: one plugin warning was found"))
+			pluginErrors = append(pluginErrors, fmt.Errorf("error: one component warning was found"))
 		} else {
-			pluginErrors = append(pluginErrors, fmt.Errorf("error: %v plugin warnings were found", pluginWarnings))
+			pluginErrors = append(pluginErrors, fmt.Errorf("error: %v component warnings were found", pluginWarnings))
 		}
 	}
 	if len(pluginErrors) > 0 {
@@ -195,13 +195,13 @@ func (v *CommandOverrideVerifier) Verify(path string) []error {
 	errors := []error{}
 
 	if isExec, err := isExecutable(path); err == nil && !isExec {
-		errors = append(errors, fmt.Errorf("warning: %s identified as a pxc plugin, but it is not executable", path))
+		errors = append(errors, fmt.Errorf("warning: %s identified as a pxc component, but it is not executable", path))
 	} else if err != nil {
 		errors = append(errors, fmt.Errorf("error: unable to identify %s as an executable file: %v", path, err))
 	}
 
 	if existingPath, ok := v.seenPlugins[binName]; ok {
-		errors = append(errors, fmt.Errorf("warning: %s is overshadowed by a similarly named plugin: %s", path, existingPath))
+		errors = append(errors, fmt.Errorf("warning: %s is overshadowed by a similarly named component: %s", path, existingPath))
 	} else {
 		v.seenPlugins[binName] = path
 	}
