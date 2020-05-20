@@ -29,10 +29,10 @@ import (
 
 var (
 	pluginLong = `
-		Provides utilities for interacting with plugins.
+Provides utilities for interacting with components.
 
-		Plugins provide extended functionality that is not part of the major command-line distribution.
-		Please refer to the documentation and examples for more information about how write your own plugins.`
+Plugins provide extended functionality that is not part of the major command-line distribution.
+Please refer to the documentation and examples for more information about how write your own components.`
 )
 
 type pluginCmdFlags struct {
@@ -48,10 +48,10 @@ var _ = commander.RegisterCommandVar(func() {
 	pluginCmd = &cobra.Command{
 		Use:                   "component",
 		DisableFlagsInUseLine: true,
-		Short:                 "Provides utilities for interacting with plugins",
+		Short:                 "Provides utilities for interacting with components",
 		Long:                  pluginLong,
 		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see pxc plugin --help for more information\n")
+			util.Printf("Please see pxc component --help for more information\n")
 		},
 	}
 })
