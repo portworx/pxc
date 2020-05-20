@@ -67,10 +67,10 @@ func TestDescribeCluster(t *testing.T) {
 	index++
 	index++
 	k = getKey(lines[index], " ")
-	assert.Contains(t, k[0], "Hostname")
-	assert.Contains(t, k[6], "IP")
-	assert.Contains(t, k[16], "SchedulerNodeName")
-	assert.Contains(t, k[18], "Used")
-	assert.Contains(t, k[20], "Capacity")
-	assert.Contains(t, k[22], "Status")
+	assert.Contains(t, k, "Hostname")
+	assert.Contains(t, k, "IP")
+	assert.Contains(t, k, "SchedulerNodeName")
+	assert.Contains(t, k, "Used")
+	assert.Contains(t, k, "Capacity")
+	assert.Contains(t, k, "Status")
 }

@@ -30,7 +30,7 @@ var logsVolumeCmd *cobra.Command
 var _ = commander.RegisterCommandVar(func() {
 	logsVolumeCmd = &cobra.Command{
 		Use:   "logs [NAME]",
-		Short: "(NOT WORKING WELL) Print Portworx logs related to specified volume(s)",
+		Short: "Print Portworx logs related to specified volume(s)",
 		Example: `
   # Return Portworx logs related to volume abc
   pxc volume logs abc
