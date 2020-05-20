@@ -33,15 +33,17 @@ func GetCliAlertInputs(cmd *cobra.Command, args []string) *portworx.CliAlertInpu
 	startTime, _ := cmd.Flags().GetString("start-time")
 	endTime, _ := cmd.Flags().GetString("end-time")
 	severity, _ := cmd.Flags().GetString("severity")
+	resourceId, _ := cmd.Flags().GetString("resource-id")
 	return &portworx.CliAlertInputs{
 		BaseFormatOutput: util.BaseFormatOutput{
 			FormatType: output,
 		},
-		AlertType: alertType,
-		AlertId:   alertId,
-		StartTime: startTime,
-		EndTime:   endTime,
-		Severity:  severity,
+		AlertType:  alertType,
+		AlertId:    alertId,
+		StartTime:  startTime,
+		EndTime:    endTime,
+		Severity:   severity,
+		ResourceId: resourceId,
 	}
 }
 

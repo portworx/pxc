@@ -258,6 +258,7 @@ func testDescribeNonExistantVolume(t *testing.T, td *testData) {
 }
 
 func TestDescribeVolume(t *testing.T) {
+	t.Skip("mock-sdk-server seems to have a bug in the alerts SDK service")
 	td := &testData{
 		volName:   test.GenVolName("testVol"),
 		cloneName: test.GenVolName("cloneVol"),

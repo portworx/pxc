@@ -35,12 +35,13 @@ type PxAlertOps interface {
 
 type CliAlertInputs struct {
 	util.BaseFormatOutput
-	Wide      bool
-	AlertType string
-	AlertId   string
-	StartTime string
-	EndTime   string
-	Severity  string
+	Wide       bool
+	AlertType  string
+	AlertId    string
+	StartTime  string
+	EndTime    string
+	Severity   string
+	ResourceId string
 }
 
 type pxAlertOps struct{}
@@ -73,7 +74,6 @@ func (p *pxAlertOps) GetPxAlerts(cliAlertInputs CliAlertInputs) (AlertResp, erro
 	alertResp := AlertResp{}
 
 	ctx, conn, err := PxConnectDefault()
-	_ = ctx
 	if err != nil {
 		return alertResp, err
 	}
@@ -142,7 +142,6 @@ func (p *pxAlertOps) GetPxAlerts(cliAlertInputs CliAlertInputs) (AlertResp, erro
 	}
 
 	for _, resourceType := range alterType {
-		resourceType := resourceType
 		if len(cliAlertInputs.AlertId) > 0 {
 			id, ok := alertResp.AlertNameToId[cliAlertInputs.AlertId]
 			if !ok {
@@ -160,7 +159,26 @@ func (p *pxAlertOps) GetPxAlerts(cliAlertInputs CliAlertInputs) (AlertResp, erro
 					Opts: opts,
 				},
 			}
+		} else if len(cliAlertInputs.ResourceId) > 0 {
+			getAlertsGetReq.req.Queries = make([]*api.SdkAlertsQuery, 0, len(typeToSpec))
 
+			// The Portworx Alerts server may have a "bug" where it requires that the
+			// Alert type is given. To satisfy the server, we have a filter of each alert
+			// type for that specific resource
+			for alertType, alertDefinition := range typeToSpec {
+				if alertDefinition.ResourceType == resourceType {
+					getAlertsGetReq.req.Queries = append(getAlertsGetReq.req.Queries, &api.SdkAlertsQuery{
+						Query: &api.SdkAlertsQuery_ResourceIdQuery{
+							ResourceIdQuery: &api.SdkAlertsResourceIdQuery{
+								ResourceType: resourceType,
+								ResourceId:   cliAlertInputs.ResourceId,
+								AlertType:    int64(alertType),
+							},
+						},
+						Opts: opts,
+					})
+				}
+			}
 		} else {
 			getAlertsGetReq.req.Queries = []*api.SdkAlertsQuery{
 				{
@@ -172,7 +190,6 @@ func (p *pxAlertOps) GetPxAlerts(cliAlertInputs CliAlertInputs) (AlertResp, erro
 					Opts: opts,
 				},
 			}
-
 		}
 
 		// Send request
@@ -187,7 +204,9 @@ func (p *pxAlertOps) GetPxAlerts(cliAlertInputs CliAlertInputs) (AlertResp, erro
 			if err == io.EOF {
 				break
 			}
-			myAlerts = append(myAlerts, res.Alerts...)
+			if res.GetAlerts() != nil {
+				myAlerts = append(myAlerts, res.Alerts...)
+			}
 		}
 	}
 	sort.Sort(alertsList(myAlerts))

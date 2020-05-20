@@ -18,14 +18,15 @@ package alerts
 
 import (
 	"bytes"
+	"text/tabwriter"
+	"unsafe"
+
 	"github.com/cheynewallace/tabby"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
-	"text/tabwriter"
-	"unsafe"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
 	prototime "github.com/portworx/pxc/pkg/openstorage/proto/time"
@@ -65,6 +66,7 @@ var _ = commander.RegisterCommandInit(func() {
 
 	listAlertsCmd.Flags().StringP("type", "t", "all", "alert type (Valid Values: [volume node cluster drive all])")
 	listAlertsCmd.Flags().StringP("id", "i", "", "Alert id ")
+	listAlertsCmd.Flags().String("resource-id", "", "Resource ID for a specific type")
 	listAlertsCmd.Flags().StringP("start-time", "a", "", "start time span (RFC 3339)")
 	listAlertsCmd.Flags().StringP("end-time", "e", "", "end time span (RFC 3339)")
 	listAlertsCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")

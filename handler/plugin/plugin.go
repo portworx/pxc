@@ -46,7 +46,7 @@ var (
 
 var _ = commander.RegisterCommandVar(func() {
 	pluginCmd = &cobra.Command{
-		Use:                   "plugin",
+		Use:                   "component",
 		DisableFlagsInUseLine: true,
 		Short:                 "Provides utilities for interacting with plugins",
 		Long:                  pluginLong,

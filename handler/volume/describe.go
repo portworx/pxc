@@ -24,6 +24,7 @@ import (
 	"github.com/cheynewallace/tabby"
 	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
+	"github.com/portworx/pxc/handler/alerts"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
 	prototime "github.com/portworx/pxc/pkg/openstorage/proto/time"
@@ -179,7 +180,28 @@ func (p *VolumeDescribeFormatter) AddVolumeDetails(
 		return err
 	}
 	p.addVolumeAccessInfo(v, t)
+	p.addVolumeAlerts(v, t)
+
 	return nil
+}
+
+func (p *VolumeDescribeFormatter) addVolumeAlerts(
+	v *api.Volume,
+	t *tabby.Tabby,
+) {
+	alertInfo := &cliops.CliAlertOps{}
+	alertInfo.AlertType = "volume"
+	alertInfo.ResourceId = v.GetId()
+	alertInfo.PxAlertOps = portworx.NewPxAlertOps()
+	f := alerts.NewAlertGetFormatter(alertInfo)
+
+	t.AddLine("Alerts:")
+	lines, err := f.DefaultFormat()
+	if err != nil {
+		t.AddLine("Unable to get alerts: %v", err)
+	} else {
+		t.AddLine(lines)
+	}
 }
 
 func (p *VolumeDescribeFormatter) addVolumeAccessInfo(
