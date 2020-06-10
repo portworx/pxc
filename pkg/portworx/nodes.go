@@ -405,3 +405,48 @@ func getAllNodeNamesForVolume(v *api.Volume, nodeIds map[string]bool) {
 		addToNodeIds(nodeIds, rset.Nodes)
 	}
 }
+
+const (
+	nodeVersionKey       = "PX Version"
+	nodeKernelVersionKey = "Kernel Version"
+	nodeOSKey            = "OS"
+)
+
+// GetStorageNodeVersion returns the version of a node
+func GetStorageNodeVersion(n *api.StorageNode) string {
+	if n.GetNodeLabels() != nil {
+		return n.GetNodeLabels()[nodeVersionKey]
+	}
+	return "(Unknown)"
+}
+
+// GetStorageNodeOS returns the operating system of a node
+func GetStorageNodeOS(n *api.StorageNode) string {
+	if n.GetNodeLabels() != nil {
+		return n.GetNodeLabels()[nodeOSKey]
+	}
+	return "(Unknown)"
+}
+
+// GetStorageNodeKernelVersion returns the kernel version of the node
+func GetStorageNodeKernelVersion(n *api.StorageNode) string {
+	if n.GetNodeLabels() != nil {
+		return n.GetNodeLabels()[nodeKernelVersionKey]
+	}
+	return "(Unknown)"
+}
+
+// GetTotalCapacity returns the used and total capacity of the storage node
+func GetTotalCapacity(n *api.StorageNode) (used, capacity uint64) {
+	for _, pool := range n.GetPools() {
+		used += pool.GetUsed()
+		capacity += pool.GetTotalSize()
+	}
+	return used, capacity
+}
+
+// GetTotalCapacityGi returns the used and total capacity in Giygabytes
+func GetTotalCapacityGi(n *api.StorageNode) (used, capacity uint64) {
+	used, capacity = GetTotalCapacity(n)
+	return used / util.Gi, capacity / util.Gi
+}

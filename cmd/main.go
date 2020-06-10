@@ -27,13 +27,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	Ki = 1024
-	Mi = 1024 * Ki
-	Gi = 1024 * Mi
-	Ti = 1024 * Gi
-)
-
 func init() {
 	cobra.OnInitialize(initConfig)
 }

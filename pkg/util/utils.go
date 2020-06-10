@@ -42,6 +42,13 @@ const (
 	TimeFormat  = "Jan 2 15:04:05 UTC 2006"
 )
 
+const (
+	Ki = 1024
+	Mi = 1024 * Ki
+	Gi = 1024 * Mi
+	Ti = 1024 * Gi
+)
+
 // ListContains returns true when string s is found in the list
 func ListContainsSubString(list []string, s string) bool {
 	for _, value := range list {
