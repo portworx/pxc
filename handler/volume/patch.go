@@ -32,6 +32,7 @@ type volumeUpdateOpts struct {
 	replicaSet             []string
 	size                   uint64
 	shared                 string
+	sharedv4               string
 	sticky                 string
 	addCollaborators       string
 	addGroups              string
@@ -106,6 +107,7 @@ var _ = commander.RegisterCommandInit(func() {
 	patchVolumeCmd.Flags().StringSliceVar(&updateReq.replicaSet, "nodes", []string{}, "Desired set of nodes for the volume data")
 	patchVolumeCmd.Flags().Uint64Var(&updateReq.size, "size", 0, "New size for the volume (GiB) (default 1)")
 	patchVolumeCmd.Flags().StringVar(&updateReq.shared, "shared", "", "set shared setting (Valid Values: [on off]) (default \"off\")")
+	patchVolumeCmd.Flags().StringVar(&updateReq.sharedv4, "sharedv4", "", "set sharedv4 setting (Valid Values: [on off]) (default \"off\")")
 	patchVolumeCmd.Flags().StringVar(&updateReq.sticky, "sticky", "", "set sticky setting (Valid Values: [on off]) (default \"off\")")
 	patchVolumeCmd.Flags().StringVar(&updateReq.addCollaborators, "add-collaborators", "", "Add list of collaborators to the existing list")
 	patchVolumeCmd.Flags().StringVar(&updateReq.addGroups, "add-groups", "", "Add list of groups to the existing list")
@@ -294,7 +296,7 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 	}
 
 	// check prvoide size is valid
-	if updateReq.size > 0 {
+	if updateReq.size >= 0 {
 		//Provided size has to be converted to bytes
 		updateReq.req.Spec.SizeOpt = &api.VolumeSpecUpdate_Size{
 			Size: (updateReq.size * 1024 * 1024 * 1024),
@@ -312,6 +314,23 @@ func updateVolume(cmd *cobra.Command, args []string) error {
 		case "off":
 			updateReq.req.Spec.SharedOpt = &api.VolumeSpecUpdate_Shared{
 				Shared: false,
+			}
+		default:
+			return fmt.Errorf("Invalid input given for shared flag. Valid values are \"on\" or \"off\"")
+		}
+		changed = true
+	}
+
+	// For setting volume as sharedv4 or not
+	if len(updateReq.sharedv4) != 0 {
+		switch updateReq.sharedv4 {
+		case "on":
+			updateReq.req.Spec.Sharedv4Opt = &api.VolumeSpecUpdate_Sharedv4{
+				Sharedv4: true,
+			}
+		case "off":
+			updateReq.req.Spec.Sharedv4Opt = &api.VolumeSpecUpdate_Sharedv4{
+				Sharedv4: false,
 			}
 		default:
 			return fmt.Errorf("Invalid input given for shared flag. Valid values are \"on\" or \"off\"")
