@@ -192,9 +192,9 @@ func (p *nodesGetFormatter) toTabbed() (string, error) {
 func (p *nodesGetFormatter) getHeader() []interface{} {
 	var header []interface{}
 	if p.cliOps.CliInputs().Wide {
-		header = []interface{}{"Id", "Hostname", "IP", "Data IP", "SchedulerNodeName", "Used", "Capacity", "# Disks", "# Pools", "Status"}
+		header = []interface{}{"Id", "Hostname", "Version", "IP", "Data IP", "SchedulerNodeName", "Used", "Capacity", "# Disks", "# Pools", "Status"}
 	} else {
-		header = []interface{}{"Hostname", "IP", "SchedulerNodeName", "Used", "Capacity", "Status"}
+		header = []interface{}{"Hostname", "Version", "SchedulerNodeName", "Used", "Capacity", "Status"}
 	}
 	if p.cliOps.CliInputs().ShowLabels {
 		header = append(header, "Labels")
@@ -220,13 +220,13 @@ func (p *nodesGetFormatter) getLine(n *api.StorageNode) ([]interface{}, error) {
 	var line []interface{}
 	if p.cliOps.CliInputs().Wide {
 		line = []interface{}{
-			n.GetId(), n.GetHostname(), n.GetMgmtIp(),
+			n.GetId(), n.GetHostname(), portworx.GetStorageNodeVersion(n), n.GetMgmtIp(),
 			n.GetDataIp(), n.GetSchedulerNodeName(), usedStr, capacityStr,
 			len(n.GetDisks()), len(n.GetPools()), util.SdkStatusToPrettyString(n.GetStatus()),
 		}
 	} else {
 		line = []interface{}{
-			n.GetHostname(), n.GetMgmtIp(),
+			n.GetHostname(), portworx.GetStorageNodeVersion(n),
 			n.GetSchedulerNodeName(), usedStr, capacityStr,
 			util.SdkStatusToPrettyString(n.GetStatus()),
 		}

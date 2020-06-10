@@ -21,7 +21,6 @@ import (
 	"os"
 
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
 	sched "github.com/portworx/pxc/pkg/openstorage/sched"
 	"github.com/portworx/pxc/pkg/portworx"
@@ -184,7 +183,7 @@ func createVolumeExec(c *cobra.Command, args []string) error {
 	}
 
 	// Convert size to bytes in uint64
-	cvOpts.req.Spec.Size = uint64(cvOpts.sizeInGi) * uint64(cmd.Gi)
+	cvOpts.req.Spec.Size = uint64(cvOpts.sizeInGi) * uint64(util.Gi)
 
 	// Add fs to request
 	switch {

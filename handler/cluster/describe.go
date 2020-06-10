@@ -16,14 +16,16 @@ package cluster
 
 import (
 	"fmt"
+	"math/big"
 
-	humanize "github.com/dustin/go-humanize"
+	"github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/portworx"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
+
+	"github.com/sirupsen/logrus"
 )
 
 var describeClusterCmd *cobra.Command
@@ -60,7 +62,7 @@ func describeClusterExec(c *cobra.Command, args []string) error {
 	}
 	var versionDetails string
 	for k, v := range version.GetVersion().GetDetails() {
-		versionDetails += fmt.Sprintf(" %s: %s\n", k, v)
+		versionDetails += fmt.Sprintf("%s:%s", k, v)
 	}
 
 	// Print cluster information
@@ -70,18 +72,16 @@ func describeClusterExec(c *cobra.Command, args []string) error {
 		return util.PxErrorMessage(err, "Failed to inspect cluster")
 	}
 
-	util.Printf("Cluster ID: %s\n"+
-		"Cluster UUID: %s\n"+
-		"Cluster Status: %s\n"+
-		"Version: %s\n"+
-		"%s"+
-		"SDK Version %s\n",
+	logrus.Infof("Information about the node which was used: SDK Version[%s] MoreInfo[%s]",
+		version.GetSdkVersion().GetVersion(),
+		versionDetails)
+
+	util.Printf("Name: %s\n"+
+		"UUID: %s\n"+
+		"Status: %s\n",
 		clusterInfo.GetCluster().GetName(),
 		clusterInfo.GetCluster().GetId(),
-		util.SdkStatusToPrettyString(clusterInfo.GetCluster().GetStatus()),
-		version.GetVersion().GetVersion(),
-		versionDetails,
-		version.GetSdkVersion().GetVersion())
+		util.SdkStatusToPrettyString(clusterInfo.GetCluster().GetStatus()))
 
 	// Get all node Ids
 	nodes := api.NewOpenStorageNodeClient(conn)
@@ -90,9 +90,9 @@ func describeClusterExec(c *cobra.Command, args []string) error {
 		return util.PxErrorMessage(err, "Failed to get nodes")
 	}
 
-	util.Printf("\n")
+	util.Printf("\nNodes:\n")
 	t := util.NewTabby()
-	t.AddHeader("Hostname", "IP", "SchedulerNodeName", "Used", "Capacity", "Status", "CPU", "Mem Total", "Mem Free", "Containers", "Kernel Version", "OS")
+	t.AddHeader("Hostname", "Version", "Used", "Capacity", "Status", "Kernel Version", "OS")
 	for _, nid := range nodesInfo.GetNodeIds() {
 		node, err := nodes.Inspect(ctx, &api.SdkNodeInspectRequest{NodeId: nid})
 		if err != nil {
@@ -100,30 +100,15 @@ func describeClusterExec(c *cobra.Command, args []string) error {
 		}
 		n := node.GetNode()
 
-		// Calculate used
-		var (
-			used, capacity uint64
-		)
-		for _, pool := range n.GetPools() {
-			used += pool.GetUsed()
-			capacity += pool.GetTotalSize()
-		}
-		usedStr := fmt.Sprintf("%d Gi", used/cmd.Gi)
-		capacityStr := fmt.Sprintf("%d Gi", capacity/cmd.Gi)
-		kernelVersionStr := "Unavailable"
-		osFlavorStr := "Unavailable"
+		used, capacity := portworx.GetTotalCapacity(n)
+		usedStr := humanize.BigIBytes(big.NewInt(int64(used)))
+		capacityStr := humanize.BigIBytes(big.NewInt(int64(capacity)))
+		kernelVersionStr := portworx.GetStorageNodeKernelVersion(n)
+		osFlavorStr := portworx.GetStorageNodeOS(n)
 
-		if n.NodeLabels["Kernel Version"] != "" {
-			kernelVersionStr = n.NodeLabels["Kernel Version"]
-		}
-
-		if n.NodeLabels["OS"] != "" {
-			osFlavorStr = n.NodeLabels["OS"]
-		}
-
-		t.AddLine(n.GetHostname(), n.GetMgmtIp(), n.GetSchedulerNodeName(), usedStr, capacityStr, util.SdkStatusToPrettyString(n.GetStatus()),
-			humanize.Ftoa(n.GetCpu()), humanize.Bytes(n.GetMemTotal()), humanize.Bytes(n.GetMemFree()),
-			"N/A", kernelVersionStr, osFlavorStr)
+		t.AddLine(n.GetHostname(), portworx.GetStorageNodeVersion(n),
+			usedStr, capacityStr, util.SdkStatusToPrettyString(n.GetStatus()),
+			kernelVersionStr, osFlavorStr)
 	}
 	t.Print()
 

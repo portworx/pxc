@@ -103,12 +103,20 @@ func describeStorageNode(n *api.StorageNode) error {
 		"Host name: %s\n"+
 		"Scheduler name: %s\n"+
 		"Node ID: %s\n"+
-		"Management IP: %s\n",
+		"Version: %s\n"+
+		"Kernel Version: %s\n"+
+		"Operating System: %s\n"+
+		"Management IP: %s\n"+
+		"Data IP: %s\n",
 		util.SdkStatusToPrettyString(n.GetStatus()),
 		n.GetHostname(),
 		n.GetSchedulerNodeName(),
 		n.GetId(),
-		n.GetMgmtIp())
+		portworx.GetStorageNodeVersion(n),
+		portworx.GetStorageNodeKernelVersion(n),
+		portworx.GetStorageNodeOS(n),
+		n.GetMgmtIp(),
+		n.GetDataIp())
 
 	// Print pools
 	util.Printf("\n")
