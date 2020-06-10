@@ -16,7 +16,7 @@ limitations under the License.
 package alerts
 
 import (
-	"github.com/portworx/pxc/cmd"
+	"github.com/portworx/pxc/handler/cluster"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
@@ -37,7 +37,7 @@ var _ = commander.RegisterCommandVar(func() {
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	cmd.RootAddCommand(alertCmd)
+	cluster.ClusterAddCommand(alertCmd)
 })
 
 func AlertAddCommand(cmd *cobra.Command) {

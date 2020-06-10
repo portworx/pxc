@@ -19,6 +19,7 @@ package util
 import (
 	"fmt"
 
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
@@ -46,4 +47,23 @@ func PxError(err error) error {
 	}
 	gerr, _ := status.FromError(err)
 	return fmt.Errorf("%s", gerr.Message())
+}
+
+// IsErrorNotFound returns if the given error is due to not found
+func IsErrorNotFound(err error) bool {
+	return FromError(err).Code() == codes.NotFound
+}
+
+func IsErrorPermissionDenied(err error) bool {
+	return FromError(err).Code() == codes.PermissionDenied
+}
+
+func FromError(err error) *status.Status {
+	// From github.com/grpc-ecosystem/grpc-gateway/runtime/errors.go
+	s, ok := status.FromError(err)
+	if !ok {
+		s = status.New(codes.Unknown, err.Error())
+	}
+
+	return s
 }

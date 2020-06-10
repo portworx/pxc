@@ -16,7 +16,6 @@ limitations under the License.
 package handler
 
 import (
-	_ "github.com/portworx/pxc/handler/alerts"
 	_ "github.com/portworx/pxc/handler/cluster"
 	_ "github.com/portworx/pxc/handler/config"
 	_ "github.com/portworx/pxc/handler/login"

@@ -24,7 +24,7 @@ import (
 	"github.com/cheynewallace/tabby"
 	humanize "github.com/dustin/go-humanize"
 	api "github.com/libopenstorage/openstorage-sdk-clients/sdk/golang"
-	"github.com/portworx/pxc/handler/alerts"
+	"github.com/portworx/pxc/handler/cluster/alerts"
 	"github.com/portworx/pxc/pkg/cliops"
 	"github.com/portworx/pxc/pkg/commander"
 	prototime "github.com/portworx/pxc/pkg/openstorage/proto/time"
@@ -195,11 +195,13 @@ func (p *VolumeDescribeFormatter) addVolumeAlerts(
 	alertInfo.PxAlertOps = portworx.NewPxAlertOps()
 	f := alerts.NewAlertGetFormatter(alertInfo)
 
-	t.AddLine("Alerts:")
 	lines, err := f.DefaultFormat()
-	if err != nil {
+
+	// If the user has no access to alerts API, just skip
+	if err != nil && !util.IsErrorPermissionDenied(err) {
 		t.AddLine("Unable to get alerts: %v", err)
 	} else {
+		t.AddLine("Alerts:")
 		t.AddLine(lines)
 	}
 }
