@@ -27,8 +27,9 @@ var nodeCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
 	nodeCmd = &cobra.Command{
-		Use:   "node",
-		Short: "Portworx node management",
+		Use:     "node",
+		Aliases: []string{"nodes"},
+		Short:   "Portworx node management",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.Printf("Please see pxc node --help for more commands\n")
 		},

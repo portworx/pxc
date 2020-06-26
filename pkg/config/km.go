@@ -266,6 +266,10 @@ func (k *KubernetesConfigManager) GetKubernetesCurrentContext() (string, error) 
 	}
 	logrus.Infof("CurrentContext = %s\n", contextName)
 
+	if len(contextName) == 0 {
+		return "", nil
+	}
+
 	// Check that it is actually on the kubeconfig file
 	if _, ok := kConfig.Contexts[contextName]; !ok {
 		return "", fmt.Errorf("context %q does not exist", contextName)
@@ -362,6 +366,17 @@ func (k *KubernetesConfigManager) ConfigLoad() (*Config, error) {
 	contextName, err := k.GetKubernetesCurrentContext()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get kubectl context: %v", err)
+	}
+
+	// If the current context is not set, just create an empty object.
+	// This happens when there is no kubeconfig.
+	if len(contextName) == 0 {
+		clusterConfig.CurrentContext = contextName
+		clusterConfig.Contexts[contextName] = &Context{
+			AuthInfo: "",
+			Cluster:  "",
+		}
+		return clusterConfig, nil
 	}
 
 	clientConfig := k.ConfigFlags().ToRawKubeConfigLoader()
