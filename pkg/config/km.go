@@ -264,11 +264,10 @@ func (k *KubernetesConfigManager) GetKubernetesCurrentContext() (string, error) 
 		// Read it from the kubeconfig file
 		contextName = kConfig.CurrentContext
 	}
-	logrus.Infof("CurrentContext = %s\n", contextName)
-
 	if len(contextName) == 0 {
-		return "", nil
+		return "", fmt.Errorf("Current context is not set or kubeconfig is missing")
 	}
+	logrus.Infof("CurrentContext = %s\n", contextName)
 
 	// Check that it is actually on the kubeconfig file
 	if _, ok := kConfig.Contexts[contextName]; !ok {
