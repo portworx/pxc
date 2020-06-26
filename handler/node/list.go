@@ -166,7 +166,7 @@ func (p *nodesGetFormatter) toTabbed() (string, error) {
 
 	nodes, err := p.getNodes()
 	if err != nil {
-		return "", err
+		return "", util.PxErrorMessage(err, "Failed to get node list")
 	}
 
 	if len(nodes) == 0 {

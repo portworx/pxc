@@ -26,7 +26,7 @@ import (
 // PxErrorMessage returns an error composed of the gRPC error status message
 // and the message provided.
 func PxErrorMessage(err error, msg string) error {
-	gerr, _ := status.FromError(err)
+	gerr := FromError(err)
 	return fmt.Errorf("%s: %s", msg, gerr.Message())
 }
 
@@ -45,8 +45,14 @@ func PxError(err error) error {
 	if err == nil {
 		return err
 	}
-	gerr, _ := status.FromError(err)
+	gerr := FromError(err)
+
 	return fmt.Errorf("%s", gerr.Message())
+}
+
+// RectifyErrorMessage changes cryptic messages
+func RectifyErrorMessage(msg string) string {
+	return msg
 }
 
 // IsErrorNotFound returns if the given error is due to not found
@@ -63,6 +69,12 @@ func FromError(err error) *status.Status {
 	s, ok := status.FromError(err)
 	if !ok {
 		s = status.New(codes.Unknown, err.Error())
+	}
+
+	// Cleanup error which may be confusing for user
+	switch s.Message() {
+	case "Request unauthenticated with bearer":
+		s = status.New(s.Code(), "Authentication information required")
 	}
 
 	return s

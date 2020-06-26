@@ -23,6 +23,7 @@ import (
 	_ "github.com/portworx/pxc/handler/plugin"
 	_ "github.com/portworx/pxc/handler/pvc"
 	_ "github.com/portworx/pxc/handler/script"
+	_ "github.com/portworx/pxc/handler/utilities"
 	_ "github.com/portworx/pxc/handler/volume"
 	// The following features will not be released until further work
 	//	_ "github.com/portworx/pxc/handler/cloudmigration"

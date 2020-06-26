@@ -71,7 +71,7 @@ func describeNodeExec(c *cobra.Command, args []string) error {
 		// Try by looking at each node
 		nodesInfo, err := nodes.Enumerate(ctx, &api.SdkNodeEnumerateRequest{})
 		if err != nil {
-			return util.PxErrorMessage(err, "Failed to get nodes")
+			return util.PxErrorMessage(err, "Failed to get node")
 		}
 		for _, nodeID := range nodesInfo.GetNodeIds() {
 			node, err = nodes.Inspect(ctx, &api.SdkNodeInspectRequest{NodeId: nodeID})

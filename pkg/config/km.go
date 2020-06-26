@@ -83,6 +83,52 @@ func (k *KubernetesConfigManager) ModifyKubeconfig(newConfig *clientcmdapi.Confi
 	return clientcmd.ModifyConfig(k.ToRawKubeConfigLoader().ConfigAccess(), *newConfig, true)
 }
 
+// GetCurrentCluster returns configuration information about the current cluster
+func (k *KubernetesConfigManager) GetCurrentCluster() (*clientcmdapi.Cluster, error) {
+	kConfig, err := k.ToRawKubeConfigLoader().RawConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	currentContext, err := k.GetKubernetesCurrentContext()
+	if err != nil {
+		return nil, err
+	}
+
+	clusterInfoName := kConfig.Contexts[currentContext].Cluster
+	if len(clusterInfoName) == 0 {
+		return nil, fmt.Errorf("Current cluster is not set in Kubeconfig")
+	}
+
+	if clusterInfo, ok := kConfig.Clusters[clusterInfoName]; ok {
+		return clusterInfo, nil
+	}
+	return nil, fmt.Errorf("Current user information not found in Kubeconfig")
+}
+
+// GetCurrentAuthInfo returns configuration information about the current user
+func (k *KubernetesConfigManager) GetCurrentAuthInfo() (*clientcmdapi.AuthInfo, error) {
+	kConfig, err := k.ToRawKubeConfigLoader().RawConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	currentContext, err := k.GetKubernetesCurrentContext()
+	if err != nil {
+		return nil, err
+	}
+
+	authInfoName := kConfig.Contexts[currentContext].AuthInfo
+	if len(authInfoName) == 0 {
+		return nil, fmt.Errorf("Current user is not set in Kubeconfig")
+	}
+
+	if authInfo, ok := kConfig.AuthInfos[authInfoName]; ok {
+		return authInfo, nil
+	}
+	return nil, fmt.Errorf("Current user information not found in Kubeconfig")
+}
+
 // KubectlFlagsToCliArgs rebuilds the flags as cli args
 func (k *KubernetesConfigManager) KubectlFlagsToCliArgs() string {
 	var args string

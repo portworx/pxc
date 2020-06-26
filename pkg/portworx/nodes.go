@@ -100,7 +100,7 @@ func (p *nodes) GetNodes() ([]*api.StorageNode, error) {
 	if len(p.nodes) == 0 {
 		err := p.getNodes()
 		if err != nil {
-			return make([]*api.StorageNode, 0), nil
+			return make([]*api.StorageNode, 0), err
 		}
 	}
 	return p.nodes, nil
