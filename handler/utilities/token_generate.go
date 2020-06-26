@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package configcli
+package utilities
 
 import (
 	"fmt"
@@ -54,15 +54,24 @@ var (
 var _ = commander.RegisterCommandVar(func() {
 	tokenGenArgs = &tokenGenOptions{}
 	tokenGenCmd = &cobra.Command{
-		Use:     "generate",
-		Aliases: []string{"gen"},
-		Short:   "Generate a Portworx token",
-		RunE:    tokenGenExec,
+		Use:   "token-generate",
+		Short: "Generate a Portworx token",
+		Example: `
+  # Login to portworx using a secret in Kubernetes
+  pxc utilities token-generate pxc util token-generate \
+	--token-email=example.user@example.com \
+	--token-name="Example User" \
+	--token-roles=system.user \
+	--token-groups=exampleGroup \
+	--token-duration=7d \
+	--token-subject="exampleCompany/example.user@example.com" \
+	--shared-secret=mysecret`,
+		RunE: tokenGenExec,
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	CredentialsTokenAddCommand(tokenGenCmd)
+	UtilitiesAddCommand(tokenGenCmd)
 	tokenGenCmd.Flags().StringVar(&tokenGenArgs.sharedSecret,
 		"shared-secret", "", "Shared secret to sign token")
 	tokenGenCmd.Flags().StringVar(&tokenGenArgs.rsaPem,

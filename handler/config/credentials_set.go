@@ -37,7 +37,7 @@ var _ = commander.RegisterCommandVar(func() {
   pxc config credentials set --name=mycreds --k8s-secret-name=abc --k8s-secret-namespace=ns
 
   # Login to portworx using a specified token
-  pxc config credentials set --name=mycreds --auth-token=ey..`,
+  pxc config credentials set --name=mycreds --auth-token=eyJh...sb30pro`,
 		Long: `Saves your Portworx authentication information for the current
 user in the kubeconfig file. This will enable pxc to fetch the authentication
 information from the config file without having the user provide it each time.`,

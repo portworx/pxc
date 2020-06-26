@@ -33,7 +33,10 @@ type rootFlags struct {
 var (
 	rootCmd     *cobra.Command
 	rootOptions *rootFlags
-	rootTmpl    = `Usage:{{if .Runnable}}
+
+	// This template allow pxc to override the way it prints out the help. This template
+	// allows pxc to not print out global options unless requested.
+	rootTmpl = `Usage:{{if .Runnable}}
   {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
   {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
 
@@ -68,8 +71,12 @@ var _ = commander.RegisterCommandVar(func() {
 	rootOptions = &rootFlags{}
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd = &cobra.Command{
-		Use:                "pxc",
-		Short:              "Portworx client",
+		Use:   "pxc",
+		Short: "Portworx client",
+		Long: `pxc is a Portworx client which allows users to communicate with their storage cluster
+from their client machine combining information from both Kubernetes and Portworx.
+
+Please see https://docs.portworx.com/reference/ for more information.`,
 		SilenceUsage:       true,
 		SilenceErrors:      true,
 		PersistentPreRunE:  rootPersistentPreRunE,
@@ -120,7 +127,7 @@ func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Set verbosity
+	// Set version
 	logrus.Infof("pxc version: %s", PxVersion)
 
 	return nil

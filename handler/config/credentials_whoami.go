@@ -71,7 +71,7 @@ func whoAmIExec(cmd *cobra.Command, args []string) error {
 			}
 		}
 		if len(token) == 0 {
-			util.Printf("No authentication information provided")
+			util.Printf("No authentication information provided\n")
 			return nil
 		}
 	}

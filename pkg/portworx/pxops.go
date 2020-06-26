@@ -101,7 +101,7 @@ func (p *pxOps) GetStats(v *api.Volume, notCumulative bool) (*api.Stats, error) 
 			NotCumulative: notCumulative,
 		})
 	if err != nil {
-		return &api.Stats{}, err
+		return &api.Stats{}, util.PxError(err)
 	}
 	return volStats.GetStats(), nil
 }
@@ -110,7 +110,7 @@ func (p *pxOps) EnumerateNodes() ([]string, error) {
 	nodes := api.NewOpenStorageNodeClient(p.conn)
 	nodesInfo, err := nodes.Enumerate(p.ctx, &api.SdkNodeEnumerateRequest{})
 	if err != nil {
-		return make([]string, 0), err
+		return make([]string, 0), util.PxError(err)
 	}
 	return nodesInfo.GetNodeIds(), nil
 }
@@ -120,7 +120,7 @@ func (p *pxOps) GetNode(nodeId string) (*api.StorageNode, error) {
 	nodeInfo, err := nodes.Inspect(p.ctx,
 		&api.SdkNodeInspectRequest{NodeId: nodeId})
 	if err != nil {
-		return nil, err
+		return nil, util.PxError(err)
 	}
 
 	n := nodeInfo.GetNode()

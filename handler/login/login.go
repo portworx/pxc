@@ -38,10 +38,9 @@ var _ = commander.RegisterCommandVar(func() {
   pxc login --k8s-secret-name=abc --k8s-secret-namespace=ns
 
   # Login to portworx using a specified token
-  pxc login --auth-token=ey..`,
+  pxc login --auth-token=eyJh...sb30ro`,
 		Long: `Saves your Portworx authentication information for the current
-user in the kubeconfig file. This will enable pxc to fetch the authentication
-information from the config file without having the user provide it each time.`,
+user in the kubeconfig file for future access of the Portworx system.`,
 		RunE: loginExec,
 	}
 })
@@ -64,5 +63,10 @@ func LoginAddCommand(cmd *cobra.Command) {
 }
 
 func loginExec(cmd *cobra.Command, args []string) error {
-	return config.CM().ConfigSaveAuthInfo(authInfo)
+	err := config.CM().ConfigSaveAuthInfo(authInfo)
+	if err != nil {
+		return err
+	}
+	util.Printf("Successfully saved login information in Kubeconfig\n")
+	return nil
 }

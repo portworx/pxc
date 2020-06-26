@@ -35,7 +35,7 @@ var _ = commander.RegisterCommandVar(func() {
 	clusterSet = config.NewCluster()
 	clusterSetCmd = &cobra.Command{
 		Use:   "set",
-		Short: "Setup pxc cluster configuration",
+		Short: "Configure pxc to communicate with your cluster",
 		Example: `
   # Setup simple endpoint
   pxc config cluster set --name=mycluster --endpoint=127.0.0.1:9020

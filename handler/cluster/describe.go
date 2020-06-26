@@ -35,11 +35,8 @@ var _ = commander.RegisterCommandVar(func() {
 	describeClusterCmd = &cobra.Command{
 		Use:   "describe [NAME]",
 		Short: "Describe a Portworx cluster",
-		Long:  "Show detailed information of Portworx cluster",
-		Example: `
-  # Display detailed information about Portworx cluster
-  pxc cluster describe`,
-		RunE: describeClusterExec,
+		Long:  "Show detailed information of a Portworx cluster",
+		RunE:  describeClusterExec,
 	}
 })
 

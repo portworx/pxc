@@ -13,31 +13,33 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package configcli
+package utilities
 
 import (
+	"github.com/portworx/pxc/cmd"
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-// tokenCmd represents the token command
-var tokenCmd *cobra.Command
+// utilitiesCmd represents the utilities command
+var utilitiesCmd *cobra.Command
 
 var _ = commander.RegisterCommandVar(func() {
-	tokenCmd = &cobra.Command{
-		Use:   "token",
-		Short: "Portworx token management commands",
+	utilitiesCmd = &cobra.Command{
+		Use:     "utilities",
+		Aliases: []string{"utils", "util"},
+		Short:   "pxc utility commands",
 		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see pxc config credentials token --help for more commands\n")
+			util.Printf("Please see pxc utilities --help for more commands\n")
 		},
 	}
 })
 
 var _ = commander.RegisterCommandInit(func() {
-	CredentialsAddCommand(tokenCmd)
+	cmd.RootAddCommand(utilitiesCmd)
 })
 
-func CredentialsTokenAddCommand(cmd *cobra.Command) {
-	tokenCmd.AddCommand(cmd)
+func UtilitiesAddCommand(cmd *cobra.Command) {
+	utilitiesCmd.AddCommand(cmd)
 }
