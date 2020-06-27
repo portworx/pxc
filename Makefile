@@ -5,6 +5,8 @@ BRANCH := $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
 VER := $(shell git describe --tags)
 ARCH := $(shell go env GOARCH)
 GOOS := $(shell go env GOOS)
+PXC_LDFLAGS =
+PXC_GOBUILD_FLAGS =
 DIR=.
 
 ifdef APP_SUFFIX
@@ -16,7 +18,7 @@ else
   VERSION = $(VER)-$(BRANCH)
 endif
 endif
-LDFLAGS :=-ldflags "-X github.com/portworx/pxc/cmd.PxVersion=$(VERSION)"
+LDFLAGS := -ldflags "-X github.com/portworx/pxc/cmd.PxVersion=$(VERSION) $(PXC_LDFLAGS)"
 
 ifneq (windows,$(GOOS))
 PKG_NAME = $(CLINAME)
@@ -45,20 +47,20 @@ lint:
 	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
 
 pxc:
-	go build -o $(PKG_NAME) $(LDFLAGS)
+	go build $(PXC_GOBUILD_FLAGS) -o $(PKG_NAME) $(LDFLAGS)
 
 release: darwin_amd64_dist \
 	windows_amd64_dist \
 	linux_amd64_dist
 
 darwin_amd64_dist:
-	GOOS=darwin GOARCH=amd64 $(MAKE) dist
+	GOOS=darwin GOARCH=amd64 $(MAKE) PXC_LDFLAGS="-s -w" dist
 
 windows_amd64_dist:
-	GOOS=windows GOARCH=amd64 $(MAKE) distzip
+	GOOS=windows GOARCH=amd64 $(MAKE) PXC_LDFLAGS="-s -w" distzip
 
 linux_amd64_dist:
-	GOOS=linux GOARCH=amd64 $(MAKE) dist
+	GOOS=linux GOARCH=amd64 $(MAKE) PXC_LDFLAGS="-s -w" dist
 
 distzip: $(ZIPPACKAGE)
 
@@ -81,16 +83,22 @@ $(PLUGIN_PKG_NAME): pxc
 
 $(ZIPPACKAGE): all
 	@echo Packaging pxc ...
-	@mkdir -p dist
-	@zip dist/$@ $(PLUGIN_PKG_NAME)
+	@mkdir -p tmp/$(PKG_NAME)
+	@cp $(PLUGIN_PKG_NAME) tmp/$(PKG_NAME)/
+	@cp extras/docs/* tmp/$(PKG_NAME)/
+	@mkdir -p $(DIR)/dist
+	@( cd tmp/$(PKG_NAME) ; zip ../../dist/$@ * )
 	@rm -f $(PKG_NAME)
+	@rm -rf tmp
 
 $(TGZPACKAGE): all
 	@echo Packaging Binaries...
 	@mkdir -p tmp/$(PKG_NAME)
 	@cp $(PLUGIN_PKG_NAME) tmp/$(PKG_NAME)/
+	@cp extras/docs/* tmp/$(PKG_NAME)/
 	@mkdir -p $(DIR)/dist/
 	tar -czf $(DIR)/dist/$@ -C tmp $(PKG_NAME)
+	@rm -f $(PKG_NAME)
 	@rm -rf tmp
 
 clean:

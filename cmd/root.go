@@ -122,13 +122,19 @@ func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
+	// Set version
+	logrus.Infof("pxc version: %s", PxVersion)
+
+	// The following commands do not need to load configuration
+	switch cmd.Name() {
+	case "version":
+		return nil
+	}
+
 	// Load configuration information from disk if any
 	if err := config.CM().Load(); err != nil {
 		return err
 	}
-
-	// Set version
-	logrus.Infof("pxc version: %s", PxVersion)
 
 	return nil
 }
