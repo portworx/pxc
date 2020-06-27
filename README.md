@@ -25,9 +25,9 @@ Install `kubectl-pxc` binary anywhere in your PATH. You will
 then be able to run it like this:
 
 ```
-$ kubectl pxc get nodes
-$ kubectl pxc get pvc
-$ kubectl pxc get pvc --kubeconfig=/path/to/kubeconfig.conf
+$ kubectl pxc cluster describe
+$ kubectl pxc node list
+$ kubectl pxc pvc list
 ```
 
 ## Standalone
