@@ -32,7 +32,7 @@ func PxErrorMessage(err error, msg string) error {
 
 // PxErrorMessagef is like PxErrorMessage, but also adds formatted string support
 func PxErrorMessagef(err error, format string, args ...string) error {
-	return PxErrorMessage(err, fmt.Sprintf(format, args...))
+	return PxErrorMessage(err, fmt.Sprintf(format, args))
 }
 
 // PrintPxErrorMessagef prints the Portworx error message to Stderr
