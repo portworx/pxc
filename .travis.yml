@@ -9,4 +9,4 @@ script:
   - make install
   - make test
   - make docs
-  - cd example-component/golang && make verify
+  - cd component/examples/golang && make verify
