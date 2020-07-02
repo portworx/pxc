@@ -16,7 +16,7 @@ limitations under the License.
 package main
 
 import (
-	_ "github.com/portworx/pxc/example-component/golang/handler"
+	_ "github.com/portworx/pxc/component/examples/golang/handler"
 	pxc "github.com/portworx/pxc/pkg/component"
 )
 

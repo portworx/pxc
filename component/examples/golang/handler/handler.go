@@ -16,5 +16,5 @@ limitations under the License.
 package handler
 
 import (
-	_ "github.com/portworx/pxc/example-component/golang/handler/cluster"
+	_ "github.com/portworx/pxc/component/examples/golang/handler/cluster"
 )

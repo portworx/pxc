@@ -76,7 +76,7 @@ test:
 verify: all test
 	go fmt $(go list ./... | grep -v vendor) | wc -l | grep 0
 	go vet $(go list ./... | grep -v vendor)
-	$(MAKE) -C example-component/golang verify
+	$(MAKE) -C component/examples/golang verify
 
 $(PLUGIN_PKG_NAME): pxc
 	cp $(PKG_NAME) $(PLUGIN_PKG_NAME)
