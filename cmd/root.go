@@ -16,6 +16,8 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/kubernetes"
@@ -31,8 +33,9 @@ type rootFlags struct {
 
 // rootCmd represents the base command when called without any subcommands
 var (
-	rootCmd     *cobra.Command
-	rootOptions *rootFlags
+	rootCmd           *cobra.Command
+	rootOptions       *rootFlags
+	rootSignalHandler *util.SigIntManager
 
 	// This template allow pxc to override the way it prints out the help. This template
 	// allows pxc to not print out global options unless requested.
@@ -83,6 +86,7 @@ Please see https://docs.portworx.com/reference/ for more information.`,
 		PersistentPostRunE: rootPersistentPostRunE,
 		RunE:               rootCmdExec,
 	}
+
 })
 
 var _ = commander.RegisterCommandInit(func() {
@@ -125,6 +129,14 @@ func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 	// Set version
 	logrus.Infof("pxc version: %s", PxVersion)
 
+	// Capture any CTRL-C
+	rootSignalHandler = util.NewSigIntManager(func() {
+		cleanup()
+		util.Printf("\n*** Interrupt\n")
+		os.Exit(1)
+	})
+	rootSignalHandler.Start()
+
 	// The following commands do not need to load configuration
 	switch cmd.Name() {
 	case "version":
@@ -141,7 +153,12 @@ func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 
 func rootPersistentPostRunE(cmd *cobra.Command, args []string) error {
 	// Close the global tunnel if any
-	kubernetes.StopTunnel()
+	cleanup()
+	rootSignalHandler.Stop()
 
 	return nil
+}
+
+func cleanup() {
+	kubernetes.StopTunnel()
 }

@@ -19,8 +19,10 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/portworx/pxc/pkg/config"
+	"github.com/portworx/pxc/pkg/util"
 
 	"github.com/sirupsen/logrus"
 )
@@ -34,9 +36,12 @@ type PortForwarder interface {
 
 // KubectlPortForwarder object
 type KubectlPortForwarder struct {
-	kubeconfig string
-	endpoint   string
-	cmd        *exec.Cmd
+	kubeconfig  string
+	endpoint    string
+	cmd         *exec.Cmd
+	signhandler *util.SigIntManager
+	lock        sync.Mutex
+	running     bool
 }
 
 var (
@@ -80,6 +85,13 @@ func newKubectlPortForwarder(kubeconfig string) *KubectlPortForwarder {
 
 // Start creates the portforward using kubectl
 func (p *KubectlPortForwarder) Start() error {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	if p.running {
+		return fmt.Errorf("Tunnel already running")
+	}
+
 	args := config.KM().KubectlFlagsToCliArgs()
 	currentCluster := config.CM().GetCurrentCluster()
 	logrus.Debugf("port-forward: CurrentCluster: %v", *currentCluster)
@@ -97,6 +109,11 @@ func (p *KubectlPortForwarder) Start() error {
 		logrus.Errorf("Error while executing [%s]: %v", cmd.String(), err)
 		return fmt.Errorf("Unable to setup kubectl: %v", err)
 	}
+
+	p.signhandler = util.NewSigIntManager(func() {
+		p.Stop()
+	})
+	p.signhandler.Start()
 
 	// Start the port forward process
 	err = cmd.Start()
@@ -129,15 +146,31 @@ func (p *KubectlPortForwarder) Start() error {
 	logrus.Debugf("Read %d bytes", n)
 	logrus.Debugf("Output: %s", sbuf)
 
+	p.running = true
 	return nil
 }
 
 // Stop ends the session
 func (p *KubectlPortForwarder) Stop() error {
-	logrus.Debug("Port forwarding stopped")
-	if p.cmd != nil {
-		return p.cmd.Process.Kill()
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	if !p.running {
+		return nil
 	}
+
+	if p.cmd != nil {
+		logrus.Debug("Port forwarding stopped")
+		err := p.cmd.Process.Kill()
+		p.cmd = nil
+		return err
+	}
+
+	if p.signhandler != nil {
+		p.signhandler.Stop()
+		p.signhandler = nil
+	}
+	p.running = false
 	return nil
 }
 
@@ -149,7 +182,6 @@ func (p *KubectlPortForwarder) Endpoint() string {
 func (p *KubectlPortForwarder) getEndpointFromKubectlOutput(sbuf string) (string, error) {
 	index := strings.Index(sbuf, "127.0.0.1:")
 	if index >= 0 {
-		//return strings.Split(sbuf[index:], " ")[0], nil
 		e := strings.Split(sbuf[index:], " ")[0]
 		e = "localhost:" + strings.Split(e, ":")[1]
 		return e, nil
