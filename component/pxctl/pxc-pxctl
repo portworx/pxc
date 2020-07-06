@@ -18,7 +18,17 @@
 # Runs pxctl commands on the host
 #
 
-if [ $1 = "-n" ] ; then
+required="kubectl kubectl-pxc"
+
+for req in $required ; do
+	if ! which $req > /dev/null 2>&1 ; then
+		echo "$req is required"
+		exit
+	fi
+done
+
+
+if [ "$1" = "-n" ] ; then
 	NODE=$2
 	shift 2
 else
