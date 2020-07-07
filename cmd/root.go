@@ -154,7 +154,10 @@ func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
 func rootPersistentPostRunE(cmd *cobra.Command, args []string) error {
 	// Close the global tunnel if any
 	cleanup()
-	rootSignalHandler.Stop()
+
+	if rootSignalHandler != nil {
+		rootSignalHandler.Stop()
+	}
 
 	return nil
 }
