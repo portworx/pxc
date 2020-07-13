@@ -49,9 +49,18 @@ lint:
 pxc:
 	go build $(PXC_GOBUILD_FLAGS) -o $(PKG_NAME) $(LDFLAGS)
 
-release: darwin_amd64_dist \
+docker-release: darwin_amd64_dist \
 	windows_amd64_dist \
 	linux_amd64_dist
+
+release:
+	docker run --privileged -ti \
+		-v $(shell pwd):/go/src/github.com/portworx/pxc \
+		-w /go/src/github.com/portworx/pxc \
+		-e DEV_USER=$(shell id -u) \
+		-e DEV_GROUP=$(shell id -g) \
+		golang \
+		hack/create-release.sh
 
 darwin_amd64_dist:
 	GOOS=darwin GOARCH=amd64 $(MAKE) PXC_LDFLAGS="-s -w" dist
@@ -88,7 +97,7 @@ $(ZIPPACKAGE): all
 	@cp extras/docs/* tmp/$(PKG_NAME)/
 	@mkdir -p $(DIR)/dist
 	@( cd tmp/$(PKG_NAME) ; zip ../../dist/$@ * )
-	@rm -f $(PKG_NAME)
+	@rm -f $(PKG_NAME) $(PLUGIN_PKG_NAME)
 	@rm -rf tmp
 
 $(TGZPACKAGE): all
@@ -98,7 +107,7 @@ $(TGZPACKAGE): all
 	@cp extras/docs/* tmp/$(PKG_NAME)/
 	@mkdir -p $(DIR)/dist/
 	tar -czf $(DIR)/dist/$@ -C tmp $(PKG_NAME)
-	@rm -f $(PKG_NAME)
+	@rm -f $(PKG_NAME) $(PLUGIN_PKG_NAME)
 	@rm -rf tmp
 
 clean:
@@ -106,5 +115,5 @@ clean:
 	rm -rf dist
 
 .PHONY: dist all clean darwin_amd64_dist windows_amd64_dist linux_amd64_dist \
-	install release pxc test
+	install docker-release release pxc test
 
