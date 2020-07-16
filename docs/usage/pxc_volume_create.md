@@ -39,11 +39,11 @@ pxc volume create [NAME] [flags]
       --deprecated-shared          Shared volume (deprecated)
       --labels string              Comma separated list of labels as key-value pairs: 'k1=v1,k2=v2'
       --fs string                  Filesystem type for the volume [none, ext4] (default "ext4")
-      --sticky                     Sitcky volume
+      --sticky                     Sticky volume
       --journal                    Journal data for this volume
       --encryption                 encrypt this volume
       --aggregation-level uint32   aggregation level (Valid Values: [1, 2, 3] (default 1)
-      --nodes strings              Replicat set nodes for this volume
+      --nodes strings              Replica set nodes for this volume
       --ioprofile string           IO Profile (Valid Values: [sequential cms db db_remote sync_shared]) (default sequential)
       --groups string              list of group with volume access details, 'group1:r, group2:w'
       --collaborators string       list of collaborators with volume access details, 'user1:r, user2:w'
