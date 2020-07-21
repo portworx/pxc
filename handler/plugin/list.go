@@ -88,7 +88,6 @@ func ListAddCommand(cmd *cobra.Command) {
 }
 
 func listExec(cmd *cobra.Command, args []string) error {
-	logrus.Info("In listExec")
 	listOptions.Complete(cmd)
 	return listOptions.Run(cmd, args)
 }
@@ -114,7 +113,7 @@ func (o *pluginListOptions) Run(cmd *cobra.Command, args []string) error {
 		files, err := ioutil.ReadDir(dir)
 		if err != nil {
 			if _, ok := err.(*os.PathError); ok {
-				util.Eprintf("Unable read directory %q from your PATH: %v. Skipping...", dir, err)
+				logrus.Warnf("Unable read directory %q from your PATH: %v. Skipping...", dir, err)
 				continue
 			}
 
