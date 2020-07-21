@@ -31,7 +31,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Aliases: []string{"alerts"},
 		Short:   "Manage alerts on a Portworx cluster",
 		Run: func(cmd *cobra.Command, args []string) {
-			util.Printf("Please see pxc alert --help for more commands\n")
+			util.Printf("Please see pxc cluster alert --help for more commands\n")
 		},
 	}
 })
