@@ -65,6 +65,10 @@ func gendocExec(cmd *cobra.Command, args []string) error {
 
 		os.MkdirAll(gendocArgs.outputDir, 0755)
 		return doc.GenMarkdownTree(rootCmd, gendocArgs.outputDir)
+	case "yaml":
+		util.Printf("Creating yaml docs in %s...\n", gendocArgs.outputDir)
+		os.MkdirAll(gendocArgs.outputDir, 0755)
+		return doc.GenYamlTree(rootCmd, gendocArgs.outputDir)
 	case "man":
 		util.Printf("Creating man pages in %s...\n", gendocArgs.outputDir)
 
