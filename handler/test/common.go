@@ -252,7 +252,7 @@ func PxTestCreateAggrVolume(t *testing.T, volName string, size uint64, aggrLevel
 
 // Helper function to create volume with "io profile" flag set
 func PxTestCreateIoProfVolume(t *testing.T, volName string, size uint64, IoProfile string) {
-	cli := fmt.Sprintf("pxc volume create %s --size %d --ioprofile %s",
+	cli := fmt.Sprintf("pxc volume create %s --size %d --io-profile %s",
 		volName, size, IoProfile)
 	lines, _, err := ExecuteCli(cli)
 	assert.NoError(t, err)
@@ -261,13 +261,13 @@ func PxTestCreateIoProfVolume(t *testing.T, volName string, size uint64, IoProfi
 }
 
 func PxTestPatchVolumeHalevel(t *testing.T, volName string, haLevel int) {
-	cli := fmt.Sprintf("pxc volume update %s --halevel %d", volName, haLevel)
+	cli := fmt.Sprintf("pxc volume update %s --replicas %d", volName, haLevel)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines[0])
 }
 
 func PxTestPatchVolumeHalevelWithNodes(t *testing.T, volName string, haLevel int64, node string) {
-	cli := fmt.Sprintf("pxc volume update %s --halevel %d --node %s", volName, haLevel, node)
+	cli := fmt.Sprintf("pxc volume update %s --replicas %d --node %s", volName, haLevel, node)
 	lines, _, _ := ExecuteCli(cli)
 	assert.Equal(t, "Volume "+volName+" parameter updated successfully", lines)
 }

@@ -104,17 +104,17 @@ var _ = commander.RegisterCommandInit(func() {
 	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Sticky, "sticky", false, "Sticky volume")
 	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Journal, "journal", false, "Journal data for this volume")
 	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Encrypted, "encryption", false, "encrypt this volume")
-	createVolumeCmd.Flags().Uint32Var(&cvOpts.req.Spec.AggregationLevel, "aggregation-level", 0, "aggregation level (Valid Values: [1, 2, 3] (default 1)")
+	createVolumeCmd.Flags().Uint32Var(&cvOpts.req.Spec.AggregationLevel, "aggregation-level", 1, "aggregation level (Valid Values: [1, 2, 3]")
 	createVolumeCmd.Flags().StringSliceVar(&cvOpts.replicaSet, "nodes", []string{}, "Replica set nodes for this volume")
-	createVolumeCmd.Flags().StringVar(&cvOpts.IoProfile, "ioprofile", "", "IO Profile (Valid Values: [sequential cms db db_remote sync_shared]) (default sequential)")
+	createVolumeCmd.Flags().StringVar(&cvOpts.IoProfile, "io-profile", "sequential", "IO Profile (Valid Values: [sequential cms db db_remote sync_shared])")
 	createVolumeCmd.Flags().StringVar(&cvOpts.groups, "groups", "", "list of group with volume access details, 'group1:r, group2:w'")
 	createVolumeCmd.Flags().StringVar(&cvOpts.collaborators, "collaborators", "", "list of collaborators with volume access details, 'user1:r, user2:w'")
-	createVolumeCmd.Flags().Uint32Var(&cvOpts.req.Spec.QueueDepth, "queue-depth", 128, "block device queue depth (Valid Range: [1 256]) (default 128)")
+	createVolumeCmd.Flags().Uint32Var(&cvOpts.req.Spec.QueueDepth, "queue-depth", 128, "block device queue depth (Valid Range: [1 256])")
 	createVolumeCmd.Flags().BoolVar(&cvOpts.earlyAck, "early-ack", false, "Reply to async write requests after it is copied to shared memory")
 	createVolumeCmd.Flags().BoolVar(&cvOpts.asyncIo, "async-io", false, "Enable async IO to backing storage")
 	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.Nodiscard, "nodiscard", false, "Disable discard support for this volume")
 	createVolumeCmd.Flags().BoolVar(&cvOpts.req.Spec.GroupEnforced, "group-enforced", false, "Enforce group during provision")
-	createVolumeCmd.Flags().Uint32Var(&cvOpts.req.Spec.Scale, "scale", 0, "auto scale to max number (Valid Range: [1 1024]) (default 1)")
+	createVolumeCmd.Flags().Uint32Var(&cvOpts.req.Spec.Scale, "scale", 1, "auto scale to max number (Valid Range: [1 1024])")
 	createVolumeCmd.Flags().StringVar(&cvOpts.passPhrase, "passphrase", "", "Passphrase for an encrypted volume")
 	createVolumeCmd.Flags().StringVar(&cvOpts.periodic, "periodic", "", "periodic snapshot interval in mins,k (keeps 5 by default), 0 disables all schedule snapshots")
 	createVolumeCmd.Flags().StringSliceVar(&cvOpts.daily, "daily", []string{}, "daily snapshot at specified hh:mm,k (keeps 7 by default)")
@@ -202,6 +202,8 @@ func createVolumeExec(c *cobra.Command, args []string) error {
 			cvOpts.req.Spec.IoProfile = api.IoProfile_IO_PROFILE_DB_REMOTE
 		case "sync_shared":
 			cvOpts.req.Spec.IoProfile = api.IoProfile_IO_PROFILE_SYNC_SHARED
+		case "sequential":
+			cvOpts.req.Spec.IoProfile = api.IoProfile_IO_PROFILE_SEQUENTIAL
 		default:
 			flagError := errors.New("Invalid IO profile")
 			return flagError

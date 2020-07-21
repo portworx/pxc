@@ -95,7 +95,7 @@ var _ = commander.RegisterCommandVar(func() {
 var _ = commander.RegisterCommandInit(func() {
 	VolumeAddCommand(patchVolumeCmd)
 
-	patchVolumeCmd.Flags().Int64Var(&updateReq.halevel, "halevel", 0, "New replication factor (Valid Range: [1, 3]) (default 1)")
+	patchVolumeCmd.Flags().Int64Var(&updateReq.halevel, "replicas", 0, "New replication factor (Valid Range: [1, 3]) (default 1)")
 	patchVolumeCmd.Flags().StringSliceVar(&updateReq.replicaSet, "nodes", []string{}, "Desired set of nodes for the volume data")
 	patchVolumeCmd.Flags().Uint64Var(&updateReq.size, "size", 0, "New size for the volume (GiB) (default 1)")
 	patchVolumeCmd.Flags().StringVar(&updateReq.shared, "shared", "", "set shared setting (Valid Values: [on off]) (default \"off\")")
