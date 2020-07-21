@@ -48,5 +48,5 @@ if [ -z "$NODE" ] ; then
 fi
 
 echo ">> Running pxctl on $NODE"
-pod=$(kubectl -n kube-system get pods -l name=portworx -o wide | grep "${NODE}" | awk -P '{print $1}')
-kubectl -n kube-system exec -ti $pod -c portworx -- /bin/sh -c "PXCTL_AUTH_TOKEN=${PXC_TOKEN} /opt/pwx/bin/pxctl $*"
+pod=$(kubectl -n ${PXC_PORTWORX_SERVICE_NAMESPACE} get pods -l name=portworx -o wide | grep "${NODE}" | awk -P '{print $1}')
+kubectl -n ${PXC_PORTWORX_SERVICE_NAMESPACE} exec -ti $pod -c portworx -- /bin/sh -c "PXCTL_AUTH_TOKEN=${PXC_TOKEN} /opt/pwx/bin/pxctl $*"
