@@ -41,7 +41,7 @@ Normally, you would run `pxc` from a client machine. Once you download the `pxc`
 you will need to configure it. Here is an example:
 
 ```
- ./pxc config cluster set --name=clusterone endpoint=1.1.1.1:9020
+ ./pxc config cluster set --name=clusterone --endpoint=1.1.1.1:9020
  ./pxc config context set --cluster=clusterone --name=contextone
  ./pxc config context use --name=contextone
  ./pxc cluster describe
