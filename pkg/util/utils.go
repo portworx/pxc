@@ -29,8 +29,11 @@ import (
 )
 
 const (
-	EvInKubectlPluginMode = "PXC_KUBECTL_PLUGIN_MODE"
-	EvPxcToken            = "PXC_TOKEN"
+	EvInKubectlPluginMode      = "PXC_KUBECTL_PLUGIN_MODE"
+	EvPxcToken                 = "PXC_TOKEN"
+	EvPortworxServiceNamespace = "PXC_PORTWORX_SERVICE_NAMESPACE"
+	EvPortworxServiceName      = "PXC_PORTWORX_SERVICE_NAME"
+	EvPortworxServicePort      = "PXC_PORTWORX_SERVICE_PORT"
 )
 
 var (

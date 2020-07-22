@@ -131,11 +131,9 @@ func HandlePluginCommand(pluginHandler PluginHandler, cmdArgs []string) error {
 		return nil
 	}
 
-	// Setup environment variables
-	authInfo := config.CM().GetCurrentAuthInfo()
-
 	// Get token
 	var err error
+	authInfo := config.CM().GetCurrentAuthInfo()
 	token := authInfo.Token
 	if len(authInfo.KubernetesAuthInfo.SecretName) != 0 &&
 		len(authInfo.KubernetesAuthInfo.SecretNamespace) != 0 {
@@ -145,8 +143,14 @@ func HandlePluginCommand(pluginHandler PluginHandler, cmdArgs []string) error {
 		}
 	}
 
-	envVars := append(os.Environ(), fmt.Sprintf("%s=%v", util.EvInKubectlPluginMode, util.InKubectlPluginMode()))
-	envVars = append(envVars, fmt.Sprintf("%s=%v", util.EvPxcToken, token))
+	// Setup environment variables
+	envVars := appendToEnv(os.Environ(), util.EvInKubectlPluginMode, util.InKubectlPluginMode())
+	envVars = appendToEnv(envVars, util.EvPxcToken, token)
+
+	currentCluster := config.CM().GetCurrentCluster()
+	envVars = appendToEnv(envVars, util.EvPortworxServiceName, currentCluster.TunnelServiceName)
+	envVars = appendToEnv(envVars, util.EvPortworxServiceNamespace, currentCluster.TunnelServiceNamespace)
+	envVars = appendToEnv(envVars, util.EvPortworxServicePort, currentCluster.TunnelServicePort)
 
 	// invoke cmd binary relaying the current environment and args given
 	if err := pluginHandler.Execute(foundBinaryPath, cmdArgs[len(remainingArgs):], envVars); err != nil {
@@ -154,4 +158,8 @@ func HandlePluginCommand(pluginHandler PluginHandler, cmdArgs []string) error {
 	}
 
 	return nil
+}
+
+func appendToEnv(env []string, key string, val interface{}) []string {
+	return append(env, fmt.Sprintf("%s=%v", key, val))
 }
