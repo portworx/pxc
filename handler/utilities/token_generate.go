@@ -64,6 +64,7 @@ var _ = commander.RegisterCommandVar(func() {
 	--token-roles=system.user \
 	--token-groups=exampleGroup \
 	--token-duration=7d \
+	--token-issuer=myissuer \
 	--token-subject="exampleCompany/example.user@example.com" \
 	--shared-secret=mysecret`,
 		RunE: tokenGenExec,
