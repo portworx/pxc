@@ -19,6 +19,8 @@ import (
 	"fmt"
 
 	"github.com/portworx/pxc/pkg/util"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -33,16 +35,16 @@ type ConfigManager struct {
 }
 
 var (
-	cm *ConfigManager
+	gcm *ConfigManager
 )
 
 // CM returns the instance to the config manager
 func CM() *ConfigManager {
-	if cm == nil {
-		cm = newConfigManager()
+	if gcm == nil {
+		gcm = newConfigManager()
 	}
 
-	return cm
+	return gcm
 }
 
 func newConfig() *Config {
@@ -51,6 +53,30 @@ func newConfig() *Config {
 		AuthInfos: make(map[string]*AuthInfo),
 		Contexts:  make(map[string]*Context),
 	}
+}
+
+func SetCM(c *ConfigManager) {
+	gcm = c
+}
+
+func NewConfigManagerForContext(context string) (*ConfigManager, error) {
+	configManager := &ConfigManager{
+		Config: newConfig(),
+		Flags:  newConfigFlags(),
+	}
+
+	if util.InKubectlPluginMode() {
+		configManager.configrw = NewKubernetesConfigManagerForContext(context)
+	} else {
+		configManager.configrw = newPxcConfigReaderWriter()
+	}
+
+	err := configManager.Load()
+	if err != nil {
+		return nil, err
+	}
+
+	return configManager, nil
 }
 
 func newConfigManager() *ConfigManager {
@@ -80,6 +106,34 @@ func (cm *ConfigManager) Load() error {
 	cm.override()
 
 	return nil
+}
+
+func (cm *ConfigManager) ForEachContext(
+	handler func(context, clusterName string) error,
+) {
+	// get current cluster
+	original := CM()
+	originalK := KM()
+
+	// defer resetting cluster
+	defer func() {
+		SetCM(original)
+		SetKM(originalK)
+	}()
+
+	for name, context := range cm.Config.Contexts {
+		newCm, err := NewConfigManagerForContext(name)
+		if err != nil {
+			panic("here")
+		}
+		SetCM(newCm)
+		SetKM(NewKubernetesConfigManagerForContext(name))
+
+		err = handler(name, context.Cluster)
+		if err != nil {
+			logrus.Errorf("Failed to comm with cluster %s: %v", name, err)
+		}
+	}
 }
 
 // GetFlags returns all the pxc persistent flags

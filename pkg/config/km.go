@@ -44,10 +44,20 @@ func KM() *KubernetesConfigManager {
 	return km
 }
 
+func SetKM(k *KubernetesConfigManager) {
+	km = k
+}
+
 func newKubernetesConfigManager() *KubernetesConfigManager {
 	return &KubernetesConfigManager{
 		kubeCliOpts: genericclioptions.NewConfigFlags(true),
 	}
+}
+
+func NewKubernetesConfigManagerForContext(context string) *KubernetesConfigManager {
+	r := newKubernetesConfigManager()
+	*r.kubeCliOpts.Context = context
+	return r
 }
 
 // ConfigFlags returns the kubernetes raw configuration object
@@ -384,6 +394,15 @@ func (k *KubernetesConfigManager) ConfigLoad() (*Config, error) {
 		return nil, fmt.Errorf("unable to read kubernetes configuration: %v", err)
 	}
 
+	// Load all contexts
+	for k, v := range kConfig.Contexts {
+		clusterConfig.Contexts[k] = &Context{
+			Name:     k,
+			AuthInfo: v.AuthInfo,
+			Cluster:  v.Cluster,
+		}
+	}
+
 	// Initialize the context
 	clusterConfig.CurrentContext = contextName
 	clusterConfig.Contexts[contextName] = &Context{
@@ -397,6 +416,9 @@ func (k *KubernetesConfigManager) ConfigLoad() (*Config, error) {
 			logrus.Debugf("Loading user %s from %s", k, v.LocationOfOrigin)
 			pxcAuthInfo := NewAuthInfoFromMap(v.AuthProvider.Config)
 			clusterConfig.AuthInfos[pxcAuthInfo.Name] = pxcAuthInfo
+		} else if _, ok := clusterConfig.AuthInfos[k]; !ok {
+			clusterConfig.AuthInfos[k] = NewAuthInfo()
+			clusterConfig.AuthInfos[k].Name = k
 		}
 	}
 
@@ -410,6 +432,9 @@ func (k *KubernetesConfigManager) ConfigLoad() (*Config, error) {
 			} else {
 				logrus.Debugf("Unable to load cluster %s from %s", k, c.LocationOfOrigin)
 			}
+		} else if _, ok := clusterConfig.Clusters[k]; !ok {
+			clusterConfig.Clusters[k] = NewDefaultCluster()
+			clusterConfig.Clusters[k].Name = k
 		}
 	}
 

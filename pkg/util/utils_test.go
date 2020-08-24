@@ -381,3 +381,31 @@ func TestValidateEndpoint(t *testing.T) {
 		}
 	}
 }
+
+func TestListMatchGlob(t *testing.T) {
+	tests := []struct {
+		matchExpected bool
+		globs         []string
+		s             string
+	}{
+		{
+			matchExpected: true,
+			globs:         []string{"*"},
+			s:             "hello-world",
+		},
+		{
+			matchExpected: true,
+			globs:         []string{"*hello*"},
+			s:             "hello-world",
+		},
+		{
+			matchExpected: true,
+			globs:         []string{"*world*"},
+			s:             "hello-world",
+		},
+	}
+
+	for _, test := range tests {
+		assert.Equal(t, test.matchExpected, ListMatchGlob(test.globs, test.s))
+	}
+}

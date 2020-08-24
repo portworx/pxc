@@ -445,7 +445,7 @@ func GetTotalCapacity(n *api.StorageNode) (used, capacity uint64) {
 	return used, capacity
 }
 
-// GetTotalCapacityGi returns the used and total capacity in Giygabytes
+// GetTotalCapacityGi returns the used and total capacity in Gigabytes
 func GetTotalCapacityGi(n *api.StorageNode) (used, capacity uint64) {
 	used, capacity = GetTotalCapacity(n)
 	return used / util.Gi, capacity / util.Gi

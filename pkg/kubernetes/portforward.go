@@ -55,6 +55,7 @@ func StartTunnel() error {
 		logrus.Infof("Port forwarder using kubeconfig %s", *config.KM().ConfigFlags().KubeConfig)
 		kubePortForwarder = newKubectlPortForwarder(*config.KM().ConfigFlags().KubeConfig)
 		if err := kubePortForwarder.Start(); err != nil {
+			StopTunnel()
 			return fmt.Errorf("Failed to setup port forward: %v", err)
 		}
 		config.CM().SetTunnelEndpoint(kubePortForwarder.Endpoint())
@@ -67,6 +68,7 @@ func StartTunnel() error {
 func StopTunnel() {
 	if kubePortForwarder != nil {
 		kubePortForwarder.Stop()
+		kubePortForwarder = nil
 	}
 }
 
