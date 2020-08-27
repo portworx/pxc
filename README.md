@@ -1,6 +1,8 @@
 [![Build Status](https://travis-ci.com/portworx/pxc.svg?token=koUsyDmAMgMD5TViiacc&branch=master)](https://travis-ci.com/portworx/pxc)
 
-# Overview
+[![pxc](docs/images/pxc.png)](docs/images/pxc.png)
+
+# pxc - Portworx Client
 `pxc` is a client side application which communicates with Portworx, Kubernetes,
 and other services to provide users with an integrated tool. It can be used as
 a stand alone program or as a kubectl plugin.

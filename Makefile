@@ -5,9 +5,16 @@ BRANCH := $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
 VER := $(shell git describe --tags)
 ARCH := $(shell go env GOARCH)
 GOOS := $(shell go env GOOS)
-PXC_LDFLAGS =
 PXC_GOBUILD_FLAGS =
 DIR=.
+
+ifeq ($(BUILD_TYPE),release)
+BUILDFLAGS :=
+PXC_LDFLAGS=-s -w
+else
+BUILDFLAGS := -gcflags "-N -l"
+PXC_LDFLAGS =
+endif
 
 ifdef APP_SUFFIX
   VERSION = $(VER)-$(subst /,-,$(APP_SUFFIX))
@@ -18,7 +25,8 @@ else
   VERSION = $(VER)-$(BRANCH)
 endif
 endif
-LDFLAGS := -ldflags "-X github.com/portworx/pxc/cmd.PxVersion=$(VERSION) $(PXC_LDFLAGS)"
+
+LDFLAGS := $(BUILDFLAGS) -ldflags "-X github.com/portworx/pxc/cmd.PxVersion=$(VERSION) $(PXC_LDFLAGS)"
 
 ifneq (windows,$(GOOS))
 PKG_NAME = $(CLINAME)
@@ -63,13 +71,13 @@ release:
 		hack/create-release.sh
 
 darwin_amd64_dist:
-	GOOS=darwin GOARCH=amd64 $(MAKE) PXC_LDFLAGS="-s -w" dist
+	GOOS=darwin GOARCH=amd64 BUILD_TYPE=release $(MAKE) dist
 
 windows_amd64_dist:
-	GOOS=windows GOARCH=amd64 $(MAKE) PXC_LDFLAGS="-s -w" distzip
+	GOOS=windows GOARCH=amd64 BUILD_TYPE=release $(MAKE) distzip
 
 linux_amd64_dist:
-	GOOS=linux GOARCH=amd64 $(MAKE) PXC_LDFLAGS="-s -w" dist
+	GOOS=linux GOARCH=amd64 BUILD_TYPE=release $(MAKE) dist
 
 distzip: $(ZIPPACKAGE)
 
