@@ -52,6 +52,47 @@ const (
 	Ti = 1024 * Gi
 )
 
+// MatchGlob determines if the rules apply to string s
+// rule can be:
+// '*' - match all
+// '*xxx' - ends with xxx
+// 'xxx*' - starts with xxx
+// '*xxx*' - contains xxx
+func MatchGlob(rule, s string) bool {
+	// no rule
+	rl := len(rule)
+	if rl == 0 {
+		return false
+	}
+
+	// '*xxx' || 'xxx*'
+	if rule[0:1] == "*" || rule[rl-1:rl] == "*" {
+		// get the matching string from the rule
+		match := strings.TrimSpace(strings.Join(strings.Split(rule, "*"), ""))
+
+		// '*' or '*******'
+		if len(match) == 0 {
+			return true
+		}
+
+		// '*xxx*'
+		if rule[0:1] == "*" && rule[rl-1:rl] == "*" {
+			return strings.Contains(s, match)
+		}
+
+		// '*xxx'
+		if rule[0:1] == "*" {
+			return strings.HasSuffix(s, match)
+		}
+
+		// 'xxx*'
+		return strings.HasPrefix(s, match)
+	}
+
+	// no wildcard stars given in rule
+	return rule == s
+}
+
 // ListContains returns true when string s is found in the list
 func ListContainsSubString(list []string, s string) bool {
 	for _, value := range list {
@@ -75,6 +116,16 @@ func StringContainsAnyFromList(s string, list []string) bool {
 func ListContains(list []string, s string) bool {
 	for _, value := range list {
 		if value == s {
+			return true
+		}
+	}
+	return false
+}
+
+// ListMatchGlob returns true if the string matches any of the rules
+func ListMatchGlob(rules []string, s string) bool {
+	for _, rule := range rules {
+		if MatchGlob(rule, s) {
 			return true
 		}
 	}
