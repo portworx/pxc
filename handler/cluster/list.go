@@ -91,9 +91,8 @@ type PortworxClusterInfo struct {
 }
 
 type ClusterInfo struct {
-	CurrentContext string
-	Kubernetes     *KubernetesClusterInfo `json:"kubernetes" yaml:"kubernetes"`
-	Portworx       *PortworxClusterInfo   `json:"portworx" yaml:"portworx"`
+	Kubernetes *KubernetesClusterInfo `json:"kubernetes" yaml:"kubernetes"`
+	Portworx   *PortworxClusterInfo   `json:"portworx" yaml:"portworx"`
 }
 
 func NewClusterInfo(context, clusterName string) *ClusterInfo {
