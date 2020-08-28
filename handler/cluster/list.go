@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/cheynewallace/tabby"
@@ -38,10 +39,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type clusterListOptions struct {
+	contextMatch string
+}
+
 // clusterCmd represents the cluster command
-var clusterListCmd *cobra.Command
+var (
+	clusterListCmd  *cobra.Command
+	clusterListArgs *clusterListOptions
+)
 
 var _ = commander.RegisterCommandVar(func() {
+
+	clusterListArgs = &clusterListOptions{}
 	clusterListCmd = &cobra.Command{
 		Use: "list-by-context",
 		Example: `
@@ -49,10 +59,10 @@ var _ = commander.RegisterCommandVar(func() {
   pxc cluster list-by-context
 
   # Show cluster information for contexts that match contain 'east-coast' in the name
-  pxc cluster list-by-context '*east-coast*'
+  pxc cluster list-by-context --context-match='*east-coast*,*south*'
 
   # Output all Kubernetes and Portworx cluster information as json for your contexts that match '*on-prem*'
-  pxc cluster list-by-context -o json '*on-prem*'`,
+  pxc cluster list-by-context -o json --context-match='*on-prem*'`,
 		Aliases: []string{"get", "list", "show"},
 		Short:   "Show Portworx and Kubernetes information for every context in your kubeconfig",
 		RunE:    listClusterExec,
@@ -61,6 +71,8 @@ var _ = commander.RegisterCommandVar(func() {
 
 var _ = commander.RegisterCommandInit(func() {
 	ClusterAddCommand(clusterListCmd)
+	clusterListCmd.Flags().StringVar(&clusterListArgs.contextMatch,
+		"context-match", "", "Comma separated list of expressions match the appropriate context")
 	clusterListCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
 })
 
@@ -129,9 +141,10 @@ func (f *clustersGetFormatter) getClusters() ([]*ClusterInfo, error) {
 	clusterInfos := make([]*ClusterInfo, 0)
 
 	config.CM().ForEachContext(func(context, clusterName string) error {
-		if len(f.args) > 0 &&
-			!util.ListContains(f.args, context) &&
-			!util.ListMatchGlob(f.args, context) {
+		contextMatches := strings.Split(clusterListArgs.contextMatch, ",")
+		if len(clusterListArgs.contextMatch) > 0 &&
+			!util.ListContains(contextMatches, context) &&
+			!util.ListMatchGlob(contextMatches, context) {
 			return nil
 		}
 
