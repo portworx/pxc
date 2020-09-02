@@ -1,5 +1,5 @@
 /*
-Copyright © 2019 Portworx
+Copyright © 2020 Portworx
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,7 +16,11 @@ limitations under the License.
 package handler
 
 import (
+	// import all handlers to register them
+	_ "github.com/portworx/pxc/handler/auth"
+	_ "github.com/portworx/pxc/handler/auth/guestaccess"
 	_ "github.com/portworx/pxc/handler/cluster"
+	_ "github.com/portworx/pxc/handler/cluster/alerts"
 	_ "github.com/portworx/pxc/handler/config"
 	_ "github.com/portworx/pxc/handler/login"
 	_ "github.com/portworx/pxc/handler/node"
