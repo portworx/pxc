@@ -1,0 +1,220 @@
+#!/bin/bash
+#
+# Copyright © 2020 Portworx
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# USE ONLY FOR DEVELOPMENT
+# Implementation of the blog: https://www.openlogic.com/blog/granting-user-access-your-kubernetes-cluster
+
+function fail() {
+    echo "$1"
+    exit 1
+}
+
+# run() from BATS testing system
+function runorfail() {
+    local origFlags="$-"
+    set +eET
+    local origIFS="$IFS"
+    echo $@
+    output="$("$@" 2>&1)"
+    if [ $? -ne 0 ]; then
+        fail "Failed to execute ${*}"
+    fi
+    IFS=$'\n' lines=($output)
+    IFS="$origIFS"
+    set "-$origFlags"
+}
+
+# Creats a user in Kubernetes only. Use createUserKubeconfig() instead to create a full
+# kubeconfig for the new user.
+function createUser() {
+    local username="$1"
+    local location="$2"
+
+    runorfail openssl req -new -newkey rsa:4096 -nodes \
+        -keyout ${location}/${username}-k8s.key \
+        -out ${location}/${username}-k8s.csr \
+        -subj "/CN=${username}/O=${ORGANIZATION}"
+
+    cat <<EOF | kubectl --context=$CONTEXT apply -f -
+apiVersion: certificates.k8s.io/v1beta1
+kind: CertificateSigningRequest
+metadata:
+  name: ${username}-access
+spec:
+  request: $(cat ${location}/${username}-k8s.csr | base64 | tr -d '\n')
+  usages:
+  - client auth
+EOF
+    if [ $? -ne 0 ] ; then
+        fail "Failed to create certificate signing request in Kubernetes"
+    fi
+
+    runorfail kubectl --context=$CONTEXT certificate approve ${username}-access
+    kubectl --context=$CONTEXT get csr ${username}-access \
+        -o jsonpath='{.status.certificate}' | base64 --decode > ${location}/${username}-kubeconfig.crt
+    if [ $? -ne 0 ] ; then
+        fail "Failed to get certificate for user"
+    fi
+}
+
+# Creates a new Kubernetes user only able to access their namespace with the
+# same name. The kubeconfig for this user must be passed in.
+function createUserKubeconfig() {
+    local user="$1"
+    local location="$2"
+    local cafile="$3"
+    local kubeconfig="${location}/${user}-kubeconfig.conf"
+
+    echo ">>> Registering ${user}"
+
+    # create certs for user
+    createUser "$user" "$location"
+
+    # Create namespace
+    if ! kubectl --context=$CONTEXT get namespace ${NAMESPACE} > /dev/null 2>&1 ; then
+        runorfail kubectl create namespace ${NAMESPACE} --context=$CONTEXT
+    fi
+
+    # Enable user to use their namespace
+    runorfail kubectl create rolebinding ${user}-admin \
+        --context=$CONTEXT \
+        --namespace=${NAMESPACE} \
+        --clusterrole=admin \
+        --user=${user}
+
+    # Enable token to have API access
+    runorfail kubectl create rolebinding default-access-rest \
+        --context=$CONTEXT \
+        --namespace=${NAMESPACE} \
+        --clusterrole=admin \
+        --serviceaccount=${user}:default
+
+    echo ">>> Creating ${kubeconfig}"
+
+    # Create config for user
+    kubectl config set-cluster $cluster \
+        --server=$address \
+        --certificate-authority=$cafile \
+        --embed-certs=true \
+        --kubeconfig=${kubeconfig}
+    kubectl config set-credentials \
+        ${user} \
+        --client-certificate=${location}/${user}-kubeconfig.crt \
+        --client-key=${location}/${user}-k8s.key \
+        --embed-certs \
+        --kubeconfig=${kubeconfig}
+    kubectl --kubeconfig=${kubeconfig} config set-context ${user} \
+        --cluster=${cluster} \
+        --user=${user} \
+        --namespace=${NAMESPACE}
+    kubectl --kubeconfig=${kubeconfig} config use-context ${user}
+    
+    echo ""
+    echo ">>> Kubeconfig ready: ${kubeconfig}"
+}
+
+function usage() {
+    echo "
+Creates a new Kubernetes user and creating a new kubeconfig
+
+Usage:
+  kubectl pxc useradd [flags]
+
+Flags:
+  -h, --help        help for create
+  --name            Name of user
+  --namespace       Specify the new namespace for the user (default: user name)
+  --organization    Name of the organization (default: portworx)
+  --px-secret       Name of secret to contain the Portworx token (default: px-user-token)
+  --outdir          Directory where to place the created files (default: .)
+  --kubeconfig      Specify the kubeconfig to use (optional)
+  --context         Specify the context to use (optional)
+"
+  exit 1
+}
+
+parsed=$(getopt -o h -n "kubectl pxc useradd" --long name:,namespace:,help,organization:,px-secret:,outdir:,context:,kubeconfig: -- "$@" )
+if [ $? -ne 0 ] ; then
+    usage
+fi
+
+eval set -- "$parsed"
+
+NAME=""
+ORGANIZATION="portworx"
+PXSECRET="px-user-token"
+NAMESPACE=""
+CONTEXT=""
+OUTDIR="."
+
+while true; do
+    case "$1" in
+        --organization) ORGANIZATION="$2"; shift 2 ;;
+        --namespace) NAMESPACE="$2"; shift 2 ;;
+        --name) NAME="$2"; shift 2 ;;
+        --px-secret) PXSECRET="$2"; shift 2 ;;
+        --outdir) OUTDIR="$2"; shift 2 ;;
+        --context) CONTEXT="$2"; shift 2;;
+        --kubeconfig) export KUBECONFIG="$2"; shift 2;;
+        -h | --help) usage;;
+        --) shift; break ;;
+        *) usage; break ;;
+    esac
+done
+
+if [ "$NAME" = "" ] ; then
+    echo "Must provide a user name"
+    exit 1
+fi
+
+if [ "$NAMESPACE" = "" ] ; then
+    NAMESPACE="$NAME"
+fi
+
+if [ "$CONTEXT" = "" ] ; then
+    CONTEXT=$(kubectl config view --raw -o jsonpath="{.current-context}")
+fi
+
+if [ "$OUTDIR" != "." -a ! -d "$OUTDIR" ] ; then
+    runorfail mkdir $OUTDIR
+fi
+
+# Check that kubectl config works
+if ! kubectl --context=$CONTEXT version --short=true > /dev/null 2>&1 ; then
+    fail "kubectl failed to communicate with Kubernetes. Is the kubeconfig setup correctly?"
+fi
+
+# Use the current context cluster address and CA Cert data
+cafile=/tmp/cacert.$$
+cluster=$(kubectl config view --raw -o jsonpath="{.contexts[?(@.name==\"$CONTEXT\")].context.cluster}")
+address=$(kubectl config view --raw -o jsonpath="{.clusters[?(@.name==\"$cluster\")].cluster.server}")
+cacert_data=$(kubectl config view --raw -o jsonpath="{.clusters[?(@.name==\"$cluster\")].cluster.certificate-authority-data}")
+if [ -z ${cacert_data} ] ; then
+    fail "No CA cert data found in cluster ${cluster}"
+elif [ ! -f ${cacert_data} ] ; then
+    echo ${cacert_data} | base64 -d > $cafile
+    delete_cafile=$cafile
+else
+    cafile=$cacert_data
+fi
+
+createUserKubeconfig "${NAME}" "${OUTDIR}" "${cafile}"
+
+# Cleanup
+if [ -f $delete_cafile ] ; then
+    rm -f $delete_cafile > /dev/null 2>&1
+fi
