@@ -1,0 +1,23 @@
+name: pxc utilities
+synopsis: pxc utility commands
+options:
+- name: help
+  shorthand: h
+  default_value: "false"
+  usage: help for utilities
+inherited_options:
+- name: pxc.config
+  usage: Config file (default is $HOME/.pxc/config.yml)
+- name: pxc.config-dir
+  default_value: /home/lpabon/.pxc
+  usage: Config directory
+- name: pxc.context
+  usage: Force context name for the command
+- name: pxc.token
+  usage: Portworx authentication token
+- name: pxc.v
+  default_value: "0"
+  usage: '[0-3] Log level verbosity'
+see_also:
+- pxc - Portworx client
+- token-generate - Generate a Portworx token

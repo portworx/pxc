@@ -1,0 +1,37 @@
+name: pxc
+synopsis: Portworx client
+description: |-
+  pxc is a Portworx client which allows users to communicate with their storage cluster
+  from their client machine combining information from both Kubernetes and Portworx.
+
+  Please see https://docs.portworx.com/reference/ for more information.
+options:
+- name: help
+  shorthand: h
+  default_value: "false"
+  usage: help for pxc
+- name: options
+  default_value: "false"
+  usage: Show global options for all commands
+- name: pxc.config
+  usage: Config file (default is $HOME/.pxc/config.yml)
+- name: pxc.config-dir
+  default_value: /home/lpabon/.pxc
+  usage: Config directory
+- name: pxc.context
+  usage: Force context name for the command
+- name: pxc.token
+  usage: Portworx authentication token
+- name: pxc.v
+  default_value: "0"
+  usage: '[0-3] Log level verbosity'
+see_also:
+- cluster - Manage Portworx cluster
+- component - Provides utilities for interacting with components
+- config - Setup pxc configuration
+- context - Manage connections to Portworx and other systems
+- node - Portworx node management
+- script - Run a script against the current cluster
+- utilities - pxc utility commands
+- version - Show pxc version information
+- volume - Volume life cycle management

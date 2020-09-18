@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-intree-multitenant
+  labels:
+    app: nginx-intree-multitenant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-intree-multitenant
+  template:
+    metadata:
+      labels:
+        app: nginx-intree-multitenant
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+      volumes:
+        - name: www
+          persistentVolumeClaim:
+            claimName: pvc-intree-multitenant

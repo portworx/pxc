@@ -1,0 +1,87 @@
+name: pxc volume logs
+synopsis: Print Portworx logs related to specified volume(s)
+options:
+- name: all-logs
+  default_value: "false"
+  usage: "If specified all logs from the pods related to the volume are displayed.
+    Otherwise only log lines that reference the volume or its id is displayed \n"
+- name: filter
+  usage: |
+    Comma seperated list of strings to search for. Log line will be printed if any one of the strings match. Note that if --tail is specified the filter is applied on only those many lines.
+- name: follow
+  shorthand: f
+  default_value: "false"
+  usage: Specify if the logs should be streamed.
+- name: help
+  shorthand: h
+  default_value: "false"
+  usage: help for logs
+- name: ignore-errors
+  default_value: "false"
+  usage: |
+    If watching / following Portworx logs, allow for any errors that occur to be non-fatal
+- name: limit-bytes
+  default_value: "0"
+  usage: Maximum bytes of logs to return. Defaults to no limit.
+- name: max-log-requests
+  default_value: "5"
+  usage: |
+    Specify maximum number of concurrent logs to follow. Defaults to 5.
+- name: previous
+  default_value: "false"
+  usage: |
+    If true, print the logs for the previous instance of the container in a pod if it exists.
+- name: px-namespace
+  default_value: kube-system
+  usage: Kubernetes namespace in which Portworx is installed
+- name: selector
+  shorthand: l
+  usage: Selector (label query) comma-separated name=value pairs
+- name: show-pod-info
+  default_value: "false"
+  usage: Include pod info on each line in the log output
+- name: since
+  default_value: 0s
+  usage: |
+    Only return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used.
+- name: since-time
+  usage: |
+    Only return logs after a specific date (RFC3339). Defaults to all logs. Only one of since-time / since may be used.
+- name: tail
+  default_value: "-1"
+  usage: |
+    Lines of recent log file to work on. Defaults to -1, showing all log lines. All filters will be applied on top of these lines
+- name: timestamps
+  default_value: "false"
+  usage: Include timestamps on each line in the log output
+inherited_options:
+- name: pxc.config
+  usage: Config file (default is $HOME/.pxc/config.yml)
+- name: pxc.config-dir
+  default_value: /home/lpabon/.pxc
+  usage: Config directory
+- name: pxc.context
+  usage: Force context name for the command
+- name: pxc.token
+  usage: Portworx authentication token
+- name: pxc.v
+  default_value: "0"
+  usage: '[0-3] Log level verbosity'
+example: |2-
+
+    # Return Portworx logs related to volume abc
+    pxc volume logs abc
+
+    # Begin streaming the Portworx logs related to volume abc
+    pxc volume logs -f  abc
+
+    # Apply the volume filters  and the filters specified in --filters to the most recent 20 log lines of each relevant pod  and display only lines that match
+    pxc volume logs --tail=20 abc
+
+    # Display all log lines that is related to volume abc or has either error or warning in the log lines
+    pxc volume logs abc --filter "error,warning"
+
+    # Show all Portworx logs related to volume abc written in the last hour
+    pxc volume logs --since=1h volume
+see_also:
+- pxc volume - Volume life cycle management

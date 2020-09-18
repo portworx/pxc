@@ -1,0 +1,27 @@
+name: pxc volume clone
+synopsis: Creates a new volume from a volume or snapshot
+description: Create a clone for the specified volume
+options:
+- name: help
+  shorthand: h
+  default_value: "false"
+  usage: help for clone
+inherited_options:
+- name: pxc.config
+  usage: Config file (default is $HOME/.pxc/config.yml)
+- name: pxc.config-dir
+  default_value: /home/lpabon/.pxc
+  usage: Config directory
+- name: pxc.context
+  usage: Force context name for the command
+- name: pxc.token
+  usage: Portworx authentication token
+- name: pxc.v
+  default_value: "0"
+  usage: '[0-3] Log level verbosity'
+example: |2-
+
+    # Create a new volume called 'newvolume' from an existing volume called 'oldvolume'
+    pxc create volumeclone oldvolume newvolume
+see_also:
+- pxc volume - Volume life cycle management

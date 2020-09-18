@@ -1,0 +1,86 @@
+name: pxc node logs
+synopsis: Print Portworx logs for specified nodes
+options:
+- name: all-nodes
+  default_value: "false"
+  usage: If specified, logs from all nodes will be displayed
+- name: filter
+  usage: |
+    Comma seperated list of strings to search for. Log line will be printed if any one of the strings match. Note that if --tail is specified the filter is applied on only those many lines.
+- name: follow
+  shorthand: f
+  default_value: "false"
+  usage: Specify if the logs should be streamed.
+- name: help
+  shorthand: h
+  default_value: "false"
+  usage: help for logs
+- name: ignore-errors
+  default_value: "false"
+  usage: |
+    If watching / following Portworx logs, allow for any errors that occur to be non-fatal
+- name: limit-bytes
+  default_value: "0"
+  usage: Maximum bytes of logs to return. Defaults to no limit.
+- name: max-log-requests
+  default_value: "5"
+  usage: |
+    Specify maximum number of concurrent logs to follow. Defaults to 5.
+- name: previous
+  default_value: "false"
+  usage: |
+    If true, print the logs for the previous instance of the container in a pod if it exists.
+- name: px-namespace
+  default_value: kube-system
+  usage: Kubernetes namespace in which Portworx is installed
+- name: show-pod-info
+  default_value: "false"
+  usage: Include pod info on each line in the log output
+- name: since
+  default_value: 0s
+  usage: |
+    Only return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used.
+- name: since-time
+  usage: |
+    Only return logs after a specific date (RFC3339). Defaults to all logs. Only one of since-time / since may be used.
+- name: tail
+  default_value: "-1"
+  usage: |
+    Lines of recent log file to work on. Defaults to -1, showing all log lines. All filters will be applied on top of these lines
+- name: timestamps
+  default_value: "false"
+  usage: Include timestamps on each line in the log output
+inherited_options:
+- name: pxc.config
+  usage: Config file (default is $HOME/.pxc/config.yml)
+- name: pxc.config-dir
+  default_value: /home/lpabon/.pxc
+  usage: Config directory
+- name: pxc.context
+  usage: Force context name for the command
+- name: pxc.token
+  usage: Portworx authentication token
+- name: pxc.v
+  default_value: "0"
+  usage: '[0-3] Log level verbosity'
+example: |2-
+
+    # Return Portworx logs from all nodes
+    pxc node logs --all-nodes
+
+    # Return Portworx logs from  node abc
+    pxc node logs abc
+
+    # Begin streaming the Portworx logs from  node abc
+    pxc node logs -f  abc
+
+    # Apply filters to only the most recent 20 log lines and display the matched lines
+    pxc node logs --tail=20 abc
+
+    # Display all log lines that has either error or warning on node abc
+    pxc node logs abc --filter "error,warning"
+
+    # Show all Portworx logs from node abc written in the last hour
+    pxc node logs --since=1h node
+see_also:
+- pxc node - Portworx node management

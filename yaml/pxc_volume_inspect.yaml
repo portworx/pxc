@@ -1,0 +1,43 @@
+name: pxc volume inspect
+synopsis: Describe a Portworx volume
+description: Show detailed information of Portworx volumes
+options:
+- name: deep
+  default_value: "false"
+  usage: Collect more information, this may delay the request
+- name: help
+  shorthand: h
+  default_value: "false"
+  usage: help for inspect
+- name: owner
+  usage: Owner of volume
+- name: show-k8s-info
+  default_value: "false"
+  usage: Show kubernetes information
+- name: volumegroup
+  usage: Volume group id
+inherited_options:
+- name: pxc.config
+  usage: Config file (default is $HOME/.pxc/config.yml)
+- name: pxc.config-dir
+  default_value: /home/lpabon/.pxc
+  usage: Config directory
+- name: pxc.context
+  usage: Force context name for the command
+- name: pxc.token
+  usage: Portworx authentication token
+- name: pxc.v
+  default_value: "0"
+  usage: '[0-3] Log level verbosity'
+example: |2-
+
+    # Describe all the volumes:
+    pxc volume inspect
+
+    # Describe specific volume called "abc":
+    pxc volume inspect abc
+
+    # Describe list of volumes (abc, xyz)
+    pxc volume inspect abc xyz
+see_also:
+- pxc volume - Volume life cycle management

@@ -1,0 +1,40 @@
+diff --git a/handler/alerts/get.go b/handler/alerts/get.go
+index b4222ad..9aebc2d 100644
+--- a/handler/alerts/get.go
++++ b/handler/alerts/get.go
+@@ -36,27 +36,27 @@ var getAlertsCmd *cobra.Command
+ 
+ var _ = commander.RegisterCommandVar(func() {
+ 	getAlertsCmd = &cobra.Command{
+-		Use:     "alerts",
+-		Aliases: []string{"alert"},
++		Use:     "alert",
++		Aliases: []string{"alerts"},
+ 		Short:   "Get information about Portworx alerts",
+ 		Example: `
+   # Get portworx related alerts
+-  pxc get alerts
++  pxc get alert
+ 
+   # Fetch alerts based on particular alert id. Fetch all alerts based on "VolumeCreateSuccess" id
+-  pxc get alerts --id "VolumeCreateSuccess"
++  pxc get alert --id "VolumeCreateSuccess"
+ 
+   # Fetch alerts between a time window
+-  pxctl alerts show --start-time "2019-09-19T09:40:26.371Z" --end-time "2019-09-19T09:43:59.371Z"
++  pxc get alert show --start-time "2019-09-19T09:40:26.371Z" --end-time "2019-09-19T09:43:59.371Z"
+ 
+   # Fetch alerts with min severity level
+-  pxc get alerts --severity "alarm"
++  pxc get alert --severity "alarm"
+ 
+   # Fetch alerts based on resource type. Here we fetch all "volume" related alerts
+-  pxc get alerts -t "volume"
++  pxc get alert -t "volume"
+ 
+   # Fetch alerts based on resource id. Here we fetch alerts related to "cluster"
+-  pxc get alerts --id "1f95a5e7-6a38-41f9-9cb2-8bb4f8ab72c5"`,
++  pxc get alert --id "1f95a5e7-6a38-41f9-9cb2-8bb4f8ab72c5"`,
+ 		RunE: getAlertsExec,
+ 	}
+ })

@@ -1,0 +1,29 @@
+name: pxc component
+synopsis: Provides utilities for interacting with components
+description: |2-
+
+  Provides utilities for interacting with components.
+
+  Plugins provide extended functionality that is not part of the major command-line distribution.
+  Please refer to the documentation and examples for more information about how write your own components.
+options:
+- name: help
+  shorthand: h
+  default_value: "false"
+  usage: help for component
+inherited_options:
+- name: pxc.config
+  usage: Config file (default is $HOME/.pxc/config.yml)
+- name: pxc.config-dir
+  default_value: /home/lpabon/.pxc
+  usage: Config directory
+- name: pxc.context
+  usage: Force context name for the command
+- name: pxc.token
+  usage: Portworx authentication token
+- name: pxc.v
+  default_value: "0"
+  usage: '[0-3] Log level verbosity'
+see_also:
+- pxc - Portworx client
+- list - List all visible component executables

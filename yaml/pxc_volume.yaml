@@ -1,0 +1,31 @@
+name: pxc volume
+synopsis: Volume life cycle management
+options:
+- name: help
+  shorthand: h
+  default_value: "false"
+  usage: help for volume
+inherited_options:
+- name: pxc.config
+  usage: Config file (default is $HOME/.pxc/config.yml)
+- name: pxc.config-dir
+  default_value: /home/lpabon/.pxc
+  usage: Config directory
+- name: pxc.context
+  usage: Force context name for the command
+- name: pxc.token
+  usage: Portworx authentication token
+- name: pxc.v
+  default_value: "0"
+  usage: '[0-3] Log level verbosity'
+see_also:
+- pxc - Portworx client
+- clone - Creates a new volume from a volume or snapshot
+- create - Create a volume in Portworx
+- delete - Delete a volume in Portworx
+- inspect - Describe a Portworx volume
+- list - Get information about Portworx volumes
+- logs - Print Portworx logs related to specified volume(s)
+- snapshot - Create a volume snapshot
+- stats - Get stats of Portworx volumes
+- update - Update field(s) of a portworx volume

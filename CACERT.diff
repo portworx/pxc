@@ -1,0 +1,45 @@
+diff --git a/handler/config/cluster_set.go b/handler/config/cluster_set.go
+index 0490506..1c91b4d 100644
+--- a/handler/config/cluster_set.go
++++ b/handler/config/cluster_set.go
+@@ -16,6 +16,9 @@ limitations under the License.
+ package configcli
+ 
+ import (
++	"fmt"
++	"io/ioutil"
++
+ 	"github.com/portworx/pxc/pkg/commander"
+ 	"github.com/portworx/pxc/pkg/config"
+ 	"github.com/portworx/pxc/pkg/util"
+@@ -69,6 +72,14 @@ var _ = commander.RegisterCommandInit(func() {
+ 
+ func clusterSetExec(cmd *cobra.Command, args []string) error {
+ 
++	if len(clusterSet.CACert) != 0 {
++		var err error
++		clusterSet.CACertData, err = ioutil.ReadFile(clusterSet.CACert)
++		if err != nil {
++			return fmt.Errorf("Failed to read %s: %v", clusterSet.CACert, err)
++		}
++	}
++
+ 	if err := config.CM().ConfigSaveCluster(clusterSet); err != nil {
+ 		return err
+ 	}
+diff --git a/pkg/kubernetes/portforward.go b/pkg/kubernetes/portforward.go
+index 5c0c11e..02fe1c7 100644
+--- a/pkg/kubernetes/portforward.go
++++ b/pkg/kubernetes/portforward.go
+@@ -149,7 +149,10 @@ func (p *KubectlPortForwarder) Endpoint() string {
+ func (p *KubectlPortForwarder) getEndpointFromKubectlOutput(sbuf string) (string, error) {
+ 	index := strings.Index(sbuf, "127.0.0.1:")
+ 	if index >= 0 {
+-		return strings.Split(sbuf[index:], " ")[0], nil
++		//return strings.Split(sbuf[index:], " ")[0], nil
++		e := strings.Split(sbuf[index:], " ")[0]
++		e = "localhost:" + strings.Split(e, ":")[1]
++		return e, nil
+ 	}
+ 
+ 	index = strings.Index(sbuf, "[::1]:")

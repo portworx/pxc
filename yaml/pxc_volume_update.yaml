@@ -1,0 +1,84 @@
+name: pxc volume update
+synopsis: Update field(s) of a portworx volume
+options:
+- name: halevel
+  default_value: "0"
+  usage: 'New replication factor (Valid Range: [1, 3]) (default 1)'
+- name: nodes
+  default_value: '[]'
+  usage: Desired set of nodes for the volume data
+- name: size
+  default_value: "0"
+  usage: New size for the volume (GiB) (default 1)
+- name: shared
+  usage: 'set shared setting (Valid Values: [on off]) (default "off")'
+- name: sharedv4
+  usage: |
+    set sharedv4 setting (Valid Values: [on off]) (default "off")
+- name: sticky
+  usage: 'set sticky setting (Valid Values: [on off]) (default "off")'
+- name: add-collaborators
+  usage: Add list of collaborators to the existing list
+- name: add-groups
+  usage: Add list of groups to the existing list
+- name: remove-collaborators
+  usage: Remove the given users from the collaborators list
+- name: remove-groups
+  usage: Remove the given groups from the group list
+- name: remove-all-collaborators
+  default_value: "false"
+  usage: Remove all the user from the collaborators list
+- name: remove-all-groups
+  default_value: "false"
+  usage: Remove all the groups from the group list
+- name: early-ack
+  usage: |
+    Reply to async write requests after it is copied to shared memory (Valid Values: [on off]) (default "off")
+- name: async-io
+  usage: |
+    Enable async IO to backing storage (Valid Values: [on off]) (default "off")
+- name: io-profile
+  usage: |
+    IO Profile (Valid Values: [sequential cms db db_remote sync_shared]) (default "sequential")
+- name: nodiscard
+  usage: |
+    Disable discard support for this volume (Valid Values: [on off]) (default "off")
+- name: help
+  shorthand: h
+  default_value: "false"
+  usage: help for update
+inherited_options:
+- name: pxc.config
+  usage: Config file (default is $HOME/.pxc/config.yml)
+- name: pxc.config-dir
+  default_value: /home/lpabon/.pxc
+  usage: Config directory
+- name: pxc.context
+  usage: Force context name for the command
+- name: pxc.token
+  usage: Portworx authentication token
+- name: pxc.v
+  default_value: "0"
+  usage: '[0-3] Log level verbosity'
+example: |2-
+
+    #### Update Volume Spec ####
+
+    # Update the size of the volume to 2GiB
+    pxc volume update xyz --size 2
+
+    # Set the shared flag of the volume xyz
+    pxc volume update xyz --shared=on
+
+    #### Update Volume Access Controls ####
+
+    # Update collaborators and groups of the volume access list
+    pxc volume update xyz --add-collaborators user1:r,user2:w,user3:a --add-groups group1:r,group2:w,group3:a
+
+    # Update collaborators and remove few groups from the volume access list
+    pxc volume update xyz --add-collaborators user4:r,user5:w, --remove-groups group1:r
+
+    # Update the access type of the existing collaborators and groups
+    pxc volume update xyz --add-collaborators user1:a --add-groups group1:a
+see_also:
+- pxc volume - Volume life cycle management

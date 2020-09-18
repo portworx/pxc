@@ -1,0 +1,25 @@
+name: pxc config context
+synopsis: Setup pxc contexts
+options:
+- name: help
+  shorthand: h
+  default_value: "false"
+  usage: help for context
+inherited_options:
+- name: pxc.config
+  usage: Config file (default is $HOME/.pxc/config.yml)
+- name: pxc.config-dir
+  default_value: /home/lpabon/.pxc
+  usage: Config directory
+- name: pxc.context
+  usage: Force context name for the command
+- name: pxc.token
+  usage: Portworx authentication token
+- name: pxc.v
+  default_value: "0"
+  usage: '[0-3] Log level verbosity'
+see_also:
+- pxc config - Setup pxc configuration
+- delete - Delete pxc context
+- set - Set context information for which cluster and credentials to uset
+- use - Sets the context to use

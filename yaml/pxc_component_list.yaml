@@ -1,0 +1,29 @@
+name: pxc component list
+synopsis: List all visible component executables
+description: "\n\t\tList all available component files on a user's PATH.\n\n\t\tAvailable
+  component files are those that are:\n\t\t- executable\n\t\t- anywhere on the user's
+  PATH\n\t\t- begin with \"pxc-\""
+options:
+- name: help
+  shorthand: h
+  default_value: "false"
+  usage: help for list
+- name: name-only
+  default_value: "false"
+  usage: |
+    If true, display only the binary name of each component, rather than its full path
+inherited_options:
+- name: pxc.config
+  usage: Config file (default is $HOME/.pxc/config.yml)
+- name: pxc.config-dir
+  default_value: /home/lpabon/.pxc
+  usage: Config directory
+- name: pxc.context
+  usage: Force context name for the command
+- name: pxc.token
+  usage: Portworx authentication token
+- name: pxc.v
+  default_value: "0"
+  usage: '[0-3] Log level verbosity'
+see_also:
+- pxc component - Provides utilities for interacting with components

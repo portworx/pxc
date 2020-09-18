@@ -1,0 +1,45 @@
+name: pxc volume list
+synopsis: Get information about Portworx volumes
+options:
+- name: deep
+  default_value: "false"
+  usage: Collect more information, this may delay the request
+- name: help
+  shorthand: h
+  default_value: "false"
+  usage: help for list
+- name: output
+  shorthand: o
+  usage: Output in yaml|json|wide
+- name: owner
+  usage: Owner of volume
+- name: selector
+  shorthand: l
+  usage: Selector (label query) comma-separated name=value pairs
+- name: show-k8s-info
+  default_value: "false"
+  usage: Show kubernetes information
+- name: show-labels
+  default_value: "false"
+  usage: Show labels in the last column of the output
+- name: volumegroup
+  usage: Volume group id
+inherited_options:
+- name: pxc.config
+  usage: Config file (default is $HOME/.pxc/config.yml)
+- name: pxc.config-dir
+  default_value: /home/lpabon/.pxc
+  usage: Config directory
+- name: pxc.context
+  usage: Force context name for the command
+- name: pxc.token
+  usage: Portworx authentication token
+- name: pxc.v
+  default_value: "0"
+  usage: '[0-3] Log level verbosity'
+example: |2-
+
+    # Get informtation about the portworx volumes
+    pxc volume list
+see_also:
+- pxc volume - Volume life cycle management

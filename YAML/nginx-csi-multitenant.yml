@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-csi-multitenant
+  labels:
+    app: nginx-csi-multitenant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-csi-multitenant
+  template:
+    metadata:
+      labels:
+        app: nginx-csi-multitenant
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+      volumes:
+        - name: www
+          persistentVolumeClaim:
+            claimName: pvc-csi-multitenant

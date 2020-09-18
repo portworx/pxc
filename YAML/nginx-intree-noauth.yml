@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-intree-noauth
+  labels:
+    app: nginx-intree-noauth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-intree-noauth
+  template:
+    metadata:
+      labels:
+        app: nginx-intree-noauth
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+      volumes:
+        - name: www
+          persistentVolumeClaim:
+            claimName: pvc-intree-noauth

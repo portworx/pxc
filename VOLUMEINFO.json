@@ -1,0 +1,156 @@
+[
+  {
+    "id": "a88ac14d-684b-4228-a39b-1a54951ada2f",
+    "cpu": 2.269861286254729,
+    "mem_total": 8201986048,
+    "mem_used": 1605832704,
+    "mem_free": 6596153344,
+    "status": 2,
+    "disks": {
+      "/dev/sdb": {
+        "id": "1",
+        "path": "/dev/sdb",
+        "medium": 1,
+        "online": true,
+        "seq_write": 308417000,
+        "size": 34359738368,
+        "used": 2437393940,
+        "rotation_speed": "Unknown",
+        "last_scan": {
+          "seconds": 1590081759,
+          "nanos": 310867572
+        }
+      },
+      "/dev/sdc": {
+        "id": "1",
+        "path": "/dev/sdc",
+        "medium": 1,
+        "online": true,
+        "seq_write": 353839000,
+        "size": 26843545600,
+        "used": 2437393940,
+        "rotation_speed": "Unknown",
+        "last_scan": {
+          "seconds": 1590081759,
+          "nanos": 315111114
+        }
+      },
+      "/dev/sdd": {
+        "id": "1",
+        "path": "/dev/sdd",
+        "medium": 1,
+        "online": true,
+        "seq_write": 353217000,
+        "size": 137438953472,
+        "used": 5368709120,
+        "rotation_speed": "Unknown",
+        "last_scan": {
+          "seconds": 1590081759,
+          "nanos": 319418254
+        }
+      },
+      "/dev/sde": {
+        "id": "2",
+        "path": "/dev/sde",
+        "medium": 1,
+        "online": true,
+        "size": 137438953472,
+        "used": 4305704714,
+        "rotation_speed": "Unknown",
+        "last_scan": {
+          "seconds": 1590081759,
+          "nanos": 319445494
+        }
+      },
+      "/dev/sdf": {
+        "id": "3",
+        "path": "/dev/sdf",
+        "medium": 1,
+        "online": true,
+        "size": 137438953472,
+        "used": 5379446538,
+        "rotation_speed": "Unknown",
+        "last_scan": {
+          "seconds": 1590081759,
+          "nanos": 319468760
+        }
+      }
+    },
+    "pools": [
+      {
+        "Cos": 3,
+        "Medium": 1,
+        "RaidLevel": "raid0",
+        "TotalSize": 34359738368,
+        "Used": 2437393940,
+        "labels": {
+          "beta.kubernetes.io/arch": "amd64",
+          "beta.kubernetes.io/os": "linux",
+          "iopriority": "HIGH",
+          "kubernetes.io/arch": "amd64",
+          "kubernetes.io/hostname": "ip-70-0-63-155.brbnca.spcsdns.net",
+          "kubernetes.io/os": "linux",
+          "medium": "STORAGE_MEDIUM_SSD"
+        },
+        "uuid": "ae2a6e27-6d16-4284-9622-79fba6b8ed23"
+      },
+      {
+        "ID": 1,
+        "Cos": 3,
+        "Medium": 1,
+        "RaidLevel": "raid0",
+        "TotalSize": 26843545600,
+        "Used": 2437393940,
+        "labels": {
+          "beta.kubernetes.io/arch": "amd64",
+          "beta.kubernetes.io/os": "linux",
+          "iopriority": "HIGH",
+          "kubernetes.io/arch": "amd64",
+          "kubernetes.io/hostname": "ip-70-0-63-155.brbnca.spcsdns.net",
+          "kubernetes.io/os": "linux",
+          "medium": "STORAGE_MEDIUM_SSD"
+        },
+        "uuid": "45147e95-4dc1-46a6-9928-b9084b8df570"
+      },
+      {
+        "ID": 2,
+        "Cos": 3,
+        "Medium": 1,
+        "RaidLevel": "raid0",
+        "TotalSize": 412316860416,
+        "Used": 15053860372,
+        "labels": {
+          "beta.kubernetes.io/arch": "amd64",
+          "beta.kubernetes.io/os": "linux",
+          "iopriority": "HIGH",
+          "kubernetes.io/arch": "amd64",
+          "kubernetes.io/hostname": "ip-70-0-63-155.brbnca.spcsdns.net",
+          "kubernetes.io/os": "linux",
+          "medium": "STORAGE_MEDIUM_SSD"
+        },
+        "uuid": "23f39d33-58b1-4a87-8e10-bcba9f404378"
+      }
+    ],
+    "mgmt_ip": "70.0.63.155",
+    "data_ip": "70.0.63.155",
+    "hostname": "ip-70-0-63-155.brbnca.spcsdns.net",
+    "node_labels": {
+      "City": "Santa Cruz",
+      "Country": "United States",
+      "Data IP": "70.0.63.155",
+      "ISP": "Telx",
+      "ISP IP": "72.28.98.242",
+      "Kernel Version": "3.10.0-862.3.2.el7.x86_64",
+      "LAT": "3.70313E+01",
+      "LNG": "-1.221198E+02",
+      "Management IP": "70.0.63.155",
+      "OS": "CentOS Linux 7 (Core)",
+      "PX Version": "2.6.0.0-65ce8b1",
+      "Region": "CA",
+      "Timezone": "America/Los_Angeles",
+      "Zip": "95060"
+    },
+    "scheduler_node_name": "ip-70-0-63-155.brbnca.spcsdns.net",
+    "HWType": 1
+  }
+]

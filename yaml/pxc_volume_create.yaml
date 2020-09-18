@@ -1,0 +1,118 @@
+name: pxc volume create
+synopsis: Create a volume in Portworx
+options:
+- name: size
+  default_value: "0"
+  usage: Size in GiB
+- name: replicas
+  default_value: "1"
+  usage: Number of replicas also called HA level [1-3]
+- name: shared
+  default_value: "false"
+  usage: Shared volume using sharedv4 model
+- name: deprecated-shared
+  default_value: "false"
+  usage: Shared volume (deprecated)
+- name: labels
+  usage: |
+    Comma separated list of labels as key-value pairs: 'k1=v1,k2=v2'
+- name: fs
+  default_value: ext4
+  usage: Filesystem type for the volume [none, ext4]
+- name: sticky
+  default_value: "false"
+  usage: Sitcky volume
+- name: journal
+  default_value: "false"
+  usage: Journal data for this volume
+- name: encryption
+  default_value: "false"
+  usage: encrypt this volume
+- name: aggregation-level
+  default_value: "0"
+  usage: 'aggregation level (Valid Values: [1, 2, 3] (default 1)'
+- name: nodes
+  default_value: '[]'
+  usage: Replicat set nodes for this volume
+- name: ioprofile
+  usage: |
+    IO Profile (Valid Values: [sequential cms db db_remote sync_shared]) (default sequential)
+- name: groups
+  usage: |
+    list of group with volume access details, 'group1:r, group2:w'
+- name: collaborators
+  usage: |
+    list of collaborators with volume access details, 'user1:r, user2:w'
+- name: queue-depth
+  default_value: "128"
+  usage: |
+    block device queue depth (Valid Range: [1 256]) (default 128)
+- name: early-ack
+  default_value: "false"
+  usage: |
+    Reply to async write requests after it is copied to shared memory
+- name: async-io
+  default_value: "false"
+  usage: Enable async IO to backing storage
+- name: nodiscard
+  default_value: "false"
+  usage: Disable discard support for this volume
+- name: group-enforced
+  default_value: "false"
+  usage: Enforce group during provision
+- name: scale
+  default_value: "0"
+  usage: 'auto scale to max number (Valid Range: [1 1024]) (default 1)'
+- name: passphrase
+  usage: Passphrase for an encrypted volume
+- name: periodic
+  usage: |
+    periodic snapshot interval in mins,k (keeps 5 by default), 0 disables all schedule snapshots
+- name: daily
+  default_value: '[]'
+  usage: daily snapshot at specified hh:mm,k (keeps 7 by default)
+- name: weekly
+  default_value: '[]'
+  usage: |
+    weekly snapshot at specified weekday@hh:mm,k (keeps 5 by default)
+- name: monthly
+  default_value: '[]'
+  usage: |
+    monthly snapshot at specified day@hh:mm,k (keeps 12 by default)
+- name: policy
+  usage: Schedule policy names separated by comma
+- name: help
+  shorthand: h
+  default_value: "false"
+  usage: help for create
+inherited_options:
+- name: pxc.config
+  usage: Config file (default is $HOME/.pxc/config.yml)
+- name: pxc.config-dir
+  default_value: /home/lpabon/.pxc
+  usage: Config directory
+- name: pxc.context
+  usage: Force context name for the command
+- name: pxc.token
+  usage: Portworx authentication token
+- name: pxc.v
+  default_value: "0"
+  usage: '[0-3] Log level verbosity'
+example: |2-
+
+    # Create a volume called "myvolume" with size as 3GiB and replicas set to 3:
+    pxc volume create myvolume --size=3 --replicas=3
+
+    # Create a volume called "myvolume" with label as "access=slow" and size as 3 GiB:
+    pxc volume create myvolume --size=3 --labels 'access=slow'
+
+    # Create a volume with daily snapshot policy at 00h:10m with retain=2 (maintaing two snapshot copies at a given time):
+    pxc volume create snapvol --daily 00:10,2
+
+    # Create a volume with weekly snapshot for every monday at 00h:12m with retain=2 (maintaing two snapshot copies at a given time):
+    pxc volume create snapvol --weekly monday@00:12,2
+
+    # Create a volume with monthly snapshot on 25th of every month at 10h:10m with retain=2 (maintaing two snapshot copies at a given time):
+    pxc volume create snapvol --monthly 25@10:10,2
+see_also:
+- pxc volume - Volume life cycle management

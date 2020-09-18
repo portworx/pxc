@@ -58,7 +58,7 @@ var _ = commander.RegisterCommandVar(func() {
 		Short: "Generate a Portworx token",
 		Example: `
   # Login to portworx using a secret in Kubernetes
-  pxc utilities token-generate pxc util token-generate \
+  pxc utilities token-generate \
 	--token-email=example.user@example.com \
 	--token-name="Example User" \
 	--token-roles=system.user \

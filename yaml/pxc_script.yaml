@@ -1,0 +1,67 @@
+name: pxc script
+synopsis: Run a script against the current cluster
+description: |2+
+
+  Run a SDK script to communicate to the specified Kubernetes and Portworx systems.
+  Pxc will pass to the script all configuration and authentication information needed.
+
+  Pxc scripts current only support Python scripts, but more langauges will be supported
+  in future releases.
+
+options:
+- name: help
+  shorthand: h
+  default_value: "false"
+  usage: help for script
+- name: language
+  shorthand: l
+  default_value: python
+  usage: Script language. Currently only python is supported.
+inherited_options:
+- name: pxc.config
+  usage: Config file (default is $HOME/.pxc/config.yml)
+- name: pxc.config-dir
+  default_value: /home/lpabon/.pxc
+  usage: Config directory
+- name: pxc.context
+  usage: Force context name for the command
+- name: pxc.token
+  usage: Portworx authentication token
+- name: pxc.v
+  default_value: "0"
+  usage: '[0-3] Log level verbosity'
+example: |2-
+
+    # Python
+
+    You will need to first type the following to install the required library:
+
+        pip3 install --user --upgrade libopenstorage-openstorage
+
+    The following python example application can used to return the id and status
+    of a Portworx cluster:
+
+        import grpc
+
+        from openstorage import api_pb2
+        from openstorage import api_pb2_grpc
+        from openstorage import connector
+
+        # No need to setup connection information to your cluster.
+        # pxc will pass all the required information.
+        c = connector.Connector()
+        channel = c.connect()
+
+        try:
+            clusters = api_pb2_grpc.OpenStorageClusterStub(channel)
+            ic_resp = clusters.InspectCurrent(api_pb2.SdkClusterInspectCurrentRequest())
+            print('Conntected to {0} with status {1}'.format(ic_resp.cluster.id, api_pb2.Status.Name(ic_resp.cluster.status)))
+        except grpc.RpcError as e:
+            print('Failed: code={0} msg={1}'.format(e.code(), e.details()))
+
+    For more information please visit the python tutorial on https://libopenstorage.github.io/
+
+    # Execute a python script called myscript.py
+    pxc script myscript.py
+see_also:
+- pxc - Portworx client
