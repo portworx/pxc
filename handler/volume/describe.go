@@ -313,6 +313,38 @@ func (p *VolumeDescribeFormatter) addVolumeBasicInfo(
 	if len(v.GetLocator().GetVolumeLabels()) != 0 {
 		util.AddMap(t, "Labels:", v.GetLocator().GetVolumeLabels())
 	}
+
+	// Extend for reporting fastpath info
+	t.AddLine("Fastpath preferred:", spec.GetFpPreference())
+	fpConfig := v.GetFpConfig()
+	if spec.GetFpPreference() && fpConfig != nil {
+		t.AddLine("Fastpath Promoted:", fpConfig.GetPromote())
+		t.AddLine("Fastpath dirty:", fpConfig.GetDirty())
+		t.AddLine("Fastpath state:", fpConfig.GetStatus())
+		t.AddLine("Fastpath Coordinator:", fpConfig.GetCoordUuid())
+		t.AddLine("Fastpath replicas:", len(fpConfig.GetReplicas()))
+		for i, r := range fpConfig.GetReplicas() {
+			t.AddLine("Replica:", i)
+			t.AddLine("\tOn Node:", r.GetNodeUuid())
+			t.AddLine("\tProtocol:", r.GetProtocol())
+			t.AddLine("\tSecure:", r.GetAcl())
+			t.AddLine("\tExported:", r.GetExported())
+			if r.GetExported() {
+				t.AddLine("\t\tTarget:", r.GetTarget())
+				t.AddLine("\t\tSource:", r.GetExportedDevice())
+				if r.GetBlock() {
+					t.AddLine("\t\tType: BlockDevice")
+				} else {
+					t.AddLine("\t\tType: File")
+				}
+			}
+
+			t.AddLine("\tImported:", r.GetImported())
+			if r.Imported {
+				t.AddLine("\t\tMapped local device:", r.GetDevpath())
+			}
+		}
+	}
 	return nil
 }
 
