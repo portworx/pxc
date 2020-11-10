@@ -167,6 +167,10 @@ func (p *VolumeDescribeFormatter) AddVolumeDetails(
 	if err != nil {
 		return err
 	}
+	err = p.addFastpathInfo(v, t)
+	if err != nil {
+		return err
+	}
 	err = p.addVolumeStatsInfo(v, t)
 	if err != nil {
 		return err
@@ -314,37 +318,48 @@ func (p *VolumeDescribeFormatter) addVolumeBasicInfo(
 		util.AddMap(t, "Labels:", v.GetLocator().GetVolumeLabels())
 	}
 
-	// Extend for reporting fastpath info
-	t.AddLine("Fastpath preferred:", spec.GetFpPreference())
+	return nil
+}
+
+func (p *VolumeDescribeFormatter) addFastpathInfo(
+	v *api.Volume,
+	t *tabby.Tabby,
+) error {
+	spec := v.GetSpec()
 	fpConfig := v.GetFpConfig()
+
+	// Extend for reporting fastpath info
+	t.AddLine("Fastpath:")
+	t.AddLine("  Preference:", spec.GetFpPreference())
 	if spec.GetFpPreference() && fpConfig != nil {
-		t.AddLine("Fastpath Promoted:", fpConfig.GetPromote())
-		t.AddLine("Fastpath dirty:", fpConfig.GetDirty())
-		t.AddLine("Fastpath state:", fpConfig.GetStatus())
-		t.AddLine("Fastpath Coordinator:", fpConfig.GetCoordUuid())
-		t.AddLine("Fastpath replicas:", len(fpConfig.GetReplicas()))
+		t.AddLine("  Promoted:", fpConfig.GetPromote())
+		t.AddLine("  Dirty:", fpConfig.GetDirty())
+		t.AddLine("  State:", fpConfig.GetStatus())
+		t.AddLine("  Coordinator:", fpConfig.GetCoordUuid())
+		t.AddLine("  Replicas:", len(fpConfig.GetReplicas()))
 		for i, r := range fpConfig.GetReplicas() {
-			t.AddLine("Replica:", i)
-			t.AddLine("\tOn Node:", r.GetNodeUuid())
-			t.AddLine("\tProtocol:", r.GetProtocol())
-			t.AddLine("\tSecure:", r.GetAcl())
-			t.AddLine("\tExported:", r.GetExported())
+			t.AddLine("    Replica:", i)
+			t.AddLine("      On Node:", r.GetNodeUuid())
+			t.AddLine("      Protocol:", r.GetProtocol())
+			t.AddLine("      Secure:", r.GetAcl())
+			t.AddLine("      Exported:", r.GetExported())
 			if r.GetExported() {
-				t.AddLine("\t\tTarget:", r.GetTarget())
-				t.AddLine("\t\tSource:", r.GetExportedDevice())
+				t.AddLine("        Target:", r.GetTarget())
+				t.AddLine("        Source:", r.GetExportedDevice())
 				if r.GetBlock() {
-					t.AddLine("\t\tType: BlockDevice")
+					t.AddLine("        Type: BlockDevice")
 				} else {
-					t.AddLine("\t\tType: File")
+					t.AddLine("        Type: File")
 				}
 			}
 
-			t.AddLine("\tImported:", r.GetImported())
+			t.AddLine("      Imported:", r.GetImported())
 			if r.Imported {
-				t.AddLine("\t\tMapped local device:", r.GetDevpath())
+				t.AddLine("        Mapped local device:", r.GetDevpath())
 			}
 		}
 	}
+
 	return nil
 }
 
