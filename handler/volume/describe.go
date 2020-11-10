@@ -167,6 +167,10 @@ func (p *VolumeDescribeFormatter) AddVolumeDetails(
 	if err != nil {
 		return err
 	}
+	err = p.addFastpathInfo(v, t)
+	if err != nil {
+		return err
+	}
 	err = p.addVolumeStatsInfo(v, t)
 	if err != nil {
 		return err
@@ -313,6 +317,49 @@ func (p *VolumeDescribeFormatter) addVolumeBasicInfo(
 	if len(v.GetLocator().GetVolumeLabels()) != 0 {
 		util.AddMap(t, "Labels:", v.GetLocator().GetVolumeLabels())
 	}
+
+	return nil
+}
+
+func (p *VolumeDescribeFormatter) addFastpathInfo(
+	v *api.Volume,
+	t *tabby.Tabby,
+) error {
+	spec := v.GetSpec()
+	fpConfig := v.GetFpConfig()
+
+	// Extend for reporting fastpath info
+	t.AddLine("Fastpath:")
+	t.AddLine("  Preference:", spec.GetFpPreference())
+	if spec.GetFpPreference() && fpConfig != nil {
+		t.AddLine("  Promoted:", fpConfig.GetPromote())
+		t.AddLine("  Dirty:", fpConfig.GetDirty())
+		t.AddLine("  State:", fpConfig.GetStatus())
+		t.AddLine("  Coordinator:", fpConfig.GetCoordUuid())
+		t.AddLine("  Replicas:", len(fpConfig.GetReplicas()))
+		for i, r := range fpConfig.GetReplicas() {
+			t.AddLine("    Replica:", i)
+			t.AddLine("      On Node:", r.GetNodeUuid())
+			t.AddLine("      Protocol:", r.GetProtocol())
+			t.AddLine("      Secure:", r.GetAcl())
+			t.AddLine("      Exported:", r.GetExported())
+			if r.GetExported() {
+				t.AddLine("        Target:", r.GetTarget())
+				t.AddLine("        Source:", r.GetExportedDevice())
+				if r.GetBlock() {
+					t.AddLine("        Type: BlockDevice")
+				} else {
+					t.AddLine("        Type: File")
+				}
+			}
+
+			t.AddLine("      Imported:", r.GetImported())
+			if r.Imported {
+				t.AddLine("        Mapped local device:", r.GetDevpath())
+			}
+		}
+	}
+
 	return nil
 }
 
