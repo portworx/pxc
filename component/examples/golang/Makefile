@@ -23,20 +23,18 @@ endif
 LDFLAGS :=-ldflags "-X main.ComponentName=$(CLINAME) -X main.ComponentVersion=$(VERSION)"
 
 ifneq (windows,$(GOOS))
-PKG_NAME = $(CLINAME)
 COMPONENT_PKG_NAME = $(PXC_COMPONENT)
 else
-PKG_NAME = $(CLINAME).exe
 COMPONENT_PKG_NAME = $(PXC_COMPONENT).exe
 endif
 
 ZIPPACKAGE := $(PXC_COMPONENT)-$(VERSION).$(GOOS).$(ARCH).zip
 TGZPACKAGE := $(PXC_COMPONENT)-$(VERSION).$(GOOS).$(ARCH).tar.gz
 
-all: $(PKG_NAME) $(COMPONENT_PKG_NAME)
+all: component
 
 install: all
-	cp $(PKG_NAME) $(HOME)/.pxc/bin/$(COMPONENT_PKG_NAME)
+	cp $(COMPONENT_PKG_NAME) $(GOPATH)/bin/$(COMPONENT_PKG_NAME)
 
 imports:
 	goimports -w ./cmd
@@ -47,8 +45,8 @@ imports:
 lint:
 	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
 
-$(PKG_NAME):
-	go build -o $(PKG_NAME) $(LDFLAGS)
+component:
+	go build -o $(COMPONENT_PKG_NAME) $(LDFLAGS)
 
 release: darwin_amd64_dist \
 	windows_amd64_dist \
@@ -69,7 +67,7 @@ dist: $(TGZPACKAGE)
 
 # This also tests for any conflicts
 docs: all
-	./$(PKG_NAME) gendocs --output-dir=docs/usage
+	./$(COMPONENT_PKG_NAME) gendocs --output-dir=docs/usage
 
 # Look at pxc ./hack directory to see how it creates environments to test
 #test:
@@ -79,9 +77,6 @@ verify: all
 	go fmt $(go list ./... | grep -v vendor) | wc -l | grep 0
 	go vet $(go list ./... | grep -v vendor)
 
-$(COMPONENT_PKG_NAME): $(PKG_NAME)
-	cp $(PKG_NAME) $(COMPONENT_PKG_NAME)
-
 $(ZIPPACKAGE): all
 	@echo Packaging binaries...
 	@mkdir -p $(PKGDIR)/bin
@@ -89,7 +84,7 @@ $(ZIPPACKAGE): all
 	@mkdir -p dist
 	( cd $(DIR)/tmp && zip -r ../dist/$@ $(PXC_COMPONENT) )
 	@rm -rf $(TMP)
-	@rm -f $(PKG_NAME) $(COMPONENT_PKG_NAME) $(CLINAME).exe $(PXC_COMPONENT).exe
+	@rm -f $(COMPONENT_PKG_NAME)
 
 $(TGZPACKAGE): all
 	@echo Packaging binaries...
@@ -98,12 +93,12 @@ $(TGZPACKAGE): all
 	@mkdir -p $(DIR)/dist/
 	tar -czf $(DIR)/dist/$@ -C $(DIR)/tmp $(PXC_COMPONENT)
 	@rm -rf $(TMP)
-	@rm -f $(PKG_NAME) $(COMPONENT_PKG_NAME) $(CLINAME).exe $(PXC_COMPONENT).exe
+	@rm -f $(COMPONENT_PKG_NAME)
 
 clean:
-	rm -f $(PKG_NAME) $(COMPONENT_PKG_NAME) $(CLINAME).exe $(PXC_COMPONENT).exe
+	rm -f $(COMPONENT_PKG_NAME)
 	rm -rf dist
 
 .PHONY: dist all clean darwin_amd64_dist windows_amd64_dist linux_amd64_dist \
-	install release test
+	install release test component
 
