@@ -21,6 +21,7 @@ import (
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/kubernetes"
+	pkgplugin "github.com/portworx/pxc/pkg/plugin"
 	"github.com/portworx/pxc/pkg/util"
 	"github.com/spf13/cobra"
 
@@ -102,6 +103,24 @@ var _ = commander.RegisterCommandInit(func() {
 	}
 	rootCmd.Flags().BoolVar(&rootOptions.showOptions, "options", false, "Show global options for all commands")
 	rootCmd.SetUsageTemplate(rootTmpl)
+
+	// Custom Help
+	defaultHelpFunc := rootCmd.HelpFunc()
+	defaultUsageFunc := rootCmd.UsageFunc()
+	fromHelp := false
+	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		fromHelp = true
+		defaultHelpFunc(cmd, args)
+		rootComponentUsage(cmd)
+	})
+
+	rootCmd.SetUsageFunc(func(cmd *cobra.Command) error {
+		err := defaultUsageFunc(cmd)
+		if !fromHelp {
+			rootComponentUsage(cmd)
+		}
+		return err
+	})
 })
 
 func rootCmdExec(cmd *cobra.Command, args []string) error {
@@ -110,6 +129,31 @@ func rootCmdExec(cmd *cobra.Command, args []string) error {
 	}
 	rootCmd.Usage()
 	return nil
+}
+
+func rootComponentUsage(cmd *cobra.Command) {
+	arg0 := "pxc"
+	if util.InKubectlPluginMode() {
+		arg0 = "kubectl pxc"
+	}
+
+	if cmd != rootCmd {
+		return
+	}
+
+	lister := &pkgplugin.PluginLister{
+		NameOnly: true,
+	}
+	lister.Complete(rootCmd)
+	components, _ := lister.GetSortedRootComponents()
+
+	util.Printf("\nAvailable components:\n")
+
+	// Add components as subcommands
+	for _, component := range components {
+		util.Printf("  %s\n", component)
+	}
+	util.Printf("\nUse \"%s [component] --help\" for more information about the component\n", arg0)
 }
 
 func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {

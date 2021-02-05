@@ -1,4 +1,5 @@
 /*
+Copyright 2021 Pure Storage
 Copyright 2017 The Kubernetes Authors.
 
 Originally from:
@@ -19,25 +20,33 @@ limitations under the License.
 package plugin
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 
-	"github.com/portworx/pxc/pkg/commander"
-	pluginpkg "github.com/portworx/pxc/pkg/plugin"
+	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/util"
+	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
 )
 
-type pluginListOptions struct {
+type PluginLister struct {
 	Verifier PathVerifier
 	NameOnly bool
-	Lister   pluginpkg.PluginLister
 
 	PluginPaths []string
+}
+
+type Component struct {
+	Path     string
+	Warnings []string
 }
 
 // PathVerifier receives a path and determines if it is valid or not
@@ -51,67 +60,96 @@ type CommandOverrideVerifier struct {
 	seenPlugins map[string]string
 }
 
-var (
-	pluginListLong = `
-		List all available component files on a user's PATH.
-
-		Available component files are those that are:
-		- executable
-		- anywhere on the user's PATH
-		- begin with "pxc-"`
-
-	listOptions *pluginListOptions
-	listCmd     *cobra.Command
-)
-
-var _ = commander.RegisterCommandVar(func() {
-	listOptions = &pluginListOptions{}
-	listCmd = &cobra.Command{
-		Use:   "list",
-		Short: "List all visible component executables",
-		Long:  pluginListLong,
-		RunE:  listExec,
-	}
-})
-
-var _ = commander.RegisterCommandInit(func() {
-	listCmd.Flags().BoolVar(&listOptions.NameOnly, "name-only", listOptions.NameOnly, "If true, display only the binary name of each component, rather than its full path")
-	PluginAddCommand(listCmd)
-})
-
-func ListAddCommand(cmd *cobra.Command) {
-	listCmd.AddCommand(cmd)
-}
-
-func listExec(cmd *cobra.Command, args []string) error {
-	listOptions.Lister.Complete(cmd)
-	return listOptions.Run(cmd, args)
-}
-
-func (o *pluginListOptions) Run(cmd *cobra.Command, args []string) error {
-	isFirstFile := true
-
-	components, err := o.Lister.GetList()
-	if err != nil {
-		return err
+func (o *PluginLister) Complete(cmd *cobra.Command) error {
+	o.Verifier = &CommandOverrideVerifier{
+		root:        cmd.Root(),
+		seenPlugins: make(map[string]string),
 	}
 
-	if len(components) == 0 {
-		return fmt.Errorf("Unable to find any pxc components in your PATH")
-	}
-
-	for _, component := range components {
-		if isFirstFile {
-			util.Eprintf("The following compatible components are available:\n\n")
-			isFirstFile = false
-		}
-		util.Printf("%s\n", component.Path)
-		for _, warning := range component.Warnings {
-			util.Eprintf("  - %s\n", warning)
-		}
-	}
-
+	o.PluginPaths = filepath.SplitList(os.Getenv("PATH"))
+	o.PluginPaths = append(o.PluginPaths, path.Join(config.CM().GetFlags().ConfigDir, "bin"))
 	return nil
+}
+
+func (o *PluginLister) GetList() ([]*Component, error) {
+	pluginErrors := []error{}
+	components := make([]*Component, 0)
+
+	for _, dir := range uniquePathsList(o.PluginPaths) {
+		files, err := ioutil.ReadDir(dir)
+		if err != nil {
+			if _, ok := err.(*os.PathError); ok {
+				logrus.Warnf("Unable read directory %q from your PATH: %v. Skipping...", dir, err)
+				continue
+			}
+
+			pluginErrors = append(pluginErrors, fmt.Errorf("error: unable to read directory %q in your PATH: %v", dir, err))
+			continue
+		}
+
+		for _, f := range files {
+			if f.IsDir() {
+				continue
+			}
+			if !hasValidPrefix(f.Name(), ValidPluginFilenamePrefixes) {
+				continue
+			}
+
+			pluginPath := f.Name()
+			if !o.NameOnly {
+				pluginPath = filepath.Join(dir, pluginPath)
+			}
+
+			component := &Component{
+				Path:     pluginPath,
+				Warnings: make([]string, 0),
+			}
+
+			if errs := o.Verifier.Verify(filepath.Join(dir, f.Name())); len(errs) != 0 {
+				for _, err := range errs {
+					component.Warnings = append(component.Warnings, err.Error())
+				}
+			}
+			components = append(components, component)
+		}
+	}
+
+	if len(pluginErrors) > 0 {
+		util.Eprintf("\n")
+		errs := bytes.NewBuffer(nil)
+		for _, e := range pluginErrors {
+			fmt.Fprintln(errs, e)
+		}
+		return nil, fmt.Errorf("%s", errs.String())
+	}
+
+	return components, nil
+}
+
+func (o *PluginLister) GetSortedRootComponents() ([]string, error) {
+	components, err := o.GetList()
+	if err != nil {
+		return nil, err
+	}
+
+	list := make([]string, 0)
+
+	// Add components as subcommands
+	for _, component := range components {
+
+		// Remove the "pxc-" part of the component
+		c := strings.TrimPrefix(component.Path, "pxc-")
+
+		// Only add top level component, no sub components
+		if strings.Contains(c, "-") {
+			continue
+		}
+
+		list = append(list, c)
+	}
+
+	sort.Strings(list)
+	return list, nil
 }
 
 // Verify implements PathVerifier and determines if a given path
