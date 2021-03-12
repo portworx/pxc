@@ -227,12 +227,9 @@ func (p *pxcConfigReaderWriter) newDefaultConfig() *Config {
 }
 
 func (p *pxcConfigReaderWriter) validate(c *Config) error {
-	// REMOVED THESE LINES TO allow View for debugging. May have to check if these affect the rest of the system
-	/*
-		if len(c.CurrentContext) == 0 {
-			return fmt.Errorf("Current context missing from config file %s", CM().GetConfigFile())
-		}
-	*/
+	if len(c.CurrentContext) == 0 {
+		return fmt.Errorf("Current context missing from config file %s", CM().GetConfigFile())
+	}
 	if c.AuthInfos == nil {
 		c.AuthInfos = make(map[string]*AuthInfo)
 	}
@@ -243,21 +240,19 @@ func (p *pxcConfigReaderWriter) validate(c *Config) error {
 		c.Contexts = make(map[string]*Context)
 	}
 
-	/*
-		if _, ok := c.Contexts[c.CurrentContext]; !ok {
-			return fmt.Errorf("Context %s missing from config file %s", c.CurrentContext, CM().GetConfigFile())
-		}
+	if _, ok := c.Contexts[c.CurrentContext]; !ok {
+		return fmt.Errorf("Context %s missing from config file %s", c.CurrentContext, CM().GetConfigFile())
+	}
 
-		currentCreds := c.Contexts[c.CurrentContext].AuthInfo
-		if _, ok := c.AuthInfos[currentCreds]; !ok {
-			return fmt.Errorf("Credentials %s missing from config file %s", currentCreds, CM().GetConfigFile())
-		}
+	currentCreds := c.Contexts[c.CurrentContext].AuthInfo
+	if _, ok := c.AuthInfos[currentCreds]; !ok {
+		return fmt.Errorf("Credentials %s missing from config file %s", currentCreds, CM().GetConfigFile())
+	}
 
-		currentCluster := c.Contexts[c.CurrentContext].Cluster
-		if _, ok := c.Clusters[currentCluster]; !ok {
-			return fmt.Errorf("Cluster %s missing from config file %s", currentCluster, CM().GetConfigFile())
-		}
+	currentCluster := c.Contexts[c.CurrentContext].Cluster
+	if _, ok := c.Clusters[currentCluster]; !ok {
+		return fmt.Errorf("Cluster %s missing from config file %s", currentCluster, CM().GetConfigFile())
+	}
 
-	*/
 	return nil
 }
