@@ -71,11 +71,15 @@ func NewConfigManagerForContext(context string) (*ConfigManager, error) {
 		configManager.configrw = newPxcConfigReaderWriter()
 	}
 
-	err := configManager.Load()
-	if err != nil {
+	if err := configManager.Load(); err != nil {
 		return nil, err
 	}
 
+	if _, ok := configManager.Config.Contexts[context]; !ok {
+		return nil, fmt.Errorf("could not find the context '%s'", context)
+	}
+
+	configManager.Config.CurrentContext = context
 	return configManager, nil
 }
 
@@ -134,6 +138,31 @@ func (cm *ConfigManager) ForEachContext(
 			logrus.Errorf("Failed to comm with cluster %s: %v", name, err)
 		}
 	}
+}
+
+func (cm *ConfigManager) RunInNamedContext(contextName string, handler func() error) error {
+	// get current cluster
+	original := CM()
+	originalK := KM()
+
+	// defer resetting cluster
+	defer func() {
+		SetCM(original)
+		SetKM(originalK)
+	}()
+
+	if _, ok := cm.Config.Contexts[contextName]; !ok {
+		return fmt.Errorf("could not find the context '%s'", contextName)
+	}
+
+	newCm, err := NewConfigManagerForContext(contextName)
+	if err != nil {
+		return fmt.Errorf("failed to create manager for the context '%s'", contextName)
+	}
+	SetCM(newCm)
+	SetKM(NewKubernetesConfigManagerForContext(contextName))
+
+	return handler()
 }
 
 // GetFlags returns all the pxc persistent flags
