@@ -17,6 +17,7 @@ package kubernetes
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"sync"
@@ -78,7 +79,7 @@ func (p *kubeConnection) GetPodsByLabels(
 	if len(labels) > 0 {
 		lo.LabelSelector = labels
 	}
-	podList, err := podClient.List(lo)
+	podList, err := podClient.List(context.TODO(), lo)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +100,7 @@ func (p *kubeConnection) GetPvcsByLabels(
 	if len(labels) > 0 {
 		lo.LabelSelector = labels
 	}
-	pvcList, err := pvcClient.List(lo)
+	pvcList, err := pvcClient.List(context.TODO(), lo)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +206,7 @@ func doWrite(
 	if lo.ShowPodInfo == true {
 		prefix = []byte(fmt.Sprintf("pod=%s namespace=%s ", lp.podName, lp.podNamespace))
 	}
-	rc, err := lp.rw.Stream()
+	rc, err := lp.rw.Stream(context.TODO())
 	if err != nil {
 		return err
 	}
