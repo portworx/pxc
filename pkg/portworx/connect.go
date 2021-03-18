@@ -169,7 +169,7 @@ func PxGetTokenFromSecret(secretName, secretNamespace string) (string, error) {
 	}
 
 	secretsClient := clientSet.CoreV1().Secrets(secretNamespace)
-	secret, err := secretsClient.Get(secretName, metav1.GetOptions{})
+	secret, err := secretsClient.Get(context.TODO(), secretName, metav1.GetOptions{})
 	if err != nil {
 		logrus.Errorf("Failed to fetch secret: %v", err)
 		return "", err

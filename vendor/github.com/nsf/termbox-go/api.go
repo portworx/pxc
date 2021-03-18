@@ -2,16 +2,13 @@
 
 package termbox
 
-import (
-	"fmt"
-	"os"
-	"os/signal"
-	"runtime"
-	"syscall"
-	"time"
-
-	"github.com/mattn/go-runewidth"
-)
+import "github.com/mattn/go-runewidth"
+import "fmt"
+import "os"
+import "os/signal"
+import "syscall"
+import "runtime"
+import "time"
 
 // public API
 
@@ -27,7 +24,7 @@ import (
 func Init() error {
 	var err error
 
-	if runtime.GOOS == "openbsd" || runtime.GOOS == "freebsd" {
+	if runtime.GOOS == "openbsd" {
 		out, err = os.OpenFile("/dev/tty", os.O_RDWR, 0)
 		if err != nil {
 			return err

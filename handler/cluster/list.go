@@ -17,6 +17,7 @@ package cluster
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"math/big"
 	"sort"
@@ -140,16 +141,16 @@ func (f *clustersGetFormatter) getClusters() ([]*ClusterInfo, error) {
 
 	clusterInfos := make([]*ClusterInfo, 0)
 
-	config.CM().ForEachContext(func(context, clusterName string) error {
+	config.CM().ForEachContext(func(ctxName, clusterName string) error {
 		contextMatches := strings.Split(clusterListArgs.contextMatch, ",")
 		if len(clusterListArgs.contextMatch) > 0 &&
-			!util.ListContains(contextMatches, context) &&
-			!util.ListMatchGlob(contextMatches, context) {
+			!util.ListContains(contextMatches, ctxName) &&
+			!util.ListMatchGlob(contextMatches, ctxName) {
 			return nil
 		}
 
 		// Initialize objects
-		clusterInfo := NewClusterInfo(context, clusterName)
+		clusterInfo := NewClusterInfo(ctxName, clusterName)
 		clusterInfos = append(clusterInfos, clusterInfo)
 
 		// Get K8S Nodes
@@ -160,7 +161,7 @@ func (f *clustersGetFormatter) getClusters() ([]*ClusterInfo, error) {
 
 		// Get Kubernetes nodes
 		knodes := cs.CoreV1().Nodes()
-		knodesInfo, err := knodes.List(metav1.ListOptions{})
+		knodesInfo, err := knodes.List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return fmt.Errorf("Unable to get kubernetes nodes: %v", err)
 		}
