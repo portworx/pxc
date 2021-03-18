@@ -10,7 +10,7 @@ require (
 	github.com/gizak/termui/v3 v3.1.0
 	github.com/golang/protobuf v1.4.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
-	github.com/libopenstorage/openstorage-sdk-clients v0.9.1-0.20201105223041-67db31cd52a3
+	github.com/libopenstorage/openstorage-sdk-clients v0.109.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.1.3

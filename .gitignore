@@ -1,7 +1,5 @@
 pxc
 pxc.exe
-example-component/cm
-example-component/pxc-cm*
 *.code-workspace
 kubectl-pxc
 kubectl-pxc.exe
@@ -10,3 +8,4 @@ kubectl-pxc.exe
 *.zip
 .code-workspace*
 dist/
+component/examples/golang/pxc-cm
