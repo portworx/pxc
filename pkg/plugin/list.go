@@ -32,7 +32,6 @@ import (
 
 	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/util"
-	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
 )
@@ -79,7 +78,6 @@ func (o *PluginLister) GetList() ([]*Component, error) {
 		files, err := ioutil.ReadDir(dir)
 		if err != nil {
 			if _, ok := err.(*os.PathError); ok {
-				logrus.Warnf("Unable read directory %q from your PATH: %v. Skipping...", dir, err)
 				continue
 			}
 
