@@ -80,7 +80,7 @@ github.com/imdario/mergo
 github.com/inconshreveable/mousetrap
 # github.com/json-iterator/go v1.1.10
 github.com/json-iterator/go
-# github.com/libopenstorage/openstorage-sdk-clients v0.9.1-0.20201105223041-67db31cd52a3
+# github.com/libopenstorage/openstorage-sdk-clients v0.109.0
 ## explicit
 github.com/libopenstorage/openstorage-sdk-clients/sdk/golang
 # github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de
