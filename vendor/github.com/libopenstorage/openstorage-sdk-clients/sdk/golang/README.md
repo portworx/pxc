@@ -1,2 +1,0 @@
-# Golang gRPC Client Library
-
