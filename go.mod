@@ -23,3 +23,5 @@ require (
 	k8s.io/cli-runtime v0.20.4
 	k8s.io/client-go v0.20.4
 )
+
+replace github.com/grpc-ecosystem/grpc-gateway v1.9.0 => github.com/grpc-ecosystem/grpc-gateway v1.16.0
