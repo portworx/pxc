@@ -22,6 +22,7 @@ import (
 type VolumeSpec struct {
 	VolNames []string
 	Labels   map[string]string
+	Owner    string
 }
 
 type Volumes interface {

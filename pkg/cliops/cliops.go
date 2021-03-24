@@ -29,6 +29,7 @@ type CliInputs struct {
 	Wide          bool
 	ShowLabels    bool
 	AllNamespaces bool
+	Owner         string
 	Labels        map[string]string
 	Args          []string
 }
@@ -69,6 +70,8 @@ func NewCliInputs(cmd *cobra.Command, args []string) *CliInputs {
 	}
 	showLabels, _ := cmd.Flags().GetBool("show-labels")
 	labels, _ := cmd.Flags().GetString("selector")
+	owner, _ := cmd.Flags().GetString("owner")
+
 	//convert string to map
 	mlabels, _ := util.CommaStringToStringMap(labels)
 
@@ -79,6 +82,7 @@ func NewCliInputs(cmd *cobra.Command, args []string) *CliInputs {
 			FormatType: output,
 		},
 		Wide:          wide,
+		Owner:         owner,
 		ShowLabels:    showLabels,
 		AllNamespaces: allNamespaces,
 		Args:          args,

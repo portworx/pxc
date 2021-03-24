@@ -49,7 +49,7 @@ var _ = commander.RegisterCommandInit(func() {
 	VolumeAddCommand(getVolumesCmd)
 	getVolumesCmd.Flags().String("owner", "", "Owner of volume")
 	getVolumesCmd.Flags().String("volumegroup", "", "Volume group id")
-	getVolumesCmd.Flags().Bool("deep", false, "Collect more information, this may delay the request")
+	//getVolumesCmd.Flags().Bool("deep", false, "Collect more information, this may delay the request")
 	getVolumesCmd.Flags().Bool("show-k8s-info", false, "Show kubernetes information")
 	getVolumesCmd.Flags().StringP("output", "o", "", "Output in yaml|json|wide")
 	getVolumesCmd.Flags().Bool("show-labels", false, "Show labels in the last column of the output")
@@ -99,6 +99,7 @@ func NewVolumeGetFormatter(cliOps cliops.CliOps) *volumeGetFormatter {
 	volSpec := &portworx.VolumeSpec{
 		VolNames: cliOps.CliInputs().Args,
 		Labels:   cliOps.CliInputs().Labels,
+		Owner:    cliOps.CliInputs().Owner,
 	}
 	v := &volumeGetFormatter{
 		cliOps:  cliOps,
