@@ -77,11 +77,17 @@ func (p *pxOps) GetVolumesBySpec(
 	vs *VolumeSpec,
 ) ([]*api.SdkVolumeInspectResponse, error) {
 	volumes := api.NewOpenStorageVolumeClient(p.conn)
-	volsInfo, err := volumes.InspectWithFilters(p.ctx,
-		&api.SdkVolumeInspectWithFiltersRequest{
-			Labels: vs.Labels,
-		})
+	req := &api.SdkVolumeInspectWithFiltersRequest{
+		Labels: vs.Labels,
+	}
 
+	if vs.Owner != "" {
+		req.Ownership = &api.Ownership{
+			Owner: vs.Owner,
+		}
+	}
+
+	volsInfo, err := volumes.InspectWithFilters(p.ctx, req)
 	if err != nil {
 		return nil, util.PxErrorMessage(err, "Failed to get volumes")
 	}
