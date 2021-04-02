@@ -32,13 +32,10 @@ if [ "$1" = "-n" ] ; then
 	NODE=$2
 	shift 2
 else
-	nodes=$(kubectl pxc node list -o json | jq -r '.[].hostname')
+	nodes=$(kubectl pxc node list | grep Ready | awk '{print $1}')
 	for node in $nodes ; do
-		status=$(kubectl pxc node get $node -o json | jq -r '.[].status')
-		if [ $status -eq 2 ] ; then
-			NODE=$node
-			break 1
-		fi
+		NODE=$node
+		break 1
 	done
 fi
 
