@@ -8,6 +8,12 @@ GOOS := $(shell go env GOOS)
 PXC_GOBUILD_FLAGS =
 DIR=.
 
+ifeq ($(TRAVIS),true)
+DOCFLAGS :=
+else
+DOCFLAGS := PXC_KUBECTL_PLUGIN_MODE=true
+endif
+
 ifeq ($(BUILD_TYPE),release)
 BUILDFLAGS :=
 PXC_LDFLAGS=-s -w
@@ -85,7 +91,7 @@ dist: $(TGZPACKAGE)
 
 # This also tests for any conflicts
 docs: all
-	PXC_KUBECTL_PLUGIN_MODE=true ./pxc gendocs --output-dir=docs/usage
+	$(DOCFLAGS) ./pxc gendocs --output-dir=docs/usage
 
 test:
 	./hack/test.sh
