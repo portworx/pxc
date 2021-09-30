@@ -85,7 +85,7 @@ dist: $(TGZPACKAGE)
 
 # This also tests for any conflicts
 docs: all
-	./pxc gendocs --output-dir=docs/usage
+	PXC_KUBECTL_PLUGIN_MODE=true ./pxc gendocs --output-dir=docs/usage
 
 test:
 	./hack/test.sh

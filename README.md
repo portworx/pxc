@@ -30,6 +30,15 @@ $ kubectl pxc node list
 $ kubectl pxc pvc list
 ```
 
+If your Portworx Enterprise cluster is secured with PX-Security, then you must
+first use the following comand:
+
+```
+$ kubectl pxc login \
+  --k8s-secret-name=<Kubernetes secret holding the token> \
+  --k8s-secret-namespace=<Kubernetes namespace holding the secret>
+```
+
 ## Standalone
 
 ### On a Portworx node
