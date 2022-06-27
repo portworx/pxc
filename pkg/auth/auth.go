@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	jwt "github.com/golang-jwt/jwt/v4"
 )
 
 // Claims provides information about the claims in the token

@@ -64,6 +64,7 @@ pxc:
 	go build $(PXC_GOBUILD_FLAGS) -o $(PKG_NAME) $(LDFLAGS)
 
 docker-release: darwin_amd64_dist \
+	darwin_arm64_dist \
 	windows_amd64_dist \
 	linux_amd64_dist
 
@@ -75,6 +76,9 @@ release:
 		-e DEV_GROUP=$(shell id -g) \
 		golang \
 		hack/create-release.sh
+
+darwin_arm64_dist:
+	GOOS=darwin GOARCH=arm64 BUILD_TYPE=release $(MAKE) dist
 
 darwin_amd64_dist:
 	GOOS=darwin GOARCH=amd64 BUILD_TYPE=release $(MAKE) dist
