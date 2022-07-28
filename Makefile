@@ -97,7 +97,7 @@ dist: $(TGZPACKAGE)
 docs: all
 	$(DOCFLAGS) ./pxc gendocs --output-dir=docs/usage
 
-test:
+test: pxc
 	./hack/test.sh
 
 verify: all test
