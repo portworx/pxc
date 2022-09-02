@@ -2,7 +2,7 @@ language: go
 services:
   - docker
 go:
-  - 1.15.x
+  - 1.18.x
 install:
   - (cd ./..; go get -u github.com/vbatts/git-validation)
 script:
