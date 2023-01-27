@@ -57,7 +57,7 @@ func viewExec(cmd *cobra.Command, args []string) error {
 
 	for _, cluster := range configInfo.Clusters {
 		if len(cluster.CACertData) != 0 {
-			cluster.CACertData = []byte("<REDACTED>")
+			cluster.CACertData = "<REDACTED>"
 		}
 	}
 

@@ -24,12 +24,10 @@ endif
 
 ifdef APP_SUFFIX
   VERSION = $(VER)-$(subst /,-,$(APP_SUFFIX))
-else
-ifeq (master,$(BRANCH))
+else ifeq (master,$(BRANCH))
   VERSION = $(VER)
 else
   VERSION = $(VER)-$(BRANCH)
-endif
 endif
 
 LDFLAGS := $(BUILDFLAGS) -ldflags "-X github.com/portworx/pxc/cmd.PxVersion=$(VERSION) $(PXC_LDFLAGS)"
@@ -45,17 +43,23 @@ endif
 ZIPPACKAGE := $(CLINAME)-$(VERSION).$(GOOS).$(ARCH).zip
 TGZPACKAGE := $(CLINAME)-$(VERSION).$(GOOS).$(ARCH).tar.gz
 
+.PHONY: dist all clean darwin_amd64_dist windows_amd64_dist linux_amd64_dist \
+	install docker-release release pxc test
+
 all: pxc $(PLUGIN_PKG_NAME)
 
 install: all
 	cp $(PKG_NAME) $(GOPATH)/bin
 	cp $(PKG_NAME) $(GOPATH)/bin/$(PLUGIN_PKG_NAME)
 
-imports:
-	goimports -w ./cmd
-	goimports -w ./handler
-	goimports -w ./pkg
-	goimports -w *.go
+$(GOPATH)/bin/goimports:
+	go install golang.org/x/tools/cmd/goimports@latest
+
+imports: $(GOPATH)/bin/goimports
+	$(GOPATH)/bin/goimports -w ./cmd
+	$(GOPATH)/bin/goimports -w ./handler
+	$(GOPATH)/bin/goimports -w ./pkg
+	$(GOPATH)/bin/goimports -w *.go
 
 lint:
 	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
@@ -131,7 +135,4 @@ $(TGZPACKAGE): all
 clean:
 	rm -f $(PKG_NAME) $(PLUGIN_PKG_NAME)
 	rm -rf dist
-
-.PHONY: dist all clean darwin_amd64_dist windows_amd64_dist linux_amd64_dist \
-	install docker-release release pxc test
 
