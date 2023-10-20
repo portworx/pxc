@@ -69,9 +69,9 @@ docker-release: darwin_amd64_dist \
 	linux_amd64_dist
 
 release:
-	docker run --privileged -ti \
-		-v $(shell pwd):/go/src/github.com/portworx/pxc \
-		-w /go/src/github.com/portworx/pxc \
+	docker run --privileged \
+		-v $(shell pwd):/go/src \
+		-w /go/src \
 		-e DEV_USER=$(shell id -u) \
 		-e DEV_GROUP=$(shell id -g) \
 		golang \
