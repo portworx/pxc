@@ -113,9 +113,9 @@ func TestStringContainsAnyFromList(t *testing.T) {
 }
 
 /*
- To test postivive case of utils.ListContains function.
- Test if given element is present in the list.
- Assert if element is not found in the list.
+To test postivive case of utils.ListContains function.
+Test if given element is present in the list.
+Assert if element is not found in the list.
 */
 func TestListContainsElement(t *testing.T) {
 	// list containg elements

@@ -24,7 +24,6 @@ func (r Restorer) Restore() {
 // In tests we would type the following:
 //
 // defer Patch(somenun, 3).Restore()
-//
 func Patch(dest, value interface{}) Restorer {
 	destv := reflect.ValueOf(dest).Elem()
 	oldv := reflect.New(destv.Type()).Elem()

@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    httd://www.apache.org/licenses/LICENSE-2.0
+	httd://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//To test successful case.
+// To test successful case.
 func TestGetVolumeWithLabels(t *testing.T) {
 	//creating volumes with lables
 	volName := test.GenVolName("labelvol")
@@ -53,7 +53,7 @@ func TestGetVolumeWithNameSelector(t *testing.T) {
 	assert.False(t, test.PxTestHasVolume(volName))
 }
 
-//Test passing k,v pair which is not present
+// Test passing k,v pair which is not present
 func TestGetVolumeWithDummySelector(t *testing.T) {
 	//creating volumes with lables
 	volName := test.GenVolName("labelvol")
@@ -70,7 +70,7 @@ func TestGetVolumeWithDummySelector(t *testing.T) {
 	assert.False(t, test.PxTestHasVolume(volName))
 }
 
-//Test to error is inavlid (k,v) label pair is provided.
+// Test to error is inavlid (k,v) label pair is provided.
 func TestGetVolumeInvalidLabels(t *testing.T) {
 	//creating volumes with lables
 	volName := test.GenVolName("labelvol")

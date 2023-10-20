@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -138,8 +138,9 @@ func PxTestGetVolumeWithNameSelector(t *testing.T, volName string, selector stri
 
 // Return volume information
 // TODO: If necessary, we can do a `pxc volume list <id> -o json` then
-//       unmarshal the JSON to appropriate object
-// 		 then return the &api.Volume inside of it.
+//
+//	      unmarshal the JSON to appropriate object
+//			 then return the &api.Volume inside of it.
 func PxTestVolumeInfo(t *testing.T, id string) *api.Volume {
 	cli := fmt.Sprintf("pxc volume list %s -o json", id)
 	so, _, err := executeCliRaw(cli)
@@ -155,9 +156,10 @@ func PxTestVolumeInfo(t *testing.T, id string) *api.Volume {
 
 // Returns a list of all volume ids
 // TODO: We may need to bring this back to the TestXXX functions
-//       depending on what it does, because the output would be
-//       parse, and as a library function, it may be easier to
-//       get a specific volume.
+//
+//	depending on what it does, because the output would be
+//	parse, and as a library function, it may be easier to
+//	get a specific volume.
 func PxTestGetAllVolumes(t *testing.T) []string {
 	cli := fmt.Sprintf("pxc volume list")
 	lines, _, err := ExecuteCli(cli)
