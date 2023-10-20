@@ -164,10 +164,14 @@ func GetRequiredPortworxPods(
 
 // This method looks at each of the volumes and figures out
 // a) Which nodes the volume has relevance to such as where its replicas
-//    are and where the node is attached
+//
+//	are and where the node is attached
+//
 // b) Converts the node names to appropriate portworx pods
 // c) Figures out which pods are using this volume and which of the
-//    containers inside those pods use the volume
+//
+//	containers inside those pods use the volume
+//
 // Figures out all the unique namespace, pod and container combinations and returns those
 func FillContainerInfo(
 	vols []*api.Volume,
