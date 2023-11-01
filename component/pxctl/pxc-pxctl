@@ -32,17 +32,22 @@ if [ "$1" = "-n" ] ; then
 	NODE=$2
 	shift 2
 else
-	k8snodes=$(kubectl get pod -n ${PXC_PORTWORX_SERVICE_NAMESPACE} -lname=portworx -o jsonpath='{.items[*].spec.nodeName}')
-	pxnodes=$(kubectl pxc node list -o json | jq -r '.[].hostname')
-	# Find all nodes common to both $k8snodes and $pxnodes
-	nodes=$(comm -12 <(echo $pxnodes | tr ' ' '\n' | sort) <(echo $k8snodes | tr ' ' '\n' | sort))
-	for node in $nodes ; do
-		status=$(kubectl pxc node get $node -o json | jq -r '.[].status')
-		if [ $status -eq 2 ] ; then
-			NODE=$node
-			break 1
-		fi
-	done
+	sn=$(kubectl get storagenodes -n ${PXC_PORTWORX_SERVICE_NAMESPACE} -o jsonpath='{$.items[?(@.status.phase=="Online")]}' 2>/dev/null | jq -sr .[0].metadata.name)
+	if [ "$sn" = null ] ; then
+		k8snodes=$(kubectl get pod -n ${PXC_PORTWORX_SERVICE_NAMESPACE} -lname=portworx -o jsonpath='{.items[*].spec.nodeName}')
+		pxnodes=$(kubectl pxc node list -o json | jq -r '.[].hostname')
+		# Find all nodes common to both $k8snodes and $pxnodes
+		nodes=$(comm -12 <(echo $pxnodes | tr ' ' '\n' | sort) <(echo $k8snodes | tr ' ' '\n' | sort))
+		for node in $nodes ; do
+			status=$(kubectl pxc node get $node -o json | jq -r '.[].status')
+			if [ $status -eq 2 ] ; then
+				NODE=$node
+				break 1
+			fi
+		done
+	else
+		NODE=$sn
+	fi
 fi
 
 if [ -z "$NODE" ] ; then
