@@ -18,16 +18,19 @@ package grpcserver
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/url"
 	"time"
 
-	"github.com/portworx/pxc/pkg/util"
-
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
+	"github.com/portworx/pxc/pkg/config"
+	"github.com/portworx/pxc/pkg/util"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -40,6 +43,27 @@ func Connect(address string, dialOptions []grpc.DialOption) (*grpc.ClientConn, e
 				func(addr string, timeout time.Duration) (net.Conn, error) {
 					return net.DialTimeout("unix", u.Path, timeout)
 				}))
+	}
+
+	cadata, err := config.KM().GetCurrentCA()
+	if err != nil {
+		logrus.WithError(err).Warnf("Could not get kubernetes CA certificate from current conext")
+	} else if len(cadata) == 0 {
+		logrus.Debugf("Adding grpc.WithInsecure to dial context")
+		dialOptions = append(dialOptions, grpc.WithInsecure())
+	} else {
+		var isSecure bool
+		if err = util.VerifyConnection(address, &isSecure, cadata); err != nil {
+			return nil, err
+		}
+
+		if isSecure {
+			logrus.Debugf("Setting up TLS for grpc connection to %s", address)
+			dialOptions = append(dialOptions, grpc.WithTransportCredentials(
+				credentials.NewTLS(&tls.Config{
+					RootCAs: util.AppendCertPool(cadata),
+				})))
+		}
 	}
 
 	dialOptions = append(dialOptions, grpc.WithBackoffMaxDelay(time.Second))
@@ -60,7 +84,7 @@ func Connect(address string, dialOptions []grpc.DialOption) (*grpc.ClientConn, e
 		if err := conn.Close(); err != nil {
 			return nil, fmt.Errorf("Connection timed out and failed to close connection: %v", err)
 		}
-		return nil, fmt.Errorf("Connection timed out to server %s", address)
+		return nil, fmt.Errorf("Connection timed out to server %s: %s", address, err)
 	}
 
 	return conn, nil

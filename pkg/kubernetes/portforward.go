@@ -96,12 +96,12 @@ func (p *KubectlPortForwarder) Start() error {
 
 	args := config.KM().KubectlFlagsToCliArgs()
 	currentCluster := config.CM().GetCurrentCluster()
-	logrus.Debugf("port-forward: CurrentCluster: %v", *currentCluster)
+	logrus.Debugf("port-forward: CurrentCluster: %#v", *currentCluster)
 	args = args + fmt.Sprintf("-n %s port-forward svc/%s :%s",
 		currentCluster.TunnelServiceNamespace,
 		currentCluster.TunnelServiceName,
 		currentCluster.TunnelServicePort)
-	logrus.Debugf("port-forward: args [%s]", args)
+	logrus.Debugf("port-forward: running \"kubectl %s\"", args)
 
 	cmd := exec.Command("kubectl", strings.Split(args, " ")...)
 
@@ -123,6 +123,7 @@ func (p *KubectlPortForwarder) Start() error {
 		logrus.Errorf("Error while executing [%s]: %v", cmd.String(), err)
 		return fmt.Errorf("Unable to execute kubectl. Please make sure kubectl is in your path")
 	}
+	logrus.Debug("port-forward: started")
 	p.cmd = cmd
 
 	// Read the port

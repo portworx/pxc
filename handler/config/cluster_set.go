@@ -16,12 +16,14 @@ limitations under the License.
 package configcli
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 
 	"github.com/portworx/pxc/pkg/commander"
 	"github.com/portworx/pxc/pkg/config"
 	"github.com/portworx/pxc/pkg/util"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -29,6 +31,10 @@ import (
 var (
 	clusterSetCmd *cobra.Command
 	clusterSet    *config.Cluster
+	opt           struct {
+		cafile string
+		force  bool
+	}
 )
 
 var _ = commander.RegisterCommandVar(func() {
@@ -51,14 +57,16 @@ var _ = commander.RegisterCommandInit(func() {
 
 	clusterSetCmd.Flags().StringVar(&clusterSet.Name,
 		"name", "", "Name for Portworx cluster (ignored when used as a kubectl plugin)")
+	clusterSetCmd.Flags().BoolVar(&opt.force,
+		"force", false, "Force the configuration setting.")
 	clusterSetCmd.Flags().BoolVar(&clusterSet.Secure,
 		"tls", false, "Enable if using TLS. Passing a CA will enable this automatically.")
-	clusterSetCmd.Flags().StringVar(&clusterSet.CACert,
+	clusterSetCmd.Flags().StringVar(&opt.cafile,
 		"cafile", "", "Path to CA certificate")
 	clusterSetCmd.Flags().StringVar(&clusterSet.Endpoint,
 		"endpoint", "", "Direct connection to a Portworx node gRPC endpoint. "+
 			"This endpoint would be used instead of the Kubernetes Portworx API service. "+
-			"Example: 1.1.1.1:9020")
+			"Example: pxnode123:9020")
 
 	if util.InKubectlPluginMode() {
 		clusterSetCmd.Flags().StringVar(&clusterSet.TunnelServiceNamespace,
@@ -71,16 +79,24 @@ var _ = commander.RegisterCommandInit(func() {
 })
 
 func clusterSetExec(cmd *cobra.Command, args []string) error {
+	var cabytes []byte
+	var err error
 
-	if len(clusterSet.CACert) != 0 {
-		var err error
-		clusterSet.CACertData, err = ioutil.ReadFile(clusterSet.CACert)
+	if opt.cafile != "" {
+		cabytes, err = ioutil.ReadFile(opt.cafile)
 		if err != nil {
-			return fmt.Errorf("Failed to read %s: %v", clusterSet.CACert, err)
+			return fmt.Errorf("failed to read %s: %v", opt.cafile, err)
 		}
+		clusterSet.CACertData = base64.StdEncoding.EncodeToString(cabytes)
 	}
 
-	if err := config.CM().ConfigSaveCluster(clusterSet); err != nil {
+	if opt.force {
+		logrus.Debug("Skipping endpoint validation (--force option used)")
+	} else if err = util.VerifyConnection(clusterSet.Endpoint, &clusterSet.Secure, cabytes); err != nil {
+		return err
+	}
+
+	if err = config.CM().ConfigSaveCluster(clusterSet); err != nil {
 		return err
 	}
 

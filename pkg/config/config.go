@@ -51,8 +51,7 @@ type Context struct {
 // Cluster provides information on how to connect to Portworx
 type Cluster struct {
 	Name       string `json:"name,omitempty" yaml:"name,omitempty"`
-	CACert     string `json:"cacert,omitempty" yaml:"cacert,omitempty"`
-	CACertData []byte `json:"cacert-data,omitempty" yaml:"cacert-data,omitempty"`
+	CACertData string `json:"certificate-authority-data,omitempty" yaml:"certificate-authority-data,omitempty"`
 	Endpoint   string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
 	Secure     bool   `json:"secure,omitempty" yaml:"secure,omitempty"`
 

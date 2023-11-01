@@ -17,18 +17,16 @@ package portworx
 
 import (
 	"context"
-	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 
 	"github.com/portworx/pxc/pkg/config"
 	pxgrpc "github.com/portworx/pxc/pkg/grpc"
 	"github.com/portworx/pxc/pkg/kubernetes"
-
+	"github.com/portworx/pxc/pkg/util"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
-	"github.com/sirupsen/logrus"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -145,20 +143,19 @@ func PxConnectNamed(cfgFile string, name string) (context.Context, *grpc.ClientC
 // PxAppendCaCertcontext appends the provided valid CA from the user to the existing systemPool or
 // load the default CA certs used for authentication with the sdk server.
 func PxAppendCaCertcontext(clusterInfo *config.Cluster) ([]grpc.DialOption, error) {
-	// Read the provided CA cert from the user
-	capool, err := x509.SystemCertPool()
-
-	// TODO: Read CA Cert file
-	// If user provided CA cert, then append it to systemCertPool.
+	var cadata []byte
+	var err error
 	if len(clusterInfo.CACertData) != 0 {
-		if !capool.AppendCertsFromPEM([]byte(clusterInfo.CACertData)) {
+		cadata, err = base64.StdEncoding.DecodeString(clusterInfo.CACertData)
+		if err != nil {
 			return nil, err
 		}
 	}
-
-	dialOptions := []grpc.DialOption{grpc.WithTransportCredentials(
-		credentials.NewClientTLSFromCert(capool, ""))}
-	return dialOptions, nil
+	return []grpc.DialOption{
+		grpc.WithTransportCredentials(
+			credentials.NewClientTLSFromCert(util.AppendCertPool(cadata), ""),
+		),
+	}, nil
 }
 
 func PxGetTokenFromSecret(secretName, secretNamespace string) (string, error) {

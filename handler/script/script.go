@@ -16,7 +16,9 @@ limitations under the License.
 package script
 
 import (
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -119,7 +121,7 @@ func runScriptExec(cmd *cobra.Command, args []string) error {
 
 func pythonScriptExec(cmd *cobra.Command, args []string) error {
 
-	// Setup a connetion to Portworx
+	// Setup a connection to Portworx
 	clusterInfo := config.CM().GetCurrentCluster()
 	authInfo := config.CM().GetCurrentAuthInfo()
 
@@ -136,8 +138,29 @@ func pythonScriptExec(cmd *cobra.Command, args []string) error {
 	scriptCmd := exec.Command("python3", args...)
 	scriptCmd.Env = append(os.Environ(),
 		EvEndpoint+"="+config.CM().GetEndpoint(),
-		EvCAFile+"="+clusterInfo.CACert,
 	)
+
+	// write out base64-encoded CA as a temporary file
+	if clusterInfo.CACertData != "" {
+		tf, err := ioutil.TempFile("", "cafile*.crt")
+		if err != nil {
+			return fmt.Errorf("error creating temporary file: %s", err)
+		}
+		barry, err := base64.StdEncoding.DecodeString(clusterInfo.CACertData)
+		if err != nil {
+			return fmt.Errorf("error decoding CA from config: %s", err)
+		}
+		defer os.RemoveAll(tf.Name())
+		n, err := tf.Write(barry)
+		if err != nil {
+			return fmt.Errorf("error writing CA to file: %s", err)
+		} else if n != len(barry) {
+			return fmt.Errorf("short write: %s", err)
+		}
+		scriptCmd.Env = append(os.Environ(),
+			EvCAFile+"="+tf.Name(),
+		)
+	}
 
 	if clusterInfo.Secure {
 		scriptCmd.Env = append(scriptCmd.Env, EvSecure+"=true")

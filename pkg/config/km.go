@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -137,6 +138,38 @@ func (k *KubernetesConfigManager) GetCurrentAuthInfo() (*clientcmdapi.AuthInfo, 
 		return authInfo, nil
 	}
 	return nil, fmt.Errorf("Current user information not found in Kubeconfig")
+}
+
+// GetCurrentCA returns current kubernetes CA.  Note, it will return "nil, nil" if insecure-skip-tls-verify used
+func (k *KubernetesConfigManager) GetCurrentCA() ([]byte, error) {
+	kConfig, err := k.ToRawKubeConfigLoader().RawConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	currentContext, err := k.GetKubernetesCurrentContext()
+	if err != nil {
+		return nil, err
+	}
+
+	cluster := kConfig.Contexts[currentContext].Cluster
+	if len(cluster) == 0 {
+		return nil, fmt.Errorf("current cluster is not set in Kubeconfig")
+	}
+
+	ci, has := kConfig.Clusters[cluster]
+	if !has {
+		return nil, fmt.Errorf("current cluster information not found in Kubeconfig")
+	}
+
+	if len(ci.CertificateAuthorityData) > 0 {
+		return ci.CertificateAuthorityData, nil
+	} else if len(ci.CertificateAuthority) != 0 {
+		return ioutil.ReadFile(ci.CertificateAuthority)
+	} else if ci.InsecureSkipTLSVerify {
+		return nil, nil
+	}
+	return nil, fmt.Errorf("could not find CA information in Kubeconfig")
 }
 
 // KubectlFlagsToCliArgs rebuilds the flags as cli args
